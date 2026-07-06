@@ -829,6 +829,7 @@
       "label": "Rich Response"
     },
     "language": {
+      "arabic": "العربية",
       "description": "Contacts are assigned the default language when the contact language is unknown.",
       "english": "English",
       "label": "Language",

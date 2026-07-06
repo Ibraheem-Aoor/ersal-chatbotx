@@ -836,6 +836,7 @@
       "label": "Rich Response"
     },
     "language": {
+      "arabic": "العربية",
       "description": "Liên hệ được gán ngôn ngữ mặc định khi ngôn ngữ liên hệ không xác định.",
       "english": "Tiếng Anh",
       "label": "Ngôn ngữ",
