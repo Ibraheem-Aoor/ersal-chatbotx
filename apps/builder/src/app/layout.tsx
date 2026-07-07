@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: Props) {
   const locale = await getLocale()
   const tenantSettings = await getTenantSettings()
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
+    <html lang={locale} dir="ltr" suppressHydrationWarning>
       <head>
         <PublicEnvScript />
         {env.NEXT_PUBLIC_ENABLE_PANCAKE_CHAT && (
