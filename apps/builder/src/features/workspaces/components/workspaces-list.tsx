@@ -14,7 +14,7 @@ import { CrownIcon, PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { UpgradePlanButton } from "@/enterprise/features/billing/upgrade-plan-dialog"
-import { isCloud, isCommunity } from "@/env"
+import { isCloud } from "@/env"
 import type { WorkspaceResource } from "../schema/resource"
 
 type WorkspacesListProps = {
@@ -150,7 +150,7 @@ const WorkspacesList = async ({
   const createLabel = t("actions.createFeature", {
     feature: t("fields.workspace.label"),
   })
-  const showCreateCard = !isCommunity()
+  const showCreateCard = true
   const ownerIds = new Set(ownerWorkspaceIds)
   const ownerLabel = t("home.owner")
 

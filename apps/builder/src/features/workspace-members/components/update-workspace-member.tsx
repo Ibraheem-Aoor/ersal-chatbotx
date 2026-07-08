@@ -21,7 +21,6 @@ import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
-import { isCommunity } from "@/env"
 import { updateWorkspaceMemberAction } from "../actions/update-workspace-member.action"
 import { updateWorkspaceMemberRequest } from "../schema/mutation"
 import type { WorkspaceMemberResource } from "../schema/resource"
@@ -177,7 +176,7 @@ export function UpdateWorkspaceMemberForm({
           <Label>{t("fields.permissions.label")}</Label>
           <div className="flex flex-col gap-4">
             <SwitchField
-              disabled={isCommunity()}
+              disabled={false}
               formItemClassName="flex flex-row-reverse items-center justify-end gap-2"
               label={t("fields.permissions.superAdmin")}
               name="permissions.superAdmin"

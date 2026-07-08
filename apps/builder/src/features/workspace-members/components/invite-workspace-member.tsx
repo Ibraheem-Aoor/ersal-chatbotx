@@ -27,7 +27,7 @@ import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { useCopyToClipboard } from "usehooks-ts"
 import { UpgradePlanButton } from "@/enterprise/features/billing/upgrade-plan-dialog"
-import { isCloud, isCommunity } from "@/env"
+import { isCloud } from "@/env"
 import { useWorkspaceId } from "@/hooks/routing"
 import { inviteWorkspaceMemberAction } from "../actions/invite-workspace-member.action"
 import { inviteWorkspaceMemberRequest } from "../schema/mutation"
@@ -211,7 +211,7 @@ export function AddWorkspaceMemberForm({
         <Label>{t("fields.permissions.label")}</Label>
         <div className="flex flex-col gap-4">
           <SwitchField
-            disabled={isCommunity()}
+            disabled={false}
             formItemClassName="flex flex-row-reverse items-center justify-end gap-2"
             label={t("fields.permissions.superAdmin")}
             name="permissions.superAdmin"

@@ -28,7 +28,6 @@ import { PlusIcon, TrashIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { memo, useCallback, useEffect, useMemo, useRef } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
-import { isCommunity } from "@/env"
 import { useFlowSelectOptions } from "@/features/flows/provider/flow-hook"
 import { useTenantSettings } from "@/features/tenant"
 import { BRANDING_TITLE, getBrandingUrl } from "../lib"
@@ -224,17 +223,15 @@ export default function PersistentMenuField({
                   <AccordionTrigger>{BRANDING_TITLE}</AccordionTrigger>
                 </div>
 
-                {!isCommunity() && (
-                  <Button
-                    className="mt-2 text-destructive"
-                    onClick={handleRemoveBranding}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  className="mt-2 text-destructive"
+                  onClick={handleRemoveBranding}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </Button>
               </div>
               <AccordionContent>
                 <div className="break-all px-1 text-muted-foreground text-sm">

@@ -8,7 +8,6 @@ import {
 } from "@chatbotx.io/ui/components/ui/card"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { isCommunity } from "@/env"
 import SSOSignUp from "@/features/auth/sso-sign-in"
 import { useTenantSettings } from "../tenant"
 import { EmailPasswordSignUp } from "./components/email-password-sign-up"
@@ -43,7 +42,7 @@ export const SignUpForm = ({
           <div className="grid gap-6">
             <EmailPasswordSignUp />
 
-            {!isCommunity() && enabledProviders.length > 0 && (
+            {enabledProviders.length > 0 && (
               <>
                 <OrSeparator />
                 <SSOSignUp providers={enabledProviders} />
