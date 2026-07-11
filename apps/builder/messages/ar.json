@@ -3214,5 +3214,52 @@
       "position": "الترتيب",
       "iconSearchLink": "تصفح أيقونات Lucide ←"
     }
+  },
+  "plans": {
+    "title": "إدارة الباقات",
+    "description": "إنشاء وإدارة باقات الاشتراك",
+    "createPlan": "إنشاء باقة",
+    "editPlan": "تعديل الباقة",
+    "noPlans": "لا توجد باقات بعد. أنشئ أول باقة.",
+    "active": "مفعّلة",
+    "inactive": "معطّلة",
+    "currentPlan": "الباقة الحالية",
+    "subscribe": "اشترك الآن",
+    "monthly": "شهرياً",
+    "yearly": "سنوياً",
+    "pricingTitle": "اختر باقتك",
+    "pricingDescription": "اختر الباقة التي تناسب احتياجاتك",
+    "fields": {
+      "name": "اسم الباقة",
+      "description": "الوصف",
+      "price": "السعر (ر.س)",
+      "isActive": "مفعّلة",
+      "sortOrder": "ترتيب العرض"
+    },
+    "limits": {
+      "title": "الحدود",
+      "contacts": "جهات الاتصال",
+      "mac": "جهات الاتصال النشطة شهرياً",
+      "workspaces": "مساحات العمل",
+      "channels": "القنوات",
+      "teamMembers": "أعضاء الفريق",
+      "flows": "التدفقات",
+      "broadcasts": "البث",
+      "aiAgents": "وكلاء الذكاء الاصطناعي",
+      "removeBranding": "إزالة العلامة التجارية"
+    },
+    "features": {
+      "title": "مميزات التسويق",
+      "addPlaceholder": "أضف ميزة..."
+    },
+    "currency": {
+      "sar": "ر.س"
+    },
+    "messages": {
+      "created": "تم إنشاء الباقة بنجاح",
+      "updated": "تم تحديث الباقة بنجاح",
+      "deleted": "تم حذف الباقة بنجاح",
+      "checkoutFailed": "فشل بدء عملية الدفع"
+    }
   }
 }

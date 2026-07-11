@@ -15,6 +15,7 @@ import {
   analyticsSequenceEventRelations,
 } from "./analytics"
 import { analyticsEmailTopicRelations } from "./analytics-email-topic"
+import { billingPlanRelations } from "./billing-plan"
 import { attachmentRelations } from "./attachment"
 import { accountRelations } from "./auth-account"
 import { invitationRelations } from "./auth-invitation"
@@ -88,6 +89,7 @@ import { productRelations } from "./product"
 import { reflinkRelations } from "./reflink"
 import { savedReplyRelations } from "./save-reply"
 import { sequenceRelations } from "./sequence"
+import { subscriptionRelations } from "./subscription"
 import { sequenceDispatchRelations } from "./sequence-dispatch"
 import { sequenceStepRelations } from "./sequence-step"
 import { spreadsheetRelations } from "./spreadsheet"
@@ -120,6 +122,7 @@ export const relations = {
   ...aiFileRelations,
   ...flowRelations,
   ...aiMCPServerRelations,
+  ...billingPlanRelations,
   ...attachmentRelations,
   ...conversationRelations,
   ...messageRelations,
@@ -175,6 +178,7 @@ export const relations = {
   ...reflinkRelations,
   ...magicLinkRelations,
   ...sequenceRelations,
+  ...subscriptionRelations,
   ...sequenceStepRelations,
   ...contactsOnSequenceRelations,
   ...sequenceDispatchRelations,

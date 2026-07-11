@@ -3426,5 +3426,52 @@
       "position": "Order",
       "iconSearchLink": "Browse Lucide icons →"
     }
+  },
+  "plans": {
+    "title": "Plans Management",
+    "description": "Create and manage subscription plans",
+    "createPlan": "Create Plan",
+    "editPlan": "Edit Plan",
+    "noPlans": "No plans yet. Create your first plan.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "currentPlan": "Current Plan",
+    "subscribe": "Subscribe Now",
+    "monthly": "month",
+    "yearly": "year",
+    "pricingTitle": "Choose Your Plan",
+    "pricingDescription": "Select the plan that best fits your needs",
+    "fields": {
+      "name": "Plan Name",
+      "description": "Description",
+      "price": "Price (SAR)",
+      "isActive": "Active",
+      "sortOrder": "Sort Order"
+    },
+    "limits": {
+      "title": "Limits",
+      "contacts": "Contacts",
+      "mac": "Monthly Active Contacts",
+      "workspaces": "Workspaces",
+      "channels": "Channels",
+      "teamMembers": "Team Members",
+      "flows": "Flows",
+      "broadcasts": "Broadcasts",
+      "aiAgents": "AI Agents",
+      "removeBranding": "Remove Branding"
+    },
+    "features": {
+      "title": "Marketing Features",
+      "addPlaceholder": "Add a feature..."
+    },
+    "currency": {
+      "sar": "SAR"
+    },
+    "messages": {
+      "created": "Plan created successfully",
+      "updated": "Plan updated successfully",
+      "deleted": "Plan deleted successfully",
+      "checkoutFailed": "Failed to start checkout"
+    }
   }
 }
