@@ -4,6 +4,9 @@ import * as schema from "../schema"
 
 export const billingPlanRelations = defineRelationsPart(schema, (r) => ({
   billingPlanModel: {
-    subscriptions: r.many.subscriptionModel(),
+    subscriptions: r.many.subscriptionModel({
+      from: r.billingPlanModel.id,
+      to: r.subscriptionModel.planId,
+    }),
   },
 }))
