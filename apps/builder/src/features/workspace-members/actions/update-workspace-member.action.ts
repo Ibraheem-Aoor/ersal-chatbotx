@@ -5,15 +5,11 @@ import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { workspaceMemberModel } from "@chatbotx.io/database/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
-import { isCommunity } from "@/env"
 import { workspaceIdAndIdRequestParams } from "@/features/common/schemas"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
-import {
-  getSuperAdminPermissions,
-  normalizeContactsPermissions,
-} from "../helpers"
+import { normalizeContactsPermissions } from "../helpers"
 import { updateWorkspaceMemberRequest } from "../schema/mutation"
 
 export const updateWorkspaceMemberAction = workspaceActionClient
@@ -42,15 +38,10 @@ export const updateWorkspaceMemberAction = workspaceActionClient
       )
     }
 
-    const updateInput = isCommunity()
-      ? {
-          ...parsedInput,
-          permissions: getSuperAdminPermissions(),
-        }
-      : {
-          ...parsedInput,
-          permissions: normalizeContactsPermissions(parsedInput.permissions),
-        }
+    const updateInput = {
+      ...parsedInput,
+      permissions: normalizeContactsPermissions(parsedInput.permissions),
+    }
 
     await db
       .update(workspaceMemberModel)
