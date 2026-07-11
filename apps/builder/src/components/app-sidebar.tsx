@@ -32,12 +32,14 @@ import { NavUser } from "@/components/nav-user"
 import { WorkspaceSwitcher } from "@/components/workspace-switcher"
 import type { WorkspaceResource } from "@/features/workspaces/schema/resource"
 import { authClient } from "@/lib/auth/auth-client"
+import type { WorkspaceMemberPermissions } from "@chatbotx.io/database/partials"
 
 export function AppSidebar({
   workspaceId,
   allWorkspaces,
   isSuperAdmin,
   isPlatformAdmin,
+  memberPermissions,
   quota,
   ...props
 }: ComponentProps<typeof Sidebar> & {
@@ -45,6 +47,7 @@ export function AppSidebar({
   allWorkspaces: WorkspaceResource[]
   isSuperAdmin?: boolean
   isPlatformAdmin?: boolean
+  memberPermissions: WorkspaceMemberPermissions
   quota: QuotaSummary
 }) {
   const t = useTranslations()
@@ -120,6 +123,25 @@ export function AppSidebar({
     ],
   }
 
+  const showAll = !memberPermissions || memberPermissions.superAdmin
+
+  const permissionByPath: Record<string, keyof WorkspaceMemberPermissions> = {
+    dashboard: "analytics",
+    flows: "flows",
+    contacts: "contacts",
+    broadcasts: "broadcast",
+  }
+
+  const filteredNav = showAll
+    ? data.navMain
+    : data.navMain.filter((item) => {
+        const segment = item.url.split("/").pop()
+        if (!segment) return true
+        const permission = permissionByPath[segment]
+        if (!permission) return true
+        return memberPermissions[permission]
+      })
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="gap-0 px-0 py-0">
@@ -134,7 +156,7 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNav} />
       </SidebarContent>
       <SidebarFooter>
         <NavUsage

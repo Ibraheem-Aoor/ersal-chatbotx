@@ -53,11 +53,10 @@ export default async function WorkspaceLayout({
       cloud ? userQuotaService.getForUser(user.id) : Promise.resolve(null),
       cloud ? quotaEnforcementService.getUsageSummary(user.id) : null,
     ])
-  if (
-    !allWorkspaceMembers.some(
-      (workspaceMember) => workspaceMember.workspace.id === workspaceId,
-    )
-  ) {
+  const currentMember = allWorkspaceMembers.find(
+    (workspaceMember) => workspaceMember.workspace.id === workspaceId,
+  )
+  if (!currentMember) {
     return notFound()
   }
 
@@ -93,6 +92,7 @@ export default async function WorkspaceLayout({
         allWorkspaces={allWorkspaces}
         isPlatformAdmin={platformAdmin}
         isSuperAdmin={isSuperAdmin(user)}
+        memberPermissions={currentMember.permissions}
         quota={quotaSummary}
         workspaceId={workspaceId}
       />
