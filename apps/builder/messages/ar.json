@@ -121,7 +121,16 @@
     "onSuccess": "عند النجاح",
     "clone": "استنساخ",
     "remove": "إزالة",
-    "restore": "استعادة"
+    "restore": "استعادة",
+    "addAnother": "إضافة آخر...",
+    "enterFieldAndPressEnter": "أدخل {field} واضغط Enter",
+    "enterText": "أدخل نصاً",
+    "messagePlaceholder": "رسالة...",
+    "noRecordFound": "لم يتم العثور على سجل.",
+    "pleaseSelect": "الرجاء الاختيار",
+    "redo": "إعادة",
+    "typeMessage": "اكتب رسالة",
+    "undo": "تراجع"
   },
   "states": {
     "success": "نجاح",
@@ -377,7 +386,99 @@
       "blocked": "محظورة",
       "noAdminReply": "بدون رد مشرف",
       "contactCreatedAt": "تاريخ إنشاء جهة الاتصال",
-      "interactedInLast24h": "تفاعل خلال آخر 24 ساعة"
+      "interactedInLast24h": "تفاعل خلال آخر 24 ساعة",
+      "appliedJobs": "الوظائف المقدمة",
+      "bought": "اشترى",
+      "boughtItems": "اشترى المنتجات",
+      "broadcastClicked": "تم النقر على البث",
+      "broadcastDelivered": "تم تسليم البث",
+      "broadcastFailed": "فشل البث",
+      "broadcastSeen": "تمت مشاهدة البث",
+      "broadcastSent": "تم إرسال البث",
+      "businessFollowsUserOnInstagram": "النشاط التجاري يتابع المستخدم على Instagram",
+      "commentedOnPost": "علّق على منشور",
+      "completedWhatsAppFlows": "أكمل تدفقات WhatsApp",
+      "consecutiveAiFailures": "عدد إخفاقات الذكاء الاصطناعي المتتالية",
+      "conversationAssigned": "المحادثة المعيّنة",
+      "currentDate": "التاريخ الحالي",
+      "currentDayOfMonth": "اليوم الحالي من الشهر",
+      "currentDayOfWeek": "اليوم الحالي من الأسبوع",
+      "currentMonth": "الشهر الحالي",
+      "currentTime": "الوقت الحالي",
+      "emailClicked": "تم النقر على البريد",
+      "emailDelivered": "تم تسليم البريد",
+      "emailOpened": "تم فتح البريد",
+      "emailSent": "تم إرسال البريد",
+      "emailWasVerified": "تم التحقق من البريد",
+      "entryPointsLinks": "روابط نقاط الدخول",
+      "executedStep": "الخطوة المنفذة",
+      "followerCountOnInstagram": "عدد المتابعين على Instagram",
+      "followsBusinessOnInstagram": "يتابع النشاط التجاري على Instagram",
+      "hasLostOpportunity": "لديه فرصة خاسرة",
+      "hasOpenOpportunity": "لديه فرصة مفتوحة",
+      "hasOpportunity": "لديه فرصة (مفتوحة، رابحة، خاسرة)",
+      "hasWonOpportunity": "لديه فرصة رابحة",
+      "inbox": "صندوق الوارد",
+      "instagramStoryReply": "الرسالة هي رد على قصة Instagram",
+      "isWithinWorkingHours": "ضمن ساعات العمل",
+      "keywordsReceived": "الكلمات المفتاحية المستلمة",
+      "lastComment": "آخر تعليق",
+      "lastDelivered": "آخر تسليم",
+      "lastInteraction": "آخر تفاعل",
+      "lastInteractionMinutesAgo": "آخر تفاعل (بالدقائق)",
+      "lastSeen": "آخر ظهور",
+      "lastSeenMinutesAgo": "آخر ظهور (بالدقائق)",
+      "lastSent": "آخر إرسال",
+      "lastSentMessageFailed": "فشل آخر رسالة مرسلة",
+      "lastTotalNewTaggedUsers": "إجمالي المستخدمين المُعلَّمين الجدد",
+      "lastTotalTaggedUsers": "إجمالي المستخدمين المُعلَّمين",
+      "lastUserInput": "آخر إدخال للمستخدم",
+      "lastUserInputType": "نوع آخر إدخال للمستخدم",
+      "messengerList": "قائمة Messenger",
+      "numberOfOrders": "عدد الطلبات",
+      "optedInForEmail": "مشترك في البريد الإلكتروني",
+      "optedInForSms": "مشترك في SMS",
+      "phoneWasVerified": "تم التحقق من الهاتف",
+      "questionnaireFinished": "الاستبيان مكتمل",
+      "questionnaireInProgress": "الاستبيان قيد التنفيذ",
+      "questionnaireStarted": "بدأ الاستبيان",
+      "reactedOnPost": "تفاعل مع منشور",
+      "sentMessage": "أرسل رسالة",
+      "shoppingCartContainsItems": "سلة التسوق تحتوي على منتجات",
+      "shoppingCartIsEmpty": "سلة التسوق فارغة",
+      "shoppingCartSubtotal": "المجموع الفرعي لسلة التسوق",
+      "shoppingCartTotal": "إجمالي سلة التسوق",
+      "subjectToEuRules": "خاضع لقوانين الاتحاد الأوروبي",
+      "subscribedToDripCampaign": "مشترك في حملة التنقيط",
+      "totalSpent": "إجمالي الإنفاق",
+      "unreplied": "بدون رد",
+      "verifiedAccountOnInstagram": "حساب موثق على Instagram",
+      "votedOnPoll": "صوّت في الاستطلاع"
+    },
+    "fieldGroups": {
+      "analytics": "التحليلات",
+      "broadcastWhatsapp": "البث (WhatsApp)",
+      "customFields": "الحقول المخصصة",
+      "ecommerce": "التجارة الإلكترونية",
+      "email": "البريد الإلكتروني",
+      "facebookInstagramComment": "تعليقات Facebook/Instagram",
+      "instagram": "Instagram",
+      "opportunity": "الفرصة",
+      "sms": "SMS",
+      "systemFields": "حقول النظام",
+      "systemTime": "وقت النظام"
+    },
+    "sources": {
+      "ads": "الإعلانات",
+      "api": "API",
+      "botLink": "رابط البوت",
+      "chatPlugin": "إضافة المحادثة",
+      "comments": "التعليقات",
+      "direct": "مباشر",
+      "fbLeadAd": "FB Lead Ad",
+      "imported": "مستورد",
+      "inboundMessage": "رسالة واردة",
+      "webchat": "محادثة الويب"
     }
   },
   "channels": {
@@ -411,7 +512,15 @@
       "label": "صورة"
     },
     "instagram": {
-      "label": "Instagram"
+      "label": "Instagram",
+      "cloneFromMessenger": "نسخ من Messenger",
+      "clonedFromMessenger": "تم النسخ من Messenger",
+      "connectViaFacebook": "ربط Instagram عبر Facebook",
+      "facebookLoginDescription": "ربط حساب Instagram المرتبط بصفحة Facebook عبر Facebook OAuth.",
+      "facebookLoginTitle": "تسجيل الدخول عبر Facebook",
+      "loginDescription": "ربط حساب Instagram Business مباشرة عبر Instagram OAuth.",
+      "loginTitle": "تسجيل الدخول عبر Instagram",
+      "viaFacebookTitle": "Instagram عبر Facebook"
     },
     "zalo": {
       "label": "Zalo OA"
@@ -478,7 +587,11 @@
       "notBetween": "ليس بين"
     },
     "contactFilter": {
-      "label": "تصفية جهات الاتصال"
+      "label": "تصفية جهات الاتصال",
+      "allConditions": "جميع الشروط التالية",
+      "anyConditions": "أي من الشروط التالية.",
+      "moreOptions": "خيارات إضافية",
+      "onlyContactsMatch": "فقط جهات الاتصال التي تطابق"
     },
     "contactNote": {
       "label": "ملاحظة جهة الاتصال"
@@ -1553,7 +1666,40 @@
     "sendGrid": {
       "label": "SendGrid"
     },
-    "currentVersion": "الحالي"
+    "currentVersion": "الحالي",
+    "googleBm": {
+      "label": "Google BM"
+    },
+    "landingPage": {
+      "label": "صفحة الهبوط"
+    },
+    "link": {
+      "label": "رابط"
+    },
+    "message": {
+      "label": "رسالة"
+    },
+    "selectUsers": {
+      "label": "اختر المستخدمين"
+    },
+    "sms": {
+      "label": "SMS"
+    },
+    "smtp": {
+      "label": "SMTP"
+    },
+    "viber": {
+      "label": "Viber"
+    },
+    "viberBm": {
+      "label": "Viber BM"
+    },
+    "voice": {
+      "label": "صوت"
+    },
+    "worksheet": {
+      "label": "ورقة عمل"
+    }
   },
   "flows": {
     "title": "Flows",
@@ -1714,7 +1860,11 @@
     "fields": {
       "selectTemplatePlaceholder": "اختر قالب WhatsApp",
       "selectMessengerTemplatePlaceholder": "اختر قالب Messenger",
-      "preview": "معاينة"
+      "preview": "معاينة",
+      "filterModeAnd": "و",
+      "filterModeOr": "أو",
+      "lookupColumnsLabel": "أعمدة البحث:",
+      "typingSecondsLabel": "الكتابة لمدة (ثوانٍ)"
     },
     "operators": {
       "append": "إضافة في النهاية",
@@ -1748,7 +1898,13 @@
       "maxLabel": "الحد الأقصى",
       "unitLabel": "الوحدة",
       "specific": "محدد",
-      "dynamic": "ديناميكي"
+      "dynamic": "ديناميكي",
+      "selectTimePlaceholder": "اختر وقتاً"
+    },
+    "openaiCompatible": {
+      "empty": "قم بربط مزود متوافق مع OpenAI في إعدادات التكامل قبل استخدام هذه الخطوة.",
+      "integration": "مزود متوافق مع OpenAI",
+      "none": "لا شيء"
     }
   },
   "folders": {
@@ -2155,7 +2311,12 @@
     "publishVersionSuccess": "تم نشر إصدار جديد",
     "flowConfigIncomplete": "بعض الإعدادات غير مكتملة",
     "duplicateNodeError": "تعذر تكرار الكتلة. يرجى المحاولة مرة أخرى.",
-    "deleteNodeError": "تعذر حذف الكتلة. يرجى المحاولة مرة أخرى."
+    "deleteNodeError": "تعذر حذف الكتلة. يرجى المحاولة مرة أخرى.",
+    "historyDepth": "({count})",
+    "redoHistoryCleared": "تم مسح سجل الإعادة",
+    "revertToPublishedConfirmDescription": "سيتم تجاهل تغييرات المسودة الحالية واستعادة محتوى التدفق المنشور.",
+    "revertToPublishedConfirmTitle": "الرجوع للنسخة المنشورة؟",
+    "revertToPublishedSuccess": "تم إرجاع المسودة إلى النسخة المنشورة"
   },
   "instagram": {
     "description": "يتيح لك هذا التكامل إنشاء Bots لـ Instagram.",
@@ -2468,7 +2629,8 @@
         "latitude": "خط العرض",
         "longitude": "خط الطول",
         "locationName": "اسم الموقع (اختياري)",
-        "locationAddress": "العنوان (اختياري)"
+        "locationAddress": "العنوان (اختياري)",
+        "enterFormatUrl": "أدخل عنوان URL بصيغة {format}"
       }
     },
     "sampleBodyCardContent": {
@@ -2615,7 +2777,10 @@
     "templateHeader": {
       "label": "ترويسة القالب"
     },
-    "transferPhoneNumber": "نقل الهاتف من مزوّد WhatsApp آخر"
+    "transferPhoneNumber": "نقل الهاتف من مزوّد WhatsApp آخر",
+    "showHeader": {
+      "label": "إظهار الترويسة"
+    }
   },
   "zalo": {
     "title": "Zalo OA",
@@ -2844,7 +3009,8 @@
     "gemini": "Gemini",
     "claude": "Claude",
     "deepseek": "DeepSeek",
-    "openrouter": "OpenRouter"
+    "openrouter": "OpenRouter",
+    "openaiCompatible": "متوافق مع OpenAI"
   },
   "smtp": {
     "setting": {
@@ -2901,7 +3067,8 @@
       "alwaysRun": "تشغيل دائم",
       "save": "حفظ",
       "invalidTimeRange": "يجب أن يكون وقت النهاية بعد وقت البداية",
-      "timeRequired": "يرجى تحديد وقت البداية والنهاية معاً"
+      "timeRequired": "يرجى تحديد وقت البداية والنهاية معاً",
+      "description": "اختر وقت البداية والنهاية. إذا كان وقت النهاية أبكر من وقت البداية، سيعمل الجدول طوال الليل."
     },
     "card": {
       "targeting": "الاستهداف والرد",
@@ -3000,6 +3167,9 @@
     "helpItems": {
       "title": "روابط المساعدة",
       "description": "روابط المساعدة المعروضة في الشريط الجانبي لجميع مساحات العمل التي لا تنتمي لعلامة تجارية مخصصة."
+    },
+    "queues": {
+      "title": "قوائم الانتظار"
     }
   },
   "platformCredentials": {
@@ -3077,7 +3247,8 @@
     "portalCustomDomain": "النطاق المخصص",
     "portalPaymentProcessor": "معالج الدفع",
     "portalSmtp": "إعدادات SMTP",
-    "portalPricingPage": "التسعير"
+    "portalPricingPage": "التسعير",
+    "toolsGroup": "الأدوات"
   },
   "unsubscribePage": {
     "title": "تم إلغاء اشتراكك.",
@@ -3260,6 +3431,47 @@
       "updated": "تم تحديث الباقة بنجاح",
       "deleted": "تم حذف الباقة بنجاح",
       "checkoutFailed": "فشل بدء عملية الدفع"
+    }
+  },
+  "openaiCompatible": {
+    "addProvider": "إضافة مزود ذكاء اصطناعي",
+    "addProviderModel": "إضافة {name}",
+    "apiKeyKeepExisting": "اتركه فارغاً للاحتفاظ بمفتاح API الحالي.",
+    "autoReply": {
+      "description": "السماح لهذا المزود بالاستخدام للردود التلقائية بالذكاء الاصطناعي.",
+      "label": "الرد التلقائي بالذكاء الاصطناعي"
+    },
+    "connect": {
+      "description": "ربط مزودات متوافقة مع OpenAI لنماذج احتياطية لوكيل الذكاء الاصطناعي.",
+      "label": "مزودات متوافقة مع OpenAI"
+    },
+    "empty": "لم يتم تكوين مزودات متوافقة مع OpenAI.",
+    "fields": {
+      "baseURL": "عنوان URL الأساسي",
+      "defaultModel": "النموذج الافتراضي",
+      "enabled": "مفعّل"
+    },
+    "provider": "مزود الذكاء الاصطناعي",
+    "title": "متوافق مع OpenAI",
+    "validation": {
+      "invalidBaseURL": "عنوان URL الأساسي غير صالح أو غير مسموح به.",
+      "presetAlreadyConnected": "هذا الإعداد المسبق مرتبط بالفعل بمساحة العمل هذه."
+    }
+  },
+  "workspace": {
+    "schedule": {
+      "activated": "تم تفعيل مساحة العمل",
+      "activeHours": "نشط من {startTime} إلى {endTime}",
+      "alwaysRun": "يعمل دائماً",
+      "deactivated": "تم تعطيل مساحة العمل",
+      "description": "اختر وقت البداية والنهاية. إذا كان وقت النهاية أبكر من وقت البداية، سيعمل الجدول طوال الليل.",
+      "endTime": "وقت النهاية",
+      "invalidTimeRange": "يجب أن يكون وقت البداية والنهاية مختلفين",
+      "permissionRequired": "فقط المشرف العام يمكنه تغيير ساعات العمل النشطة",
+      "save": "حفظ",
+      "startTime": "وقت البداية",
+      "timeRequired": "الرجاء اختيار وقت البداية والنهاية",
+      "title": "تعيين ساعات العمل النشطة"
     }
   }
 }
