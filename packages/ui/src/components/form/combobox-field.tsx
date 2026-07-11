@@ -57,10 +57,13 @@ export type ComboboxFieldProps<T extends FieldValues> = {
   label?: string
   required?: boolean
   placeholder?: string
+  searchPlaceholder?: string
+  emptyText?: string
   description?: string
   descriptionType?: "inline" | "tooltip"
   options: SelectOption[]
   className?: string
+  popoverClassName?: string
   side?: PopoverContentProps["side"]
   triggerValueChange?: (value: string) => void
   disableValues?: string[]
@@ -69,10 +72,13 @@ export type ComboboxFieldProps<T extends FieldValues> = {
 
 export function ComboboxField<T extends FieldValues>({
   className,
+  popoverClassName,
   name,
   label,
   required,
   placeholder,
+  searchPlaceholder,
+  emptyText,
   description,
   descriptionType = "inline",
   options,
@@ -131,14 +137,17 @@ export function ComboboxField<T extends FieldValues>({
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="w-[200px] p-0"
+              className={cn("w-[200px] p-0", popoverClassName)}
               portal={portal}
               side={side}
             >
               <Command>
-                <CommandInput className="h-9" placeholder="Search..." />
+                <CommandInput
+                  className="h-9"
+                  placeholder={searchPlaceholder ?? "Search..."}
+                />
                 <CommandList>
-                  <CommandEmpty>No record found.</CommandEmpty>
+                  <CommandEmpty>{emptyText ?? "No record found."}</CommandEmpty>
                   {options.map((option) =>
                     option.children ? (
                       <CommandGroup heading={option.label} key={option.value}>

@@ -97,6 +97,16 @@ function matchKeywords(
   return true
 }
 
+// Facebook feed webhooks set parent_id on every comment: for a top-level
+// comment it equals the post id, and only a reply to another comment carries
+// that comment's id instead.
+export function isCommentReply(
+  parentId: string | undefined,
+  postId: string,
+): boolean {
+  return Boolean(parentId) && parentId !== postId
+}
+
 function willSendReply(reply: FBCommentReply): boolean {
   if (reply.type === "none") {
     return false
@@ -238,9 +248,7 @@ async function executePrivateReply(
 
   if (privateReply.type === "text" && privateReply.value) {
     if (ctx.channelType === "messenger") {
-      await sendPrivateReply(ctx.auth, ctx.commentId, privateReply.value).catch(
-        (_e) => undefined,
-      )
+      await sendPrivateReply(ctx.auth, ctx.commentId, privateReply.value)
     }
     // Instagram private DM text reply: out of scope MVP (no private_replies API)
     return
@@ -361,6 +369,10 @@ export async function processCommentAutomation(
     where: { id: contactInboxId },
   })
   if (!contactInbox) {
+    logger.warn(
+      { contactInboxId, workspaceId, commentId },
+      "Comment automation skipped: contactInbox not found",
+    )
     return
   }
 
@@ -388,12 +400,36 @@ export async function processCommentAutomation(
           workspace.timezone,
         )
       ) {
+        logAutomationSkipped({
+          automationId: automation.id,
+          commentId,
+          postId,
+          workspaceId,
+          reason: "outside schedule",
+        })
         continue
       }
       if (!matchPost(automation.post, postId)) {
+        logAutomationSkipped({
+          automationId: automation.id,
+          commentId,
+          postId,
+          workspaceId,
+          reason: "post does not match",
+        })
         continue
       }
-      if (automation.options.ignoreCommentReplies && parentId) {
+      if (
+        automation.options.ignoreCommentReplies &&
+        isCommentReply(parentId, postId)
+      ) {
+        logAutomationSkipped({
+          automationId: automation.id,
+          commentId,
+          postId,
+          workspaceId,
+          reason: "comment is a reply",
+        })
         continue
       }
       if (
@@ -403,6 +439,13 @@ export async function processCommentAutomation(
           message,
         )
       ) {
+        logAutomationSkipped({
+          automationId: automation.id,
+          commentId,
+          postId,
+          workspaceId,
+          reason: "keywords do not match",
+        })
         continue
       }
 
@@ -412,6 +455,13 @@ export async function processCommentAutomation(
             contactId: contactInbox.contactId,
           })
         if (priorCount > 1) {
+          logAutomationSkipped({
+            automationId: automation.id,
+            commentId,
+            postId,
+            workspaceId,
+            reason: "contact is not new",
+          })
           continue
         }
       }
@@ -423,16 +473,16 @@ export async function processCommentAutomation(
           postId,
         })
         if (existing) {
+          logAutomationSkipped({
+            automationId: automation.id,
+            commentId,
+            postId,
+            workspaceId,
+            reason: "already replied to this user on this post",
+          })
           continue
         }
       }
-
-      await fbCommentAutomationService.insertDedup({
-        automationId: automation.id,
-        contactId: contactInbox.contactId,
-        postId,
-        workspaceId,
-      })
 
       const delay = computeDelayMs(automation.replyAfter)
 
@@ -496,43 +546,64 @@ export async function processCommentAutomation(
         )
       }
 
-      executePublicReply(automation.publicReply, {
-        auth,
-        commentId,
-        channelType,
-        conversationId,
-        contactInboxId,
-        delay,
-        workspaceId,
-        contactInbox,
-        parentMessageId,
-        parentMessageCreatedAt,
-      }).catch((err) =>
+      let dispatchFailed = false
+
+      try {
+        await executePublicReply(automation.publicReply, {
+          auth,
+          commentId,
+          channelType,
+          conversationId,
+          contactInboxId,
+          delay,
+          workspaceId,
+          contactInbox,
+          parentMessageId,
+          parentMessageCreatedAt,
+        })
+      } catch (err) {
         logger.error(
           { err, automationId: automation.id, commentId },
           "Failed to send public reply",
-        ),
-      )
+        )
+        if (willSendReply(automation.publicReply)) {
+          dispatchFailed = true
+        }
+      }
 
-      executePrivateReply(automation.privateReply, {
-        auth,
-        commentId,
-        channelType,
-        conversationId,
-        contactInboxId,
-        delay,
-      }).catch((err) =>
+      try {
+        await executePrivateReply(automation.privateReply, {
+          auth,
+          commentId,
+          channelType,
+          conversationId,
+          contactInboxId,
+          delay,
+        })
+      } catch (err) {
         logger.error(
           { err, automationId: automation.id, commentId },
           "Failed to send private reply",
-        ),
-      )
+        )
+        if (willSendReply(automation.privateReply)) {
+          dispatchFailed = true
+        }
+      }
 
-      if (
-        willSendReply(automation.publicReply) ||
-        willSendReply(automation.privateReply)
-      ) {
-        await fbCommentAutomationService.incrementRepliesCount(automation.id)
+      if (!dispatchFailed) {
+        await fbCommentAutomationService.insertDedup({
+          automationId: automation.id,
+          contactId: contactInbox.contactId,
+          postId,
+          workspaceId,
+        })
+
+        if (
+          willSendReply(automation.publicReply) ||
+          willSendReply(automation.privateReply)
+        ) {
+          await fbCommentAutomationService.incrementRepliesCount(automation.id)
+        }
       }
     } catch (err) {
       logger.error(
@@ -541,4 +612,23 @@ export async function processCommentAutomation(
       )
     }
   }
+}
+
+const logAutomationSkipped = ({
+  automationId,
+  commentId,
+  postId,
+  workspaceId,
+  reason,
+}: {
+  automationId: string
+  commentId: string
+  postId: string
+  workspaceId: string
+  reason: string
+}) => {
+  logger.info(
+    { automationId, commentId, postId, workspaceId, reason },
+    "Comment automation skipped",
+  )
 }

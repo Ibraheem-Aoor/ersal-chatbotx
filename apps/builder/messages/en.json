@@ -23,6 +23,8 @@
     "back": "Back",
     "blockContact": "Block Contact",
     "unblockContact": "Unblock Contact",
+    "undo": "Undo",
+    "redo": "Redo",
     "cancel": "Cancel",
     "clear": "Clear",
     "clearCustomField": "Clear Custom Field",
@@ -89,6 +91,13 @@
     "flowVersions": "Flow Versions",
     "revertToPublished": "Revert to Published",
     "search": "Search",
+    "pleaseSelect": "Please select",
+    "noRecordFound": "No record found.",
+    "typeMessage": "Type a message",
+    "enterText": "Enter text",
+    "enterFieldAndPressEnter": "Enter {field} and press Enter",
+    "addAnother": "Add another...",
+    "messagePlaceholder": "Message...",
     "signOut": "Sign Out",
     "backToSignIn": "Back to sign in",
     "connectFeature": "Connect {feature}",
@@ -362,22 +371,114 @@
       "source": "Source",
       "conversationTransferredToHuman": "Conversation transferred to human",
       "interactedInLast24H": "Interacted in last 24 hours",
+      "interactedInLast24h": "Interacted in last 24 hours",
+      "followUp": "Follow up",
       "isGuestUser": "Guest user",
       "existingContact": "Existing contact",
-      "currentChannel": "Current channel",
+      "currentChannel": "Channel",
+      "inbox": "Inbox",
+      "subjectToEuRules": "Subject to EU rules",
       "timezone": "Time zone",
+      "hasOpportunity": "Has opportunity (Open, Won, Lost)",
+      "hasOpenOpportunity": "Has open opportunity",
+      "hasWonOpportunity": "Has won opportunity",
+      "hasLostOpportunity": "Has lost opportunity",
+      "instagramStoryReply": "Message is an Instagram story reply",
+      "followsBusinessOnInstagram": "Follows business on Instagram",
+      "businessFollowsUserOnInstagram": "Business follows user on Instagram",
+      "verifiedAccountOnInstagram": "Verified account on Instagram",
+      "followerCountOnInstagram": "Follower count on Instagram",
+      "lastSent": "Last sent",
+      "lastDelivered": "Last delivered",
+      "lastSeen": "Last seen",
+      "lastSeenMinutesAgo": "Last seen (minutes ago)",
+      "lastInteraction": "Last interaction",
+      "lastInteractionMinutesAgo": "Last interaction (minutes ago)",
+      "unreplied": "Unreplied",
+      "unread": "Unread",
+      "appliedJobs": "Applied jobs",
       "tags": "Tags",
       "customFields": "Custom fields",
       "phone": "Phone",
+      "completedWhatsAppFlows": "Completed WhatsApp Flows",
+      "messengerList": "Messenger List",
+      "subscribedToDripCampaign": "Subscribed to drip campaign",
+      "conversationAssigned": "Conversation assigned",
+      "entryPointsLinks": "Entry Points Links",
+      "sentMessage": "Sent message",
+      "keywordsReceived": "Keywords Received",
       "executedFlow": "Executed flow",
+      "executedStep": "Executed Step",
+      "consecutiveAiFailures": "Number of consecutive AI failures",
+      "questionnaireStarted": "Questionnaire started",
+      "questionnaireInProgress": "Questionnaire in progress",
+      "questionnaireFinished": "Questionnaire finished",
+      "votedOnPoll": "Voted on the poll",
+      "lastComment": "Last comment",
+      "commentedOnPost": "Commented on Post",
+      "reactedOnPost": "Reacted on post",
+      "lastTotalTaggedUsers": "Last total tagged users",
+      "lastTotalNewTaggedUsers": "Last total new tagged users",
       "email": "Email",
-      "followUp": "Follow up",
-      "unread": "Unread",
+      "phoneWasVerified": "Phone was Verified",
+      "optedInForSms": "Opted in for SMS",
+      "broadcastSent": "Broadcast Sent",
+      "broadcastDelivered": "Broadcast Delivered",
+      "broadcastSeen": "Broadcast Seen",
+      "broadcastClicked": "Broadcast Clicked",
+      "broadcastFailed": "Broadcast Failed",
+      "emailWasVerified": "Email was Verified",
+      "optedInForEmail": "Opted in for Email",
+      "emailSent": "Email Sent",
+      "emailDelivered": "Email Delivered",
+      "emailOpened": "Email Opened",
+      "emailClicked": "Email Clicked",
+      "isWithinWorkingHours": "Is within working hours",
+      "currentDate": "Current date",
+      "currentTime": "Current time",
+      "currentDayOfMonth": "Current day of month",
+      "currentDayOfWeek": "Current day of week",
+      "currentMonth": "Current month",
+      "bought": "Bought",
+      "boughtItems": "Bought the items",
+      "totalSpent": "Total spent",
+      "numberOfOrders": "Number of orders",
+      "shoppingCartTotal": "Shopping cart total",
+      "shoppingCartSubtotal": "Shopping cart subtotal",
+      "shoppingCartIsEmpty": "Shopping cart is empty",
+      "shoppingCartContainsItems": "Shopping cart contains items",
+      "lastSentMessageFailed": "Last Sent Message Failed",
+      "lastUserInput": "Last user input",
+      "lastUserInputType": "Last user input type",
       "archived": "Archived",
       "blocked": "Blocked",
       "noAdminReply": "No admin reply",
-      "contactCreatedAt": "Contact created at",
-      "interactedInLast24h": "Interacted in last 24 hours"
+      "contactCreatedAt": "Contact created at"
+    },
+    "fieldGroups": {
+      "opportunity": "Opportunity",
+      "instagram": "Instagram",
+      "analytics": "Analytics",
+      "facebookInstagramComment": "Facebook/Instagram Comment",
+      "broadcastWhatsapp": "Broadcast (WhatsApp)",
+      "systemTime": "System Time",
+      "ecommerce": "Ecommerce",
+      "systemFields": "System Fields",
+      "customFields": "Custom Fields",
+      "email": "Email",
+      "sms": "SMS"
+    },
+    "sources": {
+      "direct": "Direct",
+      "comments": "Comments",
+      "ads": "Ads",
+      "fbLeadAd": "FB Lead Ad",
+      "inboundMessage": "Inbound Message",
+      "imported": "Imported",
+      "api": "API",
+      "webchat": "Webchat",
+      "botLink": "Bot Link",
+      "chatPlugin": "C. chat plugin"
     }
   },
   "channels": {
@@ -392,6 +493,22 @@
       "zalo": "This Zalo OA is already connected to another workspace."
     }
   },
+  "workspace": {
+    "schedule": {
+      "title": "Set active hours",
+      "description": "Choose a start and end time. If the end time is earlier than the start time, the schedule runs overnight.",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "alwaysRun": "Always run",
+      "save": "Save",
+      "invalidTimeRange": "Start and end time must be different",
+      "timeRequired": "Please select both start and end time",
+      "activated": "Workspace activated",
+      "deactivated": "Workspace deactivated",
+      "activeHours": "Active from {startTime} to {endTime}",
+      "permissionRequired": "Only a super admin can change workspace active hours"
+    }
+  },
   "workspaces": {
     "list": {
       "title": "Workspaces List"
@@ -404,6 +521,9 @@
     "omnichannel": {
       "label": "Omnichannel"
     },
+    "smtp": {
+      "label": "SMTP"
+    },
     "messenger": {
       "label": "Messenger"
     },
@@ -411,7 +531,15 @@
       "label": "Image"
     },
     "instagram": {
-      "label": "Instagram"
+      "label": "Instagram",
+      "loginTitle": "Login with Instagram",
+      "loginDescription": "Connect your Instagram Business account directly via Instagram OAuth.",
+      "facebookLoginTitle": "Login with Facebook",
+      "facebookLoginDescription": "Connect an Instagram account linked to your Facebook Page via Facebook OAuth.",
+      "connectViaFacebook": "Connect Instagram via Facebook",
+      "viaFacebookTitle": "Instagram via Facebook",
+      "cloneFromMessenger": "Clone from Messenger",
+      "clonedFromMessenger": "Cloned from Messenger"
     },
     "zalo": {
       "label": "Zalo OA"
@@ -464,21 +592,25 @@
       "isNot": "Is not",
       "in": "In",
       "notIn": "Not in",
-      "isEmpty": "Is empty",
-      "isNotEmpty": "Is not empty",
+      "isEmpty": "Has no value",
+      "isNotEmpty": "Has any value",
       "gt": "Greater than",
       "lt": "Less than",
-      "gte": "Greater than or equal to",
-      "lte": "Less than or equal to",
+      "gte": "Greater than or Equal to",
+      "lte": "Less than or Equal to",
       "contains": "Contains",
-      "notContains": "Does not contain",
+      "notContains": "Doesn't contain",
       "startsWith": "Starts with",
       "endsWith": "Ends with",
-      "isBetween": "Is between",
-      "notBetween": "Not between"
+      "isBetween": "Interval",
+      "notBetween": "Not interval"
     },
     "contactFilter": {
-      "label": "Contact filter"
+      "allConditions": "All of the following conditions",
+      "anyConditions": "Any of the below conditions.",
+      "label": "Contact filter",
+      "onlyContactsMatch": "Only contacts, that match to",
+      "moreOptions": "More Options"
     },
     "contactNote": {
       "label": "Contact Note"
@@ -701,6 +833,12 @@
     "file": {
       "label": "File"
     },
+    "link": {
+      "label": "Link"
+    },
+    "message": {
+      "label": "Message"
+    },
     "filter": {
       "label": "Filter"
     },
@@ -715,7 +853,7 @@
       "label": "Country Code"
     },
     "contactId": {
-      "label": "Contact ID / Subscriber ID / PSID"
+      "label": "Contact ID"
     },
     "flow": {
       "label": "Flow"
@@ -912,6 +1050,9 @@
       "label": "Name",
       "placeholder": "Enter name",
       "searchPlaceholder": "Search name..."
+    },
+    "selectUsers": {
+      "label": "Select users"
     },
     "node": {
       "label": "Node"
@@ -1218,6 +1359,24 @@
     "whatsapp": {
       "label": "WhatsApp"
     },
+    "sms": {
+      "label": "SMS"
+    },
+    "viber": {
+      "label": "Viber"
+    },
+    "viberBm": {
+      "label": "Viber BM"
+    },
+    "voice": {
+      "label": "Voice"
+    },
+    "googleBm": {
+      "label": "Google BM"
+    },
+    "landingPage": {
+      "label": "Landing Page"
+    },
     "whatsappFlow": {
       "label": "WhatsApp Flow"
     },
@@ -1344,6 +1503,9 @@
     },
     "spreadsheet": {
       "label": "Spreadsheet"
+    },
+    "worksheet": {
+      "label": "Worksheet"
     },
     "source": {
       "label": "Source",
@@ -1578,6 +1740,11 @@
     "aiExtractData": {
       "label": "{name}: Extract Data"
     },
+    "openaiCompatible": {
+      "empty": "Connect an OpenAI-compatible provider in integration settings before using this step.",
+      "integration": "OpenAI-compatible provider",
+      "none": "None"
+    },
     "actions": {
       "addContactNotes": "Add Contact Notes",
       "addContactTag": "Add Contact Tag",
@@ -1714,7 +1881,11 @@
     "fields": {
       "selectTemplatePlaceholder": "Choose a WhatsApp template",
       "selectMessengerTemplatePlaceholder": "Choose a Messenger template",
-      "preview": "Preview"
+      "preview": "Preview",
+      "typingSecondsLabel": "Typing for (seconds)",
+      "lookupColumnsLabel": "Lookup Columns:",
+      "filterModeAnd": "AND",
+      "filterModeOr": "OR"
     },
     "operators": {
       "append": "Append to the end",
@@ -1748,7 +1919,8 @@
       "maxLabel": "Max",
       "unitLabel": "Unit",
       "specific": "Specific",
-      "dynamic": "Dynamic"
+      "dynamic": "Dynamic",
+      "selectTimePlaceholder": "Select a time"
     }
   },
   "folders": {
@@ -2151,11 +2323,16 @@
     "humanAgentWarningDescription": "You may respond to a user's message within 7 days only when the issue cannot reasonably be resolved within 24 hours. Examples include weekends, holidays, or cases that require more than one day to complete. Do not use this option for any other reason, as it could put your Facebook Page or Instagram account at risk. If you're not sure, do not continue.",
     "humanAgentWindowExpired": "Messaging window expired. The contact must message first to reopen the conversation.",
     "restoreVersionSuccess": "Flow restored to selected version",
+    "revertToPublishedSuccess": "Draft reverted to the published version",
+    "revertToPublishedConfirmTitle": "Revert to published version?",
+    "revertToPublishedConfirmDescription": "This will discard the current draft changes and restore the published flow content.",
     "noVersionsFound": "No published versions found",
     "publishVersionSuccess": "A new version has been published",
     "flowConfigIncomplete": "Some configurations are incomplete",
     "duplicateNodeError": "Could not duplicate the block. Please try again.",
-    "deleteNodeError": "Could not delete the block. Please try again."
+    "deleteNodeError": "Could not delete the block. Please try again.",
+    "redoHistoryCleared": "Redo history cleared",
+    "historyDepth": "({count})"
   },
   "instagram": {
     "description": "This integration lets you create Instagram bots.",
@@ -2305,6 +2482,31 @@
       "label": "OpenRouter"
     },
     "title": "OpenRouter"
+  },
+  "openaiCompatible": {
+    "addProvider": "Add AI Provider",
+    "addProviderModel": "Add {name}",
+    "apiKeyKeepExisting": "Leave blank to keep the existing API key.",
+    "autoReply": {
+      "description": "Allow this provider to be used for automated AI replies.",
+      "label": "AI Auto Reply"
+    },
+    "connect": {
+      "description": "Connect OpenAI-compatible providers for AI Agent fallback models.",
+      "label": "OpenAI-compatible providers"
+    },
+    "empty": "No OpenAI-compatible providers configured.",
+    "fields": {
+      "baseURL": "Base URL",
+      "defaultModel": "Default model",
+      "enabled": "Enabled"
+    },
+    "provider": "AI Provider",
+    "title": "OpenAI Compatible",
+    "validation": {
+      "invalidBaseURL": "Base URL is invalid or not allowed.",
+      "presetAlreadyConnected": "This preset is already connected for this workspace."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -2468,7 +2670,8 @@
         "latitude": "Latitude",
         "longitude": "Longitude",
         "locationName": "Location name (optional)",
-        "locationAddress": "Address (optional)"
+        "locationAddress": "Address (optional)",
+        "enterFormatUrl": "Enter {format} URL"
       }
     },
     "sampleBodyCardContent": {
@@ -2482,6 +2685,9 @@
     },
     "showFooter": {
       "label": "Show footer"
+    },
+    "showHeader": {
+      "label": "Show header"
     },
     "tabs": {
       "accountHealths": "Account Health",
@@ -2844,7 +3050,8 @@
     "gemini": "Gemini",
     "claude": "Claude",
     "deepseek": "DeepSeek",
-    "openrouter": "OpenRouter"
+    "openrouter": "OpenRouter",
+    "openaiCompatible": "OpenAI Compatible"
   },
   "smtp": {
     "setting": {
@@ -2896,11 +3103,12 @@
     "replyAfterValue": "Value",
     "schedule": {
       "title": "Set active hours",
+      "description": "Choose a start and end time. If the end time is earlier than the start time, the schedule runs overnight.",
       "startTime": "Start time",
       "endTime": "End time",
       "alwaysRun": "Always run",
       "save": "Save",
-      "invalidTimeRange": "End time must be after start time",
+      "invalidTimeRange": "Start and end time must be different",
       "timeRequired": "Please select both start and end time"
     },
     "card": {
@@ -3000,6 +3208,9 @@
     "helpItems": {
       "title": "Help Links",
       "description": "Help links shown in the sidebar for all workspaces that don't belong to a white-label tenant."
+    },
+    "queues": {
+      "title": "Queues"
     }
   },
   "platformCredentials": {
@@ -3069,6 +3280,7 @@
   },
   "manageSidebar": {
     "platformGroup": "Platform",
+    "toolsGroup": "Tools",
     "saasGroup": "SaaS",
     "portalUsers": "Sub-accounts",
     "portalWorkspaces": "Workspaces",

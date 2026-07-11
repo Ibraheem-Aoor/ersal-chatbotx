@@ -53,17 +53,12 @@ export default async function WorkspaceLayout({
       cloud ? userQuotaService.getForUser(user.id) : Promise.resolve(null),
       cloud ? quotaEnforcementService.getUsageSummary(user.id) : null,
     ])
-  if (
-    !allWorkspaceMembers.some(
-      (workspaceMember) => workspaceMember.workspace.id === workspaceId,
-    )
-  ) {
-    return notFound()
-  }
-
-  const currentMember = allWorkspaceMembers.find(
+  const targetWorkspaceMember = allWorkspaceMembers.find(
     (workspaceMember) => workspaceMember.workspace.id === workspaceId,
   )
+  if (!targetWorkspaceMember) {
+    return notFound()
+  }
 
   // Self-managed trial gate: block the workspace shell once the trial is
   // consumed. /trial-expired sits outside this layout so it stays reachable.
@@ -97,12 +92,14 @@ export default async function WorkspaceLayout({
         allWorkspaces={allWorkspaces}
         isPlatformAdmin={platformAdmin}
         isSuperAdmin={isSuperAdmin(user)}
-        memberPermissions={currentMember?.permissions}
+        permissions={targetWorkspaceMember.permissions}
         quota={quotaSummary}
         workspaceId={workspaceId}
       />
       <SidebarInset>
-        <main className="flex flex-1 flex-col gap-4 p-6">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col gap-4 p-6">
+          {children}
+        </main>
         <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
       </SidebarInset>
     </SidebarProvider>

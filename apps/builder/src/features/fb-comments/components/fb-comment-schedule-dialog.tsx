@@ -1,6 +1,6 @@
 "use client"
 
-import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { TimeField } from "@chatbotx.io/ui/components/form/time-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
@@ -19,15 +19,6 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { updateFbCommentAction } from "../actions/update-fb-comment.action"
 import type { FBCommentResource } from "../schema/resource"
-
-const HOURS = Array.from({ length: 24 }, (_, i) =>
-  i.toString().padStart(2, "0"),
-)
-
-const HOUR_OPTIONS = HOURS.map((hour) => ({
-  value: `${hour}:00`,
-  label: `${hour}:00`,
-}))
 
 type ScheduleFormValues = {
   startTime: string
@@ -93,7 +84,7 @@ export function FbCommentScheduleDialog({
       return
     }
 
-    if (startTime >= endTime) {
+    if (startTime === endTime) {
       toast.error(t("facebookCommentAutomation.schedule.invalidTimeRange"))
       return
     }
@@ -108,25 +99,25 @@ export function FbCommentScheduleDialog({
           <DialogTitle>
             {t("facebookCommentAutomation.schedule.title")}
           </DialogTitle>
-          <DialogDescription />
+          <DialogDescription>
+            {t("facebookCommentAutomation.schedule.description")}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <div className="flex items-end gap-2">
-            <div className="w-30">
-              <SelectField<ScheduleFormValues>
+          <div className="flex w-full items-end gap-2">
+            <div className="flex-1">
+              <TimeField<ScheduleFormValues>
                 label={t("facebookCommentAutomation.schedule.startTime")}
                 name="startTime"
-                options={HOUR_OPTIONS}
-                placeholder="-"
+                required
               />
             </div>
             <span className="mb-2 text-muted-foreground">-</span>
-            <div className="w-30">
-              <SelectField<ScheduleFormValues>
+            <div className="flex-1">
+              <TimeField<ScheduleFormValues>
                 label={t("facebookCommentAutomation.schedule.endTime")}
                 name="endTime"
-                options={HOUR_OPTIONS}
-                placeholder="-"
+                required
               />
             </div>
           </div>

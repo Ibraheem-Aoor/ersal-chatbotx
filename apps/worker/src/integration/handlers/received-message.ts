@@ -9,7 +9,11 @@ import {
   workspaceService,
 } from "@chatbotx.io/business"
 import { db, eq } from "@chatbotx.io/database/client"
-import type { IntegrationType } from "@chatbotx.io/database/partials"
+import {
+  type ContactSource,
+  contactSources,
+  type IntegrationType,
+} from "@chatbotx.io/database/partials"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
   contactInboxModel,
@@ -55,7 +59,23 @@ import { logger } from "../../lib/logger"
 import {
   allIntegrations,
   integrationService,
+  isInstagramViaFacebook,
 } from "../../services/integrations"
+
+export const metaReferralToContactSource = (
+  raw?: string | null,
+): ContactSource | undefined => {
+  switch (raw) {
+    case "ADS":
+      return contactSources.enum.ads
+    case "SHORTLINK":
+      return contactSources.enum.botLink
+    case "CUSTOMER_CHAT_PLUGIN":
+      return contactSources.enum.chatPlugin
+    default:
+      return
+  }
+}
 
 export const receiveMessage = async (
   props: IntegrationJobReceiveMessage["data"],
@@ -80,12 +100,22 @@ export const receiveMessage = async (
       integrationIdentifier,
     )
   const { inbox, integrationRow } = dbIntegration
-  const integration = allIntegrations[integrationType]
+  let integration = allIntegrations[integrationType]
   if (!integration) {
     throw new SdkException(
       `No integration registered for channel: ${integrationType}`,
     )
   }
+  if (
+    integrationType === "instagram" &&
+    isInstagramViaFacebook(integrationRow)
+  ) {
+    integration = allIntegrations.instagramFacebook ?? integration
+  }
+
+  const workspace = await workspaceService.findById({ id: inbox.workspaceId })
+  const isWorkspaceActive = workspaceService.isActiveNow(workspace)
+
   await resolveTenantSettings({
     workspaceId: inbox.workspaceId,
   })
@@ -110,12 +140,17 @@ export const receiveMessage = async (
     postbackAction,
     quickReplyAction,
     ref,
+    referralSource,
   } = parsedMessage
 
   const detected = await detectContactAndConversation({
     incomingContact,
     inbox,
     integrationRow,
+    skipProfileLookup: incomingMessage?.messageType === "outgoing",
+    source:
+      metaReferralToContactSource(referralSource) ??
+      contactSources.enum.inboundMessage,
   })
   if (!detected) {
     throw new SdkException("Unable to resolve contact and conversation")
@@ -171,7 +206,7 @@ export const receiveMessage = async (
     if (isNewMessage) {
       createdMessage = newMessage
 
-      if (postbackAction) {
+      if (postbackAction && isWorkspaceActive) {
         await integrationQueue.add(IntegrationJobAction.runFlowPostback, {
           type: IntegrationJobAction.runFlowPostback,
           data: {
@@ -190,7 +225,7 @@ export const receiveMessage = async (
         })
       }
 
-      if (quickReplyAction) {
+      if (quickReplyAction && isWorkspaceActive) {
         await integrationQueue.add(IntegrationJobAction.runFlowQuickReply, {
           type: IntegrationJobAction.runFlowQuickReply,
           data: {
@@ -205,7 +240,7 @@ export const receiveMessage = async (
     }
   }
 
-  if (ref) {
+  if (ref && isWorkspaceActive) {
     await integrationQueue.add(IntegrationJobAction.runRef, {
       type: IntegrationJobAction.runRef,
       data: {
@@ -350,6 +385,14 @@ export const receiveComment = async (
 
   const { integrationType, integrationIdentifier, commentData } = props
 
+  if (commentData.fromId === integrationIdentifier) {
+    logger.info(
+      { commentId: commentData.commentId, integrationIdentifier },
+      "receiveComment: skipping self-authored comment",
+    )
+    return
+  }
+
   const { inbox, integrationRow } =
     await integrationService.identifyInboxAndIntegrationAuthFromIdentifier(
       integrationType as IntegrationType,
@@ -368,6 +411,7 @@ export const receiveComment = async (
     incomingContact,
     inbox,
     integrationRow,
+    source: contactSources.enum.comments,
   })
   if (!detected) {
     throw new SdkException("Unable to resolve contact and conversation")
@@ -424,6 +468,19 @@ export const receiveComment = async (
     incomingMessage,
   })
 
+  const workspace = await workspaceService.findById({ id: inbox.workspaceId })
+  if (!workspaceService.isActiveNow(workspace)) {
+    return
+  }
+
+  const processCommentAutomationJobId = `comment-auto-${commentData.commentId}`
+  const existingJob = await integrationQueue.getJob(
+    processCommentAutomationJobId,
+  )
+  if (existingJob && (await existingJob.isFailed())) {
+    await existingJob.remove()
+  }
+
   await integrationQueue.add(
     IntegrationJobAction.processCommentAutomation,
     {
@@ -442,7 +499,7 @@ export const receiveComment = async (
         createdTime: commentData.createdTime,
       },
     },
-    { jobId: `comment-auto-${commentData.commentId}` },
+    { jobId: processCommentAutomationJobId },
   )
 }
 
@@ -530,12 +587,15 @@ const detectContactAndConversation = async (props: {
     inboxId: string
     [x: string]: unknown
   }
+  source: ContactSource
+  skipProfileLookup?: boolean
 }): Promise<{
   contactInbox: ContactInboxModel
   contact: ContactModel
   conversation: ConversationModel
 }> => {
-  const { incomingContact, inbox, integrationRow } = props
+  const { incomingContact, inbox, integrationRow, source, skipProfileLookup } =
+    props
 
   const existingContactInbox = await db.query.contactInboxModel.findFirst({
     where: {
@@ -571,25 +631,36 @@ const detectContactAndConversation = async (props: {
     ...incomingContact,
     workspaceId: inbox.workspaceId,
   }
-  if (canGetUserProfileIfNeeded(inbox.channel)) {
-    const profileIntegration = allIntegrations[inbox.channel]
+  if (canGetUserProfileIfNeeded(inbox.channel) && !skipProfileLookup) {
+    const integrationType =
+      inbox.channel === "instagram" && isInstagramViaFacebook(integrationRow)
+        ? "instagramFacebook"
+        : inbox.channel
+    const profileIntegration = allIntegrations[integrationType]
     if (profileIntegration) {
       const profileCtx = await buildContext({
         workspaceId: inbox.workspaceId,
-        integrationType: inbox.channel,
+        integrationType,
         integration: integrationRow,
       })
-      const userProfile = await profileIntegration.runChannelHandler(
-        "contact",
-        "getProfile",
-        {
-          ctx: profileCtx,
-          data: { sourceId: incomingContact.sourceId },
-        },
-      )
-      contactData = {
-        ...contactData,
-        ...userProfile,
+      try {
+        const userProfile = await profileIntegration.runChannelHandler(
+          "contact",
+          "getProfile",
+          {
+            ctx: profileCtx,
+            data: { sourceId: incomingContact.sourceId },
+          },
+        )
+        contactData = {
+          ...contactData,
+          ...userProfile,
+        }
+      } catch (error) {
+        logger.warn(
+          { error, sourceId: incomingContact.sourceId, channel: inbox.channel },
+          "detectContactAndConversation: getProfile failed, creating contact without profile data",
+        )
       }
     }
   }
@@ -627,7 +698,7 @@ const detectContactAndConversation = async (props: {
           inboxId: inbox.id,
           contactId: newContact.id,
           originalContactId: newContact.id,
-          source: inbox.channel,
+          source,
           sourceId: incomingContact.sourceId,
           channel: inbox.channel,
         })

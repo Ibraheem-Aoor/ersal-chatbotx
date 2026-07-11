@@ -24,6 +24,8 @@
     "back": "Quay lại",
     "blockContact": "Chặn liên hệ",
     "unblockContact": "Bỏ chặn liên hệ",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
     "cancel": "Hủy",
     "clearCustomField": "Xóa trường tùy chỉnh",
     "collapse": "Thu gọn",
@@ -89,6 +91,13 @@
     "flowVersions": "Phiên bản luồng",
     "revertToPublished": "Khôi phục về phiên bản đã xuất bản",
     "search": "Tìm kiếm",
+    "pleaseSelect": "Vui lòng chọn",
+    "noRecordFound": "Không tìm thấy dữ liệu.",
+    "typeMessage": "Nhập tin nhắn",
+    "enterText": "Nhập văn bản",
+    "enterFieldAndPressEnter": "Nhập {field} và nhấn Enter",
+    "addAnother": "Thêm mục khác...",
+    "messagePlaceholder": "Tin nhắn...",
     "signOut": "Đăng xuất",
     "backToSignIn": "Quay lại đăng nhập",
     "connectFeature": "Kết nối {feature}",
@@ -363,22 +372,114 @@
       "source": "Nguồn",
       "conversationTransferredToHuman": "Cuộc trò chuyện đã chuyển cho người",
       "interactedInLast24H": "Đã tương tác trong 24 giờ qua",
+      "interactedInLast24h": "Đã tương tác trong 24 giờ qua",
+      "followUp": "Theo dõi",
       "isGuestUser": "Người dùng khách",
       "existingContact": "Liên hệ hiện có",
-      "currentChannel": "Kênh hiện tại",
+      "currentChannel": "Kênh",
+      "inbox": "Hộp thư",
+      "subjectToEuRules": "Thuộc quy định EU",
       "timezone": "Múi giờ",
+      "hasOpportunity": "Có cơ hội (Mở, Thắng, Thua)",
+      "hasOpenOpportunity": "Có cơ hội đang mở",
+      "hasWonOpportunity": "Có cơ hội đã thắng",
+      "hasLostOpportunity": "Có cơ hội đã thua",
+      "instagramStoryReply": "Tin nhắn là trả lời story Instagram",
+      "followsBusinessOnInstagram": "Theo dõi doanh nghiệp trên Instagram",
+      "businessFollowsUserOnInstagram": "Doanh nghiệp theo dõi người dùng trên Instagram",
+      "verifiedAccountOnInstagram": "Tài khoản đã xác minh trên Instagram",
+      "followerCountOnInstagram": "Số người theo dõi trên Instagram",
+      "lastSent": "Gửi lần cuối",
+      "lastDelivered": "Đã giao lần cuối",
+      "lastSeen": "Đã xem lần cuối",
+      "lastSeenMinutesAgo": "Đã xem lần cuối (phút trước)",
+      "lastInteraction": "Tương tác lần cuối",
+      "lastInteractionMinutesAgo": "Tương tác lần cuối (phút trước)",
+      "unreplied": "Chưa phản hồi",
+      "unread": "Chưa đọc",
+      "appliedJobs": "Công việc đã ứng tuyển",
       "tags": "Thẻ",
       "customFields": "Trường tùy chỉnh",
       "phone": "Số điện thoại",
+      "completedWhatsAppFlows": "WhatsApp Flow đã hoàn tất",
+      "messengerList": "Danh sách Messenger",
+      "subscribedToDripCampaign": "Đã đăng ký drip campaign",
+      "conversationAssigned": "Cuộc trò chuyện đã gán",
+      "entryPointsLinks": "Liên kết điểm vào",
+      "sentMessage": "Đã gửi tin nhắn",
+      "keywordsReceived": "Từ khóa đã nhận",
       "executedFlow": "Đã thực thi luồng",
+      "executedStep": "Đã thực thi bước",
+      "consecutiveAiFailures": "Số lần AI lỗi liên tiếp",
+      "questionnaireStarted": "Bảng câu hỏi đã bắt đầu",
+      "questionnaireInProgress": "Bảng câu hỏi đang thực hiện",
+      "questionnaireFinished": "Bảng câu hỏi đã hoàn tất",
+      "votedOnPoll": "Đã bình chọn khảo sát",
+      "lastComment": "Bình luận cuối",
+      "commentedOnPost": "Đã bình luận bài viết",
+      "reactedOnPost": "Đã bày tỏ cảm xúc bài viết",
+      "lastTotalTaggedUsers": "Tổng người được gắn thẻ lần cuối",
+      "lastTotalNewTaggedUsers": "Tổng người mới được gắn thẻ lần cuối",
       "email": "Email",
-      "followUp": "Theo dõi",
-      "unread": "Chưa đọc",
+      "phoneWasVerified": "Số điện thoại đã xác minh",
+      "optedInForSms": "Đã đăng ký SMS",
+      "broadcastSent": "Broadcast đã gửi",
+      "broadcastDelivered": "Broadcast đã giao",
+      "broadcastSeen": "Broadcast đã xem",
+      "broadcastClicked": "Broadcast đã nhấn",
+      "broadcastFailed": "Broadcast thất bại",
+      "emailWasVerified": "Email đã xác minh",
+      "optedInForEmail": "Đã đăng ký Email",
+      "emailSent": "Email đã gửi",
+      "emailDelivered": "Email đã giao",
+      "emailOpened": "Email đã mở",
+      "emailClicked": "Email đã nhấn",
+      "isWithinWorkingHours": "Trong giờ làm việc",
+      "currentDate": "Ngày hiện tại",
+      "currentTime": "Giờ hiện tại",
+      "currentDayOfMonth": "Ngày trong tháng hiện tại",
+      "currentDayOfWeek": "Ngày trong tuần hiện tại",
+      "currentMonth": "Tháng hiện tại",
+      "bought": "Đã mua",
+      "boughtItems": "Đã mua sản phẩm",
+      "totalSpent": "Tổng chi tiêu",
+      "numberOfOrders": "Số đơn hàng",
+      "shoppingCartTotal": "Tổng giỏ hàng",
+      "shoppingCartSubtotal": "Tạm tính giỏ hàng",
+      "shoppingCartIsEmpty": "Giỏ hàng trống",
+      "shoppingCartContainsItems": "Giỏ hàng có sản phẩm",
+      "lastSentMessageFailed": "Tin nhắn gửi cuối thất bại",
+      "lastUserInput": "Đầu vào người dùng cuối",
+      "lastUserInputType": "Loại đầu vào người dùng cuối",
       "archived": "Đã lưu trữ",
       "blocked": "Đã chặn",
       "noAdminReply": "Không có phản hồi quản trị viên",
-      "contactCreatedAt": "Ngày tạo liên hệ",
-      "interactedInLast24h": "Đã tương tác trong 24 giờ qua"
+      "contactCreatedAt": "Ngày tạo liên hệ"
+    },
+    "fieldGroups": {
+      "opportunity": "Cơ hội",
+      "instagram": "Instagram",
+      "analytics": "Phân tích",
+      "facebookInstagramComment": "Bình luận Facebook/Instagram",
+      "broadcastWhatsapp": "Broadcast (WhatsApp)",
+      "systemTime": "Thời gian hệ thống",
+      "ecommerce": "Thương mại điện tử",
+      "systemFields": "Trường hệ thống",
+      "customFields": "Trường tùy chỉnh",
+      "email": "Email",
+      "sms": "SMS"
+    },
+    "sources": {
+      "direct": "Trực tiếp",
+      "comments": "Bình luận",
+      "ads": "Quảng cáo",
+      "fbLeadAd": "FB Lead Ad",
+      "inboundMessage": "Tin nhắn đến",
+      "imported": "Đã nhập",
+      "api": "API",
+      "webchat": "Webchat",
+      "botLink": "Liên kết bot",
+      "chatPlugin": "C. chat plugin"
     }
   },
   "channels": {
@@ -391,6 +492,22 @@
       "tiktok": "Tài khoản TikTok này đã được kết nối với một workspace khác.",
       "whatsapp": "Số WhatsApp này đã được kết nối với một workspace khác.",
       "zalo": "Zalo OA này đã được kết nối với một workspace khác."
+    }
+  },
+  "workspace": {
+    "schedule": {
+      "title": "Cài đặt khung giờ hoạt động",
+      "description": "Chọn giờ bắt đầu và kết thúc. Nếu giờ kết thúc sớm hơn giờ bắt đầu, khung giờ sẽ kéo dài qua đêm.",
+      "startTime": "Giờ bắt đầu",
+      "endTime": "Giờ kết thúc",
+      "alwaysRun": "Luôn luôn chạy",
+      "save": "Lưu",
+      "invalidTimeRange": "Giờ bắt đầu và giờ kết thúc phải khác nhau",
+      "timeRequired": "Vui lòng chọn cả giờ bắt đầu và giờ kết thúc",
+      "activated": "Đã kích hoạt workspace",
+      "deactivated": "Đã tắt workspace",
+      "activeHours": "Hoạt động từ {startTime} đến {endTime} giờ",
+      "permissionRequired": "Chỉ super admin mới có thể thay đổi khung giờ hoạt động của workspace"
     }
   },
   "workspaces": {
@@ -411,6 +528,9 @@
     "omnichannel": {
       "label": "Đa kênh"
     },
+    "smtp": {
+      "label": "SMTP"
+    },
     "messenger": {
       "label": "Messenger"
     },
@@ -418,7 +538,15 @@
       "label": "Hình ảnh"
     },
     "instagram": {
-      "label": "Instagram"
+      "label": "Instagram",
+      "loginTitle": "Đăng nhập bằng Instagram",
+      "loginDescription": "Kết nối tài khoản Instagram Business trực tiếp qua Instagram OAuth.",
+      "facebookLoginTitle": "Đăng nhập bằng Facebook",
+      "facebookLoginDescription": "Kết nối tài khoản Instagram được liên kết với Facebook Page qua Facebook OAuth.",
+      "connectViaFacebook": "Kết nối Instagram qua Facebook",
+      "viaFacebookTitle": "Instagram qua Facebook",
+      "cloneFromMessenger": "Sao chép từ Messenger",
+      "clonedFromMessenger": "Đã sao chép từ Messenger"
     },
     "zalo": {
       "label": "Zalo OA"
@@ -448,7 +576,7 @@
       "label": "Pipeline"
     },
     "sequences": {
-      "label": "Chuỗi"
+      "label": "Chăm sóc"
     },
     "entryPointLink": {
       "label": "Liên kết điểm vào"
@@ -462,8 +590,8 @@
       "isNot": "Không phải",
       "in": "Thuộc",
       "notIn": "Không thuộc",
-      "isEmpty": "Trống",
-      "isNotEmpty": "Không trống",
+      "isEmpty": "Không có giá trị",
+      "isNotEmpty": "Có bất kỳ giá trị nào",
       "gt": "Lớn hơn",
       "lt": "Nhỏ hơn",
       "gte": "Lớn hơn hoặc bằng",
@@ -472,8 +600,8 @@
       "notContains": "Không chứa",
       "startsWith": "Bắt đầu bằng",
       "endsWith": "Kết thúc bằng",
-      "isBetween": "Trong khoảng",
-      "notBetween": "Ngoài khoảng",
+      "isBetween": "Khoảng",
+      "notBetween": "Không phải khoảng",
       "hasAnyValue": "Có bất kỳ giá trị nào",
       "hasNoValue": "Không có giá trị",
       "greaterThan": "Lớn hơn",
@@ -485,7 +613,11 @@
       "notInterval": "Không phải khoảng"
     },
     "contactFilter": {
-      "label": "Bộ lọc liên hệ"
+      "allConditions": "Tất cả các điều kiện bên dưới",
+      "anyConditions": "Bất kỳ điều kiện nào bên dưới.",
+      "label": "Bộ lọc liên hệ",
+      "onlyContactsMatch": "Chỉ các liên hệ khớp với",
+      "moreOptions": "Thêm tùy chọn"
     },
     "contactNote": {
       "label": "Ghi chú liên hệ"
@@ -709,6 +841,12 @@
     "file": {
       "label": "Tệp"
     },
+    "link": {
+      "label": "Liên kết"
+    },
+    "message": {
+      "label": "Tin nhắn"
+    },
     "filter": {
       "label": "Lọc"
     },
@@ -723,7 +861,7 @@
       "label": "Mã quốc gia"
     },
     "contactId": {
-      "label": "ID Liên hệ / ID Người đăng ký / PSID"
+      "label": "ID Liên hệ"
     },
     "flow": {
       "label": "Luồng"
@@ -736,6 +874,7 @@
       "aiGenerateImage": "{aiName}: Tạo hình ảnh",
       "aiEditImage": "{aiName}: Chỉnh sửa hình ảnh",
       "aiAnalyzeImage": "{aiName}: Phân tích hình ảnh",
+      "aiExtractData": "{aiName}: Trích xuất dữ liệu",
       "aiSpeechToText": "{aiName}: Chuyển giọng nói thành văn bản",
       "aiTextToSpeech": "{aiName}: Chuyển văn bản thành giọng nói",
       "label": "Luồng",
@@ -901,6 +1040,9 @@
       "label": "Tên",
       "placeholder": "Nhập tên",
       "searchPlaceholder": "Tìm kiếm tên..."
+    },
+    "selectUsers": {
+      "label": "Chọn người dùng"
     },
     "node": {
       "label": "Nút"
@@ -1201,6 +1343,24 @@
     "whatsapp": {
       "label": "WhatsApp"
     },
+    "sms": {
+      "label": "SMS"
+    },
+    "viber": {
+      "label": "Viber"
+    },
+    "viberBm": {
+      "label": "Viber BM"
+    },
+    "voice": {
+      "label": "Voice"
+    },
+    "googleBm": {
+      "label": "Google BM"
+    },
+    "landingPage": {
+      "label": "Trang đích"
+    },
     "whatsappFlow": {
       "label": "Luồng WhatsApp"
     },
@@ -1324,6 +1484,9 @@
     },
     "spreadsheet": {
       "label": "Bảng tính"
+    },
+    "worksheet": {
+      "label": "Trang tính"
     },
     "source": {
       "label": "Nguồn",
@@ -1587,10 +1750,16 @@
     "aiExtractData": {
       "label": "{name}: Trích xuất dữ liệu"
     },
+    "openaiCompatible": {
+      "empty": "Hãy kết nối provider tương thích OpenAI trong phần cài đặt tích hợp trước khi dùng bước này.",
+      "integration": "Provider tương thích OpenAI",
+      "none": "Không có"
+    },
     "actions": {
       "addContactNotes": "Thêm ghi chú liên hệ",
       "addContactTag": "Thêm thẻ liên hệ",
       "aiDeleteMessageHistory": "Xóa lịch sử tin nhắn",
+      "aiExtractData": "AI trích xuất dữ liệu",
       "aiAnalyzeImage": "AI phân tích hình ảnh",
       "aiSpeechToText": "AI chuyển giọng nói thành văn bản",
       "aiGenerateImage": "AI tạo hình ảnh",
@@ -1722,7 +1891,11 @@
     "fields": {
       "selectTemplatePlaceholder": "Chọn mẫu WhatsApp",
       "selectMessengerTemplatePlaceholder": "Chọn mẫu Messenger",
-      "preview": "Xem trước"
+      "preview": "Xem trước",
+      "typingSecondsLabel": "Thời gian nhập (giây)",
+      "lookupColumnsLabel": "Cột tra cứu:",
+      "filterModeAnd": "VÀ",
+      "filterModeOr": "HOẶC"
     },
     "operators": {
       "append": "Thêm vào cuối",
@@ -1756,7 +1929,8 @@
       "maxLabel": "Tối đa",
       "unitLabel": "Đơn vị",
       "specific": "Cụ thể",
-      "dynamic": "Tùy chỉnh"
+      "dynamic": "Tùy chỉnh",
+      "selectTimePlaceholder": "Chọn thời gian"
     }
   },
   "folders": {
@@ -2163,7 +2337,9 @@
     "publishVersionSuccess": "Đã xuất bản phiên bản mới",
     "flowConfigIncomplete": "Một số cấu hình chưa hoàn chỉnh",
     "duplicateNodeError": "Không thể nhân bản khối. Vui lòng thử lại.",
-    "deleteNodeError": "Không thể xoá khối. Vui lòng thử lại."
+    "deleteNodeError": "Không thể xoá khối. Vui lòng thử lại.",
+    "redoHistoryCleared": "Đã xoá lịch sử làm lại",
+    "historyDepth": "({count})"
   },
   "instagram": {
     "description": "Tích hợp này cho phép bạn tạo bot Instagram.",
@@ -2314,6 +2490,31 @@
       "label": "OpenRouter"
     },
     "title": "OpenRouter"
+  },
+  "openaiCompatible": {
+    "addProvider": "Thêm AI Provider",
+    "addProviderModel": "Thêm {name}",
+    "apiKeyKeepExisting": "Để trống để giữ API key hiện tại.",
+    "autoReply": {
+      "description": "Cho phép provider này được dùng cho phản hồi AI tự động.",
+      "label": "AI Auto Reply"
+    },
+    "connect": {
+      "description": "Kết nối các provider tương thích OpenAI cho danh sách fallback của AI Agent.",
+      "label": "Provider tương thích OpenAI"
+    },
+    "empty": "Chưa cấu hình provider tương thích OpenAI.",
+    "fields": {
+      "baseURL": "Base URL",
+      "defaultModel": "Model mặc định",
+      "enabled": "Đang bật"
+    },
+    "provider": "AI Provider",
+    "title": "OpenAI Compatible",
+    "validation": {
+      "invalidBaseURL": "Base URL không hợp lệ hoặc không được phép.",
+      "presetAlreadyConnected": "Preset này đã được kết nối trong workspace."
+    }
   },
   "settings": {
     "title": "Cài đặt",
@@ -2474,7 +2675,8 @@
         "latitude": "Vĩ độ",
         "longitude": "Kinh độ",
         "locationName": "Tên vị trí (tùy chọn)",
-        "locationAddress": "Địa chỉ (tùy chọn)"
+        "locationAddress": "Địa chỉ (tùy chọn)",
+        "enterFormatUrl": "Nhập URL {format}"
       }
     },
     "sampleBodyCardContent": {
@@ -2488,6 +2690,9 @@
     },
     "showFooter": {
       "label": "Hiển thị chân trang"
+    },
+    "showHeader": {
+      "label": "Hiển thị đầu trang"
     },
     "tabs": {
       "accountHealths": "Tình trạng tài khoản",
@@ -2824,7 +3029,7 @@
     "saturday": "Thứ Bảy",
     "sunday": "Chủ Nhật",
     "afterText": "Sau",
-    "title": "Sequences"
+    "title": "Chăm sóc"
   },
   "tools": {
     "title": "Công cụ"
@@ -2837,7 +3042,8 @@
     "gemini": "Gemini",
     "claude": "Claude",
     "deepseek": "DeepSeek",
-    "openrouter": "OpenRouter"
+    "openrouter": "OpenRouter",
+    "openaiCompatible": "OpenAI Compatible"
   },
   "smtp": {
     "setting": {
@@ -2889,11 +3095,12 @@
     "replyAfterValue": "Giá trị",
     "schedule": {
       "title": "Cài đặt khung giờ hoạt động",
+      "description": "Chọn giờ bắt đầu và kết thúc. Nếu giờ kết thúc sớm hơn giờ bắt đầu, khung giờ sẽ kéo dài qua đêm.",
       "startTime": "Giờ bắt đầu",
       "endTime": "Giờ kết thúc",
       "alwaysRun": "Luôn luôn chạy",
       "save": "Lưu",
-      "invalidTimeRange": "Giờ kết thúc phải sau giờ bắt đầu",
+      "invalidTimeRange": "Giờ bắt đầu và giờ kết thúc phải khác nhau",
       "timeRequired": "Vui lòng chọn cả giờ bắt đầu và giờ kết thúc"
     },
     "card": {
@@ -2997,6 +3204,9 @@
     "helpItems": {
       "title": "Liên kết hỗ trợ",
       "description": "Liên kết hỗ trợ hiển thị trong thanh bên cho tất cả workspace không thuộc về tenant white-label."
+    },
+    "queues": {
+      "title": "Hàng chờ"
     }
   },
   "platformCredentials": {
@@ -3066,6 +3276,7 @@
   },
   "manageSidebar": {
     "platformGroup": "Nền tảng",
+    "toolsGroup": "Công cụ",
     "saasGroup": "SaaS",
     "portalUsers": "Tài khoản con",
     "portalWorkspaces": "Workspace",

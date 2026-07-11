@@ -256,17 +256,21 @@ export function FbCommentForm({
             )}
             {privateReplyType === "flow" && (
               <ComboboxField
+                emptyText={t("actions.noRecordFound")}
                 label={t("fields.flow.label")}
                 name="privateReply.value"
                 options={flowOptions}
+                placeholder={t("actions.pleaseSelect")}
                 required
               />
             )}
             {privateReplyType === "AIAgent" && (
               <ComboboxField
+                emptyText={t("actions.noRecordFound")}
                 label={t("fields.aiAgent.label")}
                 name="privateReply.value"
                 options={aiAgentOptions}
+                placeholder={t("actions.pleaseSelect")}
                 required
               />
             )}
@@ -296,17 +300,21 @@ export function FbCommentForm({
             )}
             {publicReplyType === "flow" && (
               <ComboboxField
+                emptyText={t("actions.noRecordFound")}
                 label={t("fields.flow.label")}
                 name="publicReply.value"
                 options={flowOptions}
+                placeholder={t("actions.pleaseSelect")}
                 required
               />
             )}
             {publicReplyType === "AIAgent" && (
               <ComboboxField
+                emptyText={t("actions.noRecordFound")}
                 label={t("fields.aiAgent.label")}
                 name="publicReply.value"
                 options={aiAgentOptions}
+                placeholder={t("actions.pleaseSelect")}
                 required
               />
             )}
@@ -440,7 +448,7 @@ export function FbCommentForm({
               name="options.ignoreCommentReplies"
               required
             />
-            <SwitchField
+            {/* <SwitchField
               description={t(
                 "facebookCommentAutomation.options.trackUserTagsDescription",
               )}
@@ -448,7 +456,7 @@ export function FbCommentForm({
               label={t("facebookCommentAutomation.options.trackUserTags")}
               name="options.trackUserTags"
               required
-            />
+            /> */}
           </div>
         </CardContent>
       </Card>

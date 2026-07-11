@@ -28,6 +28,7 @@ import {
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
 import { CustomFieldSelect } from "@/features/custom-fields/custom-field-select"
 import { AIModelSelect } from "../../ai-generate-text/components/ai-model-select"
+import { OpenaiCompatibleModelFields } from "../../ai-generate-text/components/openai-compatible-model-fields"
 
 type AIExtractDataDialogProps = {
   parentName: string
@@ -111,7 +112,7 @@ export const AIExtractDataDialog = ({
 
               {inputType === "text" ? (
                 <TiptapEditorField
-                  label="Input Text"
+                  label={t("fields.inputText.label")}
                   name="inputFieldId"
                   required
                 />
@@ -119,13 +120,21 @@ export const AIExtractDataDialog = ({
                 <CustomFieldSelect
                   allowCreate={true}
                   includeReserved={false}
-                  label={inputType === "image" ? "Image" : "File"}
+                  label={
+                    inputType === "image"
+                      ? t("fields.image.label")
+                      : t("fields.file.label")
+                  }
                   name="inputFieldId"
                   required
                 />
               )}
 
-              <AIModelSelect name="model" provider={provider} required />
+              {provider === "openaiCompatible" ? (
+                <OpenaiCompatibleModelFields />
+              ) : (
+                <AIModelSelect name="model" provider={provider} required />
+              )}
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
