@@ -47,7 +47,7 @@ export function AppSidebar({
   allWorkspaces: WorkspaceResource[]
   isSuperAdmin?: boolean
   isPlatformAdmin?: boolean
-  memberPermissions: WorkspaceMemberPermissions
+  memberPermissions?: WorkspaceMemberPermissions
   quota: QuotaSummary
 }) {
   const t = useTranslations()
