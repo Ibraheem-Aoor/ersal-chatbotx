@@ -9,15 +9,11 @@ import { db } from "@chatbotx.io/database/client"
 import { invitationModel } from "@chatbotx.io/database/schema"
 import { createId, SymbolicSnowflakeIDs } from "@chatbotx.io/utils"
 import { addDays } from "date-fns"
-import { isCommunity } from "@/env"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
-import {
-  getSuperAdminPermissions,
-  normalizeContactsPermissions,
-} from "../helpers"
+import { normalizeContactsPermissions } from "../helpers"
 import { inviteWorkspaceMemberRequest } from "../schema/mutation"
 
 export const inviteWorkspaceMemberAction = workspaceActionClient
@@ -59,9 +55,7 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
       .values({
         id: createId(),
         code: SymbolicSnowflakeIDs.generate(),
-        permissions: isCommunity()
-          ? getSuperAdminPermissions()
-          : normalizeContactsPermissions(parsedInput.permissions),
+        permissions: normalizeContactsPermissions(parsedInput.permissions),
         expiresAt: addDays(new Date(), 1),
         workspaceId,
         invitedBy: ctx.user.id,
