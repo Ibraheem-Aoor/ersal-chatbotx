@@ -139,7 +139,7 @@ export function AppSidebar({
         if (!segment) return true
         const permission = permissionByPath[segment]
         if (!permission) return true
-        return memberPermissions[permission]
+        return memberPermissions[permission] !== false
       })
 
   return (
