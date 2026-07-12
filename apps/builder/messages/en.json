@@ -3445,8 +3445,13 @@
       "name": "Plan Name",
       "description": "Description",
       "price": "Price (SAR)",
+      "billingCycle": "Billing Cycle",
       "isActive": "Active",
       "sortOrder": "Sort Order"
+    },
+    "billingCycleOptions": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
     },
     "limits": {
       "title": "Limits",
@@ -3466,6 +3471,21 @@
     },
     "currency": {
       "sar": "SAR"
+    },
+    "billing": {
+      "successTitle": "Subscription Successful!",
+      "errorTitle": "Payment Failed",
+      "planLabel": "Plan",
+      "amountLabel": "Amount Paid",
+      "periodLabel": "Subscription Period",
+      "goToWorkspace": "Go to Workspace",
+      "tryAgain": "Try Again",
+      "errors": {
+        "paymentFailed": "The payment could not be processed. Please try again.",
+        "invalidMetadata": "Invalid payment data. Please contact support.",
+        "planNotFound": "The selected plan was not found. Please try again.",
+        "callbackError": "An unexpected error occurred. Please try again."
+      }
     },
     "messages": {
       "created": "Plan created successfully",

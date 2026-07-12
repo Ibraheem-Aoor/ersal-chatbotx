@@ -2,6 +2,7 @@ import {
   billingPlanService,
   getPaymentGateway,
   subscriptionService,
+  userQuotaService,
 } from "@chatbotx.io/business"
 import { addMonths, addYears } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
@@ -26,7 +27,9 @@ export async function GET(req: NextRequest) {
     const result = await gateway.verify(paymentId)
 
     if (!result.success) {
-      return NextResponse.redirect(`${baseUrl}/pricing?error=payment_failed`)
+      return NextResponse.redirect(
+        `${baseUrl}/billing/error?reason=payment_failed`,
+      )
     }
 
     const metadata = extractMetadata(result.rawResponse)
@@ -35,12 +38,16 @@ export async function GET(req: NextRequest) {
       (metadata?.billingCycle as "monthly" | "yearly") ?? "monthly"
 
     if (!planId) {
-      return NextResponse.redirect(`${baseUrl}/pricing?error=invalid_metadata`)
+      return NextResponse.redirect(
+        `${baseUrl}/billing/error?reason=invalid_metadata`,
+      )
     }
 
     const plan = await billingPlanService.findById({ id: planId })
     if (!plan) {
-      return NextResponse.redirect(`${baseUrl}/pricing?error=plan_not_found`)
+      return NextResponse.redirect(
+        `${baseUrl}/billing/error?reason=plan_not_found`,
+      )
     }
 
     const now = new Date()
@@ -62,9 +69,34 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return NextResponse.redirect(`${baseUrl}/?subscription=success`)
+    await userQuotaService.applyPlanEntitlements({
+      userId: user.id,
+      planName: plan.name,
+      contactsLimit: plan.limits.contacts,
+      macLimit: plan.limits.mac,
+      workspacesLimit: plan.limits.workspaces,
+      channelsLimit: plan.limits.channels,
+      teamMembersLimit: plan.limits.teamMembers,
+      periodStart: now,
+      periodEnd,
+    })
+
+    const params = new URLSearchParams({
+      planName: plan.name,
+      amount: plan.price,
+      currency: plan.currency,
+      cycle: billingCycle,
+      periodStart: now.toISOString(),
+      periodEnd: periodEnd.toISOString(),
+    })
+
+    return NextResponse.redirect(
+      `${baseUrl}/billing/success?${params.toString()}`,
+    )
   } catch {
-    return NextResponse.redirect(`${baseUrl}/pricing?error=callback_error`)
+    return NextResponse.redirect(
+      `${baseUrl}/billing/error?reason=callback_error`,
+    )
   }
 }
 

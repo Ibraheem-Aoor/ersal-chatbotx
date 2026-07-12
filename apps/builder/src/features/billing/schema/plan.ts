@@ -16,6 +16,7 @@ export const createPlanSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/),
+  billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
   limits: planLimitsSchema,
   features: z.array(z.string()),
   isActive: z.boolean().default(true),

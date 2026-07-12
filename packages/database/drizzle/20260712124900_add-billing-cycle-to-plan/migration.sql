@@ -1,0 +1,1 @@
+ALTER TABLE "BillingPlan" ADD COLUMN "billingCycle" "billingCycle" DEFAULT 'monthly'::"billingCycle" NOT NULL;

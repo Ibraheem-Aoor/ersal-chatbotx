@@ -5,7 +5,7 @@ import {
   timestampConfig,
 } from "../partials/shared"
 import { userModel } from "./auth-user"
-import { billingPlanModel } from "./billing-plan"
+import { billingCycle, billingPlanModel } from "./billing-plan"
 
 export const subscriptionStatusValues = [
   "active",
@@ -20,11 +20,6 @@ export const subscriptionStatus = pgEnum(
   "subscriptionStatus",
   subscriptionStatusValues,
 )
-
-export const billingCycleValues = ["monthly", "yearly"] as const
-export type BillingCycle = (typeof billingCycleValues)[number]
-
-export const billingCycle = pgEnum("billingCycle", billingCycleValues)
 
 export const subscriptionModel = pgTable("Subscription", {
   ...sharedColumns,

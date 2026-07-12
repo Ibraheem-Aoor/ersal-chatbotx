@@ -25,6 +25,7 @@ type PlanRow = {
   description: string | null
   price: string
   currency: string
+  billingCycle: "monthly" | "yearly"
   limits: CreatePlanInput["limits"]
   features: string[]
   isActive: boolean
@@ -41,6 +42,7 @@ export function PlansTable({ plans }: { plans: PlanRow[] }) {
           <TableRow>
             <TableHead>{t("plans.fields.name")}</TableHead>
             <TableHead>{t("plans.fields.price")}</TableHead>
+            <TableHead>{t("plans.fields.billingCycle")}</TableHead>
             <TableHead>{t("plans.limits.title")}</TableHead>
             <TableHead>{t("plans.fields.isActive")}</TableHead>
             <TableHead>{t("plans.fields.sortOrder")}</TableHead>
@@ -52,7 +54,7 @@ export function PlansTable({ plans }: { plans: PlanRow[] }) {
             <TableRow>
               <TableCell
                 className="text-center text-muted-foreground"
-                colSpan={6}
+                colSpan={7}
               >
                 {t("plans.noPlans")}
               </TableCell>
@@ -93,6 +95,11 @@ function PlanTableRow({ plan }: { plan: PlanRow }) {
       <TableCell className="font-medium">{plan.name}</TableCell>
       <TableCell>
         {plan.price} {t("plans.currency.sar")}
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline">
+          {t(`plans.billingCycleOptions.${plan.billingCycle}`)}
+        </Badge>
       </TableCell>
       <TableCell className="text-muted-foreground text-xs">
         {limitsText}

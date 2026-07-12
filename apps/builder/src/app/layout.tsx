@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: Props) {
   const tenantSettings = await getTenantSettings()
   const pancakeChatPageId = env.NEXT_PUBLIC_PANCAKE_CHAT_PAGE_ID
   return (
-    <html lang={locale} dir="ltr" suppressHydrationWarning>
+    <html dir="ltr" lang={locale} suppressHydrationWarning>
       <head>
         <PublicEnvScript />
         {env.NEXT_PUBLIC_ENABLE_PANCAKE_CHAT && pancakeChatPageId && (

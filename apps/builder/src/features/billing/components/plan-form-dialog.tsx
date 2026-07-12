@@ -1,6 +1,7 @@
 "use client"
 
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -28,6 +29,7 @@ type PlanRow = {
   name: string
   description: string | null
   price: string
+  billingCycle: "monthly" | "yearly"
   limits: CreatePlanInput["limits"]
   features: string[]
   isActive: boolean
@@ -74,6 +76,7 @@ export function PlanFormDialog({
           name: plan?.name ?? "",
           description: plan?.description ?? "",
           price: plan?.price ?? "0.00",
+          billingCycle: plan?.billingCycle ?? "monthly",
           limits: plan?.limits ?? {
             contacts: 500,
             mac: 1000,
@@ -146,6 +149,23 @@ export function PlanFormDialog({
                 name="price"
                 required
                 type="text"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <SelectField
+                label={t("plans.fields.billingCycle")}
+                name="billingCycle"
+                options={[
+                  {
+                    value: "monthly",
+                    label: t("plans.billingCycleOptions.monthly"),
+                  },
+                  {
+                    value: "yearly",
+                    label: t("plans.billingCycleOptions.yearly"),
+                  },
+                ]}
               />
             </div>
 

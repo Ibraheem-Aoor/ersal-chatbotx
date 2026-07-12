@@ -19,6 +19,7 @@ type PlanCard = {
   name: string
   description: string | null
   price: string
+  billingCycle: "monthly" | "yearly"
   features: string[]
 }
 
@@ -55,7 +56,10 @@ function PricingCard({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id, billingCycle: "monthly" }),
+        body: JSON.stringify({
+          planId: plan.id,
+          billingCycle: plan.billingCycle,
+        }),
       })
       const data = await res.json()
       if (data.redirectUrl) {
@@ -86,7 +90,7 @@ function PricingCard({
           <span className="font-bold text-4xl">{plan.price}</span>
           <span className="text-muted-foreground text-sm">
             {" "}
-            {t("plans.currency.sar")} / {t("plans.monthly")}
+            {t("plans.currency.sar")} / {t(`plans.${plan.billingCycle}`)}
           </span>
         </div>
       </CardHeader>

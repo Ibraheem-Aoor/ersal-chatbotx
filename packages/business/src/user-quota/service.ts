@@ -143,6 +143,52 @@ class UserQuotaService extends BaseService {
     await this.store.invalidate(userId)
   }
 
+  async applyPlanEntitlements(input: {
+    userId: string
+    planName: string
+    contactsLimit: number
+    macLimit: number
+    workspacesLimit: number
+    channelsLimit: number
+    teamMembersLimit: number
+    periodStart: Date
+    periodEnd: Date
+  }): Promise<void> {
+    const { userId, ...limits } = input
+    await db
+      .insert(userQuotaModel)
+      .values({
+        userId,
+        contactsLimit: limits.contactsLimit,
+        macLimit: limits.macLimit,
+        workspacesLimit: limits.workspacesLimit,
+        channelsLimit: limits.channelsLimit,
+        teamMembersLimit: limits.teamMembersLimit,
+        planName: limits.planName,
+        planStatus: "active",
+        periodStart: limits.periodStart,
+        periodEnd: limits.periodEnd,
+        syncedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userQuotaModel.userId,
+        set: {
+          contactsLimit: limits.contactsLimit,
+          macLimit: limits.macLimit,
+          workspacesLimit: limits.workspacesLimit,
+          channelsLimit: limits.channelsLimit,
+          teamMembersLimit: limits.teamMembersLimit,
+          planName: limits.planName,
+          planStatus: "active",
+          periodStart: limits.periodStart,
+          periodEnd: limits.periodEnd,
+          syncedAt: new Date(),
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        },
+      })
+    await this.store.invalidate(userId)
+  }
+
   async getForUser(userId: string): Promise<UserQuotaModel | null> {
     const cached = await this.store.getCachedRow(userId)
     if (cached) {

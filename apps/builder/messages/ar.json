@@ -3404,8 +3404,13 @@
       "name": "اسم الباقة",
       "description": "الوصف",
       "price": "السعر (ر.س)",
+      "billingCycle": "دورة الفوترة",
       "isActive": "مفعّلة",
       "sortOrder": "ترتيب العرض"
+    },
+    "billingCycleOptions": {
+      "monthly": "شهري",
+      "yearly": "سنوي"
     },
     "limits": {
       "title": "الحدود",
@@ -3425,6 +3430,21 @@
     },
     "currency": {
       "sar": "ر.س"
+    },
+    "billing": {
+      "successTitle": "تم الاشتراك بنجاح!",
+      "errorTitle": "فشل الدفع",
+      "planLabel": "الباقة",
+      "amountLabel": "المبلغ المدفوع",
+      "periodLabel": "فترة الاشتراك",
+      "goToWorkspace": "الذهاب إلى مساحة العمل",
+      "tryAgain": "إعادة المحاولة",
+      "errors": {
+        "paymentFailed": "لم يتم معالجة الدفع. يرجى المحاولة مرة أخرى.",
+        "invalidMetadata": "بيانات الدفع غير صالحة. يرجى التواصل مع الدعم.",
+        "planNotFound": "لم يتم العثور على الباقة المحددة. يرجى المحاولة مرة أخرى.",
+        "callbackError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+      }
     },
     "messages": {
       "created": "تم إنشاء الباقة بنجاح",

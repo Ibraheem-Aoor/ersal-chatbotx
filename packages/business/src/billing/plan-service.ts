@@ -1,5 +1,6 @@
 import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
 import {
+  type BillingCycle,
   type BillingPlanLimits,
   billingPlanModel,
 } from "@chatbotx.io/database/schema"
@@ -33,6 +34,7 @@ export class BillingPlanService {
       description?: string
       price: string
       currency?: string
+      billingCycle?: BillingCycle
       limits: BillingPlanLimits
       features: string[]
       isActive?: boolean
@@ -47,6 +49,7 @@ export class BillingPlanService {
         description: data.description,
         price: data.price,
         currency: data.currency ?? "SAR",
+        billingCycle: data.billingCycle ?? "monthly",
         limits: data.limits,
         features: data.features,
         isActive: data.isActive ?? true,
@@ -64,6 +67,7 @@ export class BillingPlanService {
       description?: string
       price?: string
       currency?: string
+      billingCycle?: BillingCycle
       limits?: BillingPlanLimits
       features?: string[]
       isActive?: boolean
