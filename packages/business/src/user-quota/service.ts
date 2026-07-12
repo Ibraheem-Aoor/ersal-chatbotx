@@ -587,8 +587,18 @@ class UserQuotaService extends BaseService {
     if (!quota) {
       return true
     }
-    const { limit, used } = this.readMetricValues(quota, metric)
-    return limit === null || used < limit
+    const { limit } = this.readMetricValues(quota, metric)
+    if (limit === null) {
+      return true
+    }
+    if (metric === "workspaces") {
+      const [row] = await db
+        .select({ count: count() })
+        .from(workspaceModel)
+        .where(eq(workspaceModel.ownerId, userId))
+      return (row?.count ?? 0) < limit
+    }
+    return this.readMetricValues(quota, metric).used < limit
   }
 
   /**
