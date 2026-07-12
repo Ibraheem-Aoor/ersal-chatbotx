@@ -180,6 +180,7 @@ export function AppSidebar({
           isSuperAdmin={isSuperAdmin}
           planName={quota.planName}
           user={data.user}
+          workspaceId={workspaceId}
         />
         <NavHelp />
       </SidebarFooter>

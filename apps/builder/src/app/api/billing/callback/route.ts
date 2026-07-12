@@ -1,9 +1,11 @@
 import {
   billingPlanService,
   getPaymentGateway,
+  paymentHistoryService,
   subscriptionService,
   userQuotaService,
 } from "@chatbotx.io/business"
+import type { PaymentHistoryType } from "@chatbotx.io/database/schema"
 import { addMonths, addYears } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
 import { env } from "@/env"
@@ -53,6 +55,35 @@ export async function GET(req: NextRequest) {
     const now = new Date()
     const periodEnd =
       billingCycle === "yearly" ? addYears(now, 1) : addMonths(now, 1)
+
+    const existing = await subscriptionService.findActiveByUserId({
+      userId: user.id,
+    })
+    let paymentType: PaymentHistoryType = "new"
+    if (existing) {
+      if (existing.planId === plan.id) {
+        paymentType = "renewal"
+      } else {
+        const currentPrice = Number.parseFloat(existing.amount)
+        const newPrice = Number.parseFloat(plan.price)
+        paymentType = newPrice > currentPrice ? "upgrade" : "downgrade"
+      }
+    }
+
+    await paymentHistoryService.create({
+      data: {
+        userId: user.id,
+        planId: plan.id,
+        planName: plan.name,
+        amount: plan.price,
+        currency: plan.currency,
+        paymentGateway: gateway.name(),
+        gatewayPaymentId: paymentId,
+        type: paymentType,
+        status: "paid",
+        metadata: result.rawResponse,
+      },
+    })
 
     await subscriptionService.createOrUpdate({
       data: {

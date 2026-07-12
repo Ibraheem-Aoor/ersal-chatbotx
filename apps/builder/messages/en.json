@@ -339,6 +339,27 @@
       "noPlanDescription": "You don't have an active subscription. Browse our plans to get started.",
       "viewPlans": "View Plans",
       "manageSubscription": "Manage Subscription"
+    },
+    "paymentHistory": {
+      "columns": {
+        "date": "Date",
+        "plan": "Plan",
+        "amount": "Amount",
+        "type": "Type",
+        "status": "Status",
+        "gateway": "Gateway"
+      },
+      "type": {
+        "new": "New",
+        "upgrade": "Upgrade",
+        "downgrade": "Downgrade",
+        "renewal": "Renewal"
+      },
+      "status": {
+        "paid": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      }
     }
   },
   "broadcasts": {

@@ -339,6 +339,27 @@
       "noPlanDescription": "ليس لديك اشتراك نشط. تصفح الباقات للبدء.",
       "viewPlans": "عرض الباقات",
       "manageSubscription": "إدارة الاشتراك"
+    },
+    "paymentHistory": {
+      "columns": {
+        "date": "التاريخ",
+        "plan": "الباقة",
+        "amount": "المبلغ",
+        "type": "النوع",
+        "status": "الحالة",
+        "gateway": "بوابة الدفع"
+      },
+      "type": {
+        "new": "اشتراك جديد",
+        "upgrade": "ترقية",
+        "downgrade": "تخفيض",
+        "renewal": "تجديد"
+      },
+      "status": {
+        "paid": "مدفوع",
+        "failed": "فشل",
+        "refunded": "مسترد"
+      }
     }
   },
   "broadcasts": {

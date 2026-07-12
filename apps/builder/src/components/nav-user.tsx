@@ -41,6 +41,7 @@ export function NavUser({
   isSuperAdmin,
   isPlatformAdmin,
   planName,
+  workspaceId,
 }: {
   user: {
     name: string
@@ -50,6 +51,7 @@ export function NavUser({
   isSuperAdmin?: boolean
   isPlatformAdmin?: boolean
   planName?: string | null
+  workspaceId?: string
 }) {
   const { isMobile } = useSidebar()
   const t = useTranslations()
@@ -127,11 +129,11 @@ export function NavUser({
                 <DropdownMenuSeparator />
               </>
             )}
-            {planName && (
+            {planName && workspaceId && (
               <>
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link href="/billing/manage">
+                    <Link href={`/space/${workspaceId}/billing`}>
                       <CreditCardIcon className="h-4 w-4" />
                       {t("billing.manage.manageSubscription")}
                     </Link>

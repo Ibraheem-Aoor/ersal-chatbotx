@@ -1,4 +1,5 @@
 import {
+  paymentHistoryService,
   quotaEnforcementService,
   subscriptionService,
 } from "@chatbotx.io/business"
@@ -18,15 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@chatbotx.io/ui/components/ui/table"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@chatbotx.io/ui/components/ui/tooltip"
+import { getIdFromParams } from "@chatbotx.io/utils"
 import { format } from "date-fns"
 import { ar } from "date-fns/locale"
-import { ArrowLeftIcon } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
@@ -43,7 +38,35 @@ const STATUS_VARIANT: Record<
   cancelled: "outline",
 }
 
-export default async function BillingManagePage() {
+const PAYMENT_TYPE_VARIANT: Record<
+  string,
+  "default" | "destructive" | "outline" | "secondary"
+> = {
+  new: "default",
+  upgrade: "default",
+  downgrade: "outline",
+  renewal: "secondary",
+}
+
+const PAYMENT_STATUS_VARIANT: Record<
+  string,
+  "default" | "destructive" | "outline" | "secondary"
+> = {
+  paid: "default",
+  refunded: "secondary",
+  failed: "destructive",
+}
+
+export default async function BillingPage({
+  params,
+}: {
+  params: Promise<{ workspaceId: string }>
+}) {
+  const workspaceId = getIdFromParams(await params, "workspaceId")
+  if (!workspaceId) {
+    return notFound()
+  }
+
   const user = await getCurrentUser()
   if (!user) {
     return notFound()
@@ -56,11 +79,11 @@ export default async function BillingManagePage() {
   const fmtDate = (d: Date | string) =>
     format(new Date(d), "dd MMM yyyy", { locale: dateLocale })
 
-  const subscription = await subscriptionService.findByUserId({
-    userId: user.id,
-  })
-
-  const usage = await quotaEnforcementService.getUsageSummary(user.id)
+  const [subscription, usage, payments] = await Promise.all([
+    subscriptionService.findByUserId({ userId: user.id }),
+    quotaEnforcementService.getUsageSummary(user.id),
+    paymentHistoryService.listByUserId({ userId: user.id }),
+  ])
 
   const usageMetrics = [
     { key: "contacts", label: t("billing.usage.contacts") },
@@ -72,19 +95,9 @@ export default async function BillingManagePage() {
     { key: "broadcasts", label: t("billing.usage.broadcasts") },
   ] as const
 
-  const allSubscriptions = await subscriptionService.listAll({
-    search: user.email,
-  })
-
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <Link
-          className="text-muted-foreground text-sm hover:underline"
-          href="/"
-        >
-          <ArrowLeftIcon className="mb-0.5 inline size-3" /> {t("actions.back")}
-        </Link>
         <h1 className="font-bold text-2xl">{t("billing.manage.title")}</h1>
       </div>
 
@@ -132,22 +145,10 @@ export default async function BillingManagePage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 pt-2">
+            <div className="pt-2">
               <Button asChild variant="outline">
                 <Link href="/pricing">{t("billing.manage.changePlan")}</Link>
               </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button disabled variant="outline">
-                      {t("billing.manage.cancelSubscription")}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {t("billing.manage.comingSoon")}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
           </CardContent>
         </Card>
@@ -208,7 +209,7 @@ export default async function BillingManagePage() {
           <CardTitle>{t("billing.manage.paymentHistory")}</CardTitle>
         </CardHeader>
         <CardContent>
-          {allSubscriptions.length === 0 ? (
+          {payments.length === 0 ? (
             <p className="py-6 text-center text-muted-foreground text-sm">
               {t("billing.manage.noPayments")}
             </p>
@@ -217,33 +218,56 @@ export default async function BillingManagePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("subscriptions.columns.plan")}</TableHead>
-                    <TableHead>{t("subscriptions.columns.amount")}</TableHead>
-                    <TableHead>{t("subscriptions.columns.status")}</TableHead>
-                    <TableHead>{t("subscriptions.columns.period")}</TableHead>
-                    <TableHead>{t("subscriptions.columns.gateway")}</TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.date")}
+                    </TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.plan")}
+                    </TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.amount")}
+                    </TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.type")}
+                    </TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.status")}
+                    </TableHead>
+                    <TableHead>
+                      {t("billing.paymentHistory.columns.gateway")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allSubscriptions.map((s) => (
-                    <TableRow key={s.id}>
+                  {payments.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-xs">
+                        {fmtDate(p.createdAt)}
+                      </TableCell>
                       <TableCell className="font-medium">
-                        {s.planName}
+                        {p.planName}
                       </TableCell>
                       <TableCell>
-                        {s.amount} {s.currency}
+                        {p.amount} {p.currency}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_VARIANT[s.status] ?? "outline"}>
-                          {t(`subscriptions.status.${s.status}`)}
+                        <Badge
+                          variant={PAYMENT_TYPE_VARIANT[p.type] ?? "outline"}
+                        >
+                          {t(`billing.paymentHistory.type.${p.type}`)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {fmtDate(s.currentPeriodStart)} →{" "}
-                        {fmtDate(s.currentPeriodEnd)}
+                      <TableCell>
+                        <Badge
+                          variant={
+                            PAYMENT_STATUS_VARIANT[p.status] ?? "outline"
+                          }
+                        >
+                          {t(`billing.paymentHistory.status.${p.status}`)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {s.paymentGateway ?? "—"}
+                        {p.paymentGateway}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -253,6 +277,6 @@ export default async function BillingManagePage() {
           )}
         </CardContent>
       </Card>
-    </main>
+    </div>
   )
 }
