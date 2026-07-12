@@ -26,6 +26,7 @@ import {
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
+import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   type SelectAccountRequest,
   selectAccountRequest,
@@ -172,7 +173,7 @@ export const selectAccountAction = authActionClient
               `/space/${parsedInput.workspaceId}/settings/channels?channel=instagram&error=duplicated`,
             )
           }
-          throw error
+          throw await translateQuotaError(error)
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Instagram account already connected")

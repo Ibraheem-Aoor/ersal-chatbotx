@@ -28,6 +28,7 @@ import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
 import { FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE } from "@/lib/facebook-pending-auth"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
+import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   type SelectFacebookAccountRequest,
   selectFacebookAccountRequest,
@@ -186,7 +187,7 @@ export const selectFacebookAccountAction = authActionClient
               `/space/${parsedInput.workspaceId}/settings/channels?channel=instagram&error=duplicated`,
             )
           }
-          throw error
+          throw await translateQuotaError(error)
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Instagram account already connected")

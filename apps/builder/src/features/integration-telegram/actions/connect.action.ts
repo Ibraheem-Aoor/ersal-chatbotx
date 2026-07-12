@@ -16,6 +16,7 @@ import { integrations } from "@/integration"
 import { logger } from "@/lib/log"
 import { buildBrokerCallbackUrl } from "@/lib/oauth-broker"
 import { authActionClient } from "@/lib/safe-action"
+import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   type ConnectTelegramRequest,
   connectTelegramRequest,
@@ -105,7 +106,7 @@ export const connectTelegramAction = authActionClient
               `/space/${workspaceId}/settings/channels?channel=telegram&error=duplicated`,
             )
           }
-          throw error
+          throw await translateQuotaError(error)
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Bot already connected")

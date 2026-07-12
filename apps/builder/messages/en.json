@@ -293,6 +293,13 @@
       "notAuthorizedUpdateWorkspace": "You are not authorized to update this workspace",
       "superAdminRequiredSchedule": "You need to be a super admin to change workspace active hours"
     },
+    "quotaLimits": {
+      "workspaceLimitReached": "Workspace limit reached for this plan",
+      "contactLimitReached": "Contact limit reached",
+      "channelDuplicated": "This account is already connected to another workspace.",
+      "phoneNumberExists": "Phone number already exists",
+      "contactInboxNotFound": "Contact inbox not found"
+    },
     "pastDue": {
       "message": "Your last payment failed. Update your payment method to keep your workspace active."
     },

@@ -29,6 +29,7 @@ import {
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
+import { translateQuotaError } from "@/lib/translate-business-error"
 import { type SelectPageRequest, selectPageRequest } from "../schema/action"
 
 export const selectPageAction = authActionClient
@@ -194,7 +195,7 @@ export const selectPageAction = authActionClient
               `/space/${parsedInput.workspaceId}/settings/channels?channel=messenger&error=duplicated`,
             )
           }
-          throw error
+          throw await translateQuotaError(error)
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Page already connected")

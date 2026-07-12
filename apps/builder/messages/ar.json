@@ -293,6 +293,13 @@
       "notAuthorizedUpdateWorkspace": "غير مصرح لك بتحديث مساحة العمل هذه",
       "superAdminRequiredSchedule": "يجب أن تكون مشرفاً أعلى لتغيير ساعات نشاط مساحة العمل"
     },
+    "quotaLimits": {
+      "workspaceLimitReached": "تم الوصول إلى الحد الأقصى لمساحات العمل في هذه الباقة",
+      "contactLimitReached": "تم الوصول إلى الحد الأقصى لجهات الاتصال",
+      "channelDuplicated": "هذا الحساب مرتبط بالفعل بمساحة عمل أخرى.",
+      "phoneNumberExists": "رقم الهاتف موجود بالفعل",
+      "contactInboxNotFound": "لم يتم العثور على صندوق بريد جهة الاتصال"
+    },
     "pastDue": {
       "message": "فشلت عملية الدفع الأخيرة. قم بتحديث طريقة الدفع للحفاظ على نشاط مساحة العمل."
     },

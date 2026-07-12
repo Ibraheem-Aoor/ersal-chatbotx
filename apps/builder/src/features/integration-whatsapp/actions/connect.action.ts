@@ -40,6 +40,7 @@ import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
 import { logger } from "@/lib/log"
 import { buildBrokerCallbackUrl, getBrokerOrigin } from "@/lib/oauth-broker"
 import { authActionClient } from "@/lib/safe-action"
+import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   isCoexistOnboardingIntent,
   WHATSAPP_OAUTH_CALLBACK_PATH,
@@ -522,7 +523,7 @@ export const connectWhatsappAction = authActionClient
         logger.error({ err }, "Unable to verify whatsapp token")
 
         if (err instanceof ChatbotXException) {
-          throw err
+          throw await translateQuotaError(err)
         }
 
         if (err instanceof SdkException) {
