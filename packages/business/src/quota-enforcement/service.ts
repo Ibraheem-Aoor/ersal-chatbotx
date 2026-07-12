@@ -1,6 +1,6 @@
 import { macTrackingService } from "@chatbotx.io/analytics"
-import { db, type Transaction } from "@chatbotx.io/database/client"
-import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
+import { count, db, eq, type Transaction } from "@chatbotx.io/database/client"
+import { ROOT_TENANT_ID, workspaceModel } from "@chatbotx.io/database/schema"
 import { distributedLock } from "@chatbotx.io/redis"
 import { tenantService } from "../enterprise/tenant/service"
 import { type QuotaMetric, userQuotaService } from "../user-quota/service"
@@ -447,14 +447,15 @@ class QuotaEnforcementService {
       ) as QuotaUsageSummary
     }
 
-    // `used` from the live per-user counters (near-real-time), `limit` from the
-    // cached quota row — the value the user sees now matches what enforcement
-    // counts, with no wait for the next `sync-user-quota` pass.
-    const [liveUsed, quota] = await Promise.all([
+    const [liveUsed, quota, [workspacesRow]] = await Promise.all([
       userQuotaService.getLiveUsage(userId),
       userQuotaService.getForUser(userId),
+      db
+        .select({ count: count() })
+        .from(workspaceModel)
+        .where(eq(workspaceModel.ownerId, userId)),
     ])
-    return Object.fromEntries(
+    const summary = Object.fromEntries(
       ALL_METRICS.map((metric) => [
         metric,
         {
@@ -463,6 +464,8 @@ class QuotaEnforcementService {
         },
       ]),
     ) as QuotaUsageSummary
+    summary.workspaces.used = workspacesRow?.count ?? 0
+    return summary
   }
 
   /**
