@@ -65,6 +65,17 @@ export class SubscriptionService {
     })
   }
 
+  async findById(props: { tx?: DatabaseClient; id: string }) {
+    const { tx = db, id } = props
+    return await tx.query.subscriptionModel.findFirst({
+      where: { id },
+      with: {
+        plan: true,
+        user: true,
+      },
+    })
+  }
+
   async findActiveByUserId(props: { tx?: DatabaseClient; userId: string }) {
     const { tx = db, userId } = props
     return await tx.query.subscriptionModel.findFirst({

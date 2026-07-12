@@ -10,6 +10,7 @@ import {
   BanknoteIcon,
   CircleHelpIcon,
   Grid2x2PlusIcon,
+  HistoryIcon,
   ListTodoIcon,
   MailIcon,
   PaletteIcon,
@@ -83,6 +84,11 @@ export function AdminSidebar({
       title: t("subscriptions.title"),
       url: "/admin/subscriptions",
       icon: ReceiptTextIcon,
+    },
+    {
+      title: t("billing.manage.paymentHistory"),
+      url: "/admin/payment-history",
+      icon: HistoryIcon,
     },
   ]
 

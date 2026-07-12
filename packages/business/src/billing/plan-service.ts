@@ -1,4 +1,4 @@
-import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
+import { type DatabaseClient, db, desc, eq } from "@chatbotx.io/database/client"
 import {
   type BillingCycle,
   type BillingPlanLimits,
@@ -11,7 +11,7 @@ export class BillingPlanService {
     const rows = await tx
       .select()
       .from(billingPlanModel)
-      .orderBy(billingPlanModel.sortOrder)
+      .orderBy(desc(billingPlanModel.createdAt))
     if (activeOnly) {
       return rows.filter((r) => r.isActive)
     }

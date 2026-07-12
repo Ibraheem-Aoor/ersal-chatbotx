@@ -347,7 +347,8 @@
         "amount": "المبلغ",
         "type": "النوع",
         "status": "الحالة",
-        "gateway": "بوابة الدفع"
+        "gateway": "بوابة الدفع",
+        "subscription": "الاشتراك"
       },
       "type": {
         "new": "اشتراك جديد",
@@ -359,7 +360,19 @@
         "paid": "مدفوع",
         "failed": "فشل",
         "refunded": "مسترد"
-      }
+      },
+      "filters": {
+        "allTypes": "جميع الأنواع"
+      },
+      "viewSubscription": "عرض الاشتراك",
+      "adminDescription": "عرض جميع عمليات الدفع لجميع المستخدمين"
+    },
+    "subscriptionDetail": {
+      "title": "تفاصيل الاشتراك",
+      "userInfo": "معلومات المستخدم",
+      "userName": "الاسم",
+      "userEmail": "البريد الإلكتروني",
+      "paymentTimeline": "سجل المدفوعات"
     }
   },
   "broadcasts": {

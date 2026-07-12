@@ -347,7 +347,8 @@
         "amount": "Amount",
         "type": "Type",
         "status": "Status",
-        "gateway": "Gateway"
+        "gateway": "Gateway",
+        "subscription": "Subscription"
       },
       "type": {
         "new": "New",
@@ -359,7 +360,19 @@
         "paid": "Paid",
         "failed": "Failed",
         "refunded": "Refunded"
-      }
+      },
+      "filters": {
+        "allTypes": "All Types"
+      },
+      "viewSubscription": "View subscription",
+      "adminDescription": "View all payment transactions across all users"
+    },
+    "subscriptionDetail": {
+      "title": "Subscription Details",
+      "userInfo": "User Information",
+      "userName": "Name",
+      "userEmail": "Email",
+      "paymentTimeline": "Payment Timeline"
     }
   },
   "broadcasts": {

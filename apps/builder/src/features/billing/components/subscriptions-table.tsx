@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@chatbotx.io/ui/components/ui/table"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useMemo, useState } from "react"
 
@@ -61,6 +62,7 @@ export function SubscriptionsTable({
   subscriptions: SubscriptionRow[]
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const [statusFilter, setStatusFilter] = useState("all")
   const [search, setSearch] = useState("")
 
@@ -139,7 +141,11 @@ export function SubscriptionsTable({
               </TableRow>
             )}
             {filtered.map((sub) => (
-              <TableRow key={sub.id}>
+              <TableRow
+                className="cursor-pointer"
+                key={sub.id}
+                onClick={() => router.push(`/admin/subscriptions/${sub.id}`)}
+              >
                 <TableCell>
                   <div>
                     <div className="font-medium">{sub.userName}</div>
