@@ -6,6 +6,7 @@ import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { workspaceMemberModel } from "@chatbotx.io/database/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { zodBigintAsString } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
@@ -16,6 +17,7 @@ export const deleteWorkspaceMemberAction = workspaceActionClient
     const {
       bindArgsParsedInputs: [workspaceId, id],
     } = props
+    const t = await getTranslations("billing.errors")
 
     const workspaceMember = await findOrFail({
       table: workspaceMemberModel,
@@ -24,25 +26,19 @@ export const deleteWorkspaceMemberAction = workspaceActionClient
     })
 
     if (workspaceMember.role === "owner") {
-      throw new ChatbotXException(
-        "You cannot delete the owner of the workspace",
-      )
+      throw new ChatbotXException(t("cannotDeleteOwner"))
     }
 
     const currentUserAndTargetChatbot =
       await getCurrentUserAndTargetWorkspace(workspaceId)
     if (!currentUserAndTargetChatbot) {
-      throw new ChatbotXException(
-        "You are not authorized to delete this workspace member",
-      )
+      throw new ChatbotXException(t("notAuthorizedDeleteMember"))
     }
 
     const permissions =
       currentUserAndTargetChatbot.targetWorkspaceMember.permissions
     if (!hasWorkspacePermission(permissions, "superAdmin")) {
-      throw new ChatbotXException(
-        "You are not authorized to delete this workspace member. You need to be a super admin to do this.",
-      )
+      throw new ChatbotXException(t("notAuthorizedDeleteMemberSuperAdmin"))
     }
 
     await db.delete(workspaceMemberModel).where(eq(workspaceMemberModel.id, id))

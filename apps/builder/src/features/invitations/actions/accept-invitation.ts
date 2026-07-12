@@ -12,6 +12,7 @@ import {
 } from "@chatbotx.io/database/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import { z } from "zod"
 import { authActionClient } from "@/lib/safe-action"
 
@@ -23,6 +24,7 @@ export const acceptInvitationAction = authActionClient
   )
   .action(async ({ ctx, parsedInput }) => {
     const { code } = parsedInput
+    const t = await getTranslations("billing.errors")
 
     const invitation = await findOrFail({
       table: invitationModel,
@@ -33,11 +35,11 @@ export const acceptInvitationAction = authActionClient
     })
 
     if (invitation.expiresAt < new Date()) {
-      throw new ChatbotXException("Invitation expired")
+      throw new ChatbotXException(t("invitationExpired"))
     }
 
     if (!invitation.workspaceId) {
-      throw new ChatbotXException("Invalid invitation: no workspace associated")
+      throw new ChatbotXException(t("invalidInvitation"))
     }
 
     const existingMember = await db.query.workspaceMemberModel.findFirst({
@@ -47,7 +49,7 @@ export const acceptInvitationAction = authActionClient
       },
     })
     if (existingMember) {
-      throw new ChatbotXException("You are already a member of this workspace")
+      throw new ChatbotXException(t("alreadyMember"))
     }
 
     const workspace = await workspaceService.find({
@@ -59,9 +61,7 @@ export const acceptInvitationAction = authActionClient
         metric: "teamMembers",
       })
       if (!consumed.ok) {
-        throw new ChatbotXException(
-          "Team member limit reached for this workspace plan",
-        )
+        throw new ChatbotXException(t("teamMemberLimitReached"))
       }
     }
 

@@ -9,6 +9,7 @@ import { db } from "@chatbotx.io/database/client"
 import { invitationModel } from "@chatbotx.io/database/schema"
 import { createId, SymbolicSnowflakeIDs } from "@chatbotx.io/utils"
 import { addDays } from "date-fns"
+import { getTranslations } from "next-intl/server"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
@@ -20,6 +21,7 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(inviteWorkspaceMemberRequest)
   .action(async ({ ctx, parsedInput, bindArgsParsedInputs: [workspaceId] }) => {
+    const t = await getTranslations("billing.errors")
     // Read-only gate: the team-member quota is consumed when the invitation
     // is accepted (accept-invitation.ts), so block issuing a new invitation
     // once the workspace owner is already at the limit (own or reseller pool).
@@ -27,17 +29,13 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
     const currentUserAndTargetChatbot =
       await getCurrentUserAndTargetWorkspace(workspaceId)
     if (!currentUserAndTargetChatbot) {
-      throw new ChatbotXException(
-        "You are not authorized to invite a workspace member",
-      )
+      throw new ChatbotXException(t("notAuthorizedInvite"))
     }
 
     const currentPermissions =
       currentUserAndTargetChatbot.targetWorkspaceMember.permissions
     if (!hasWorkspacePermission(currentPermissions, "superAdmin")) {
-      throw new ChatbotXException(
-        "You are not authorized to invite a workspace member. You need to be a super admin to do this.",
-      )
+      throw new ChatbotXException(t("notAuthorizedInviteSuperAdmin"))
     }
 
     const atLimit = await quotaEnforcementService.hasReachedLimit({
@@ -45,9 +43,7 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
       metric: "teamMembers",
     })
     if (atLimit) {
-      throw new ChatbotXException(
-        "Team member limit reached for this workspace plan",
-      )
+      throw new ChatbotXException(t("teamMemberLimitReached"))
     }
 
     return await db

@@ -36,6 +36,7 @@ import {
   IntegrationJobAction,
   integrationQueue,
 } from "@chatbotx.io/worker-config"
+import { getTranslations } from "next-intl/server"
 import { randomString } from "remeda"
 import { logger } from "@/lib/log"
 import { actionClient } from "@/lib/safe-action"
@@ -384,7 +385,8 @@ async function getConversationFromInput(
   })
 
   if (!result.ok) {
-    throw new ChatbotXException("Contact limit reached", "quotaExceeded", 422)
+    const t = await getTranslations("billing.errors")
+    throw new ChatbotXException(t("contactLimitReached"), "quotaExceeded", 422)
   }
 
   return {

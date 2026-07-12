@@ -277,6 +277,22 @@
       "contacts": "You've reached your contact limit. Upgrade your plan to add more.",
       "mac": "You've reached your monthly active contact limit. Upgrade your plan to reach more."
     },
+    "errors": {
+      "teamMemberLimitReached": "Team member limit reached for this workspace plan",
+      "contactLimitReached": "Contact limit reached",
+      "notAuthorizedInvite": "You are not authorized to invite a workspace member",
+      "notAuthorizedInviteSuperAdmin": "You are not authorized to invite a workspace member. You need to be a super admin to do this.",
+      "notAuthorizedUpdateMember": "You are not authorized to update this workspace member",
+      "notAuthorizedUpdateMemberSuperAdmin": "You are not authorized to update this workspace member. You need to be a super admin to do this.",
+      "notAuthorizedDeleteMember": "You are not authorized to delete this workspace member",
+      "notAuthorizedDeleteMemberSuperAdmin": "You are not authorized to delete this workspace member. You need to be a super admin to do this.",
+      "alreadyMember": "You are already a member of this workspace",
+      "cannotDeleteOwner": "You cannot delete the owner of the workspace",
+      "invitationExpired": "Invitation expired",
+      "invalidInvitation": "Invalid invitation: no workspace associated",
+      "notAuthorizedUpdateWorkspace": "You are not authorized to update this workspace",
+      "superAdminRequiredSchedule": "You need to be a super admin to change workspace active hours"
+    },
     "pastDue": {
       "message": "Your last payment failed. Update your payment method to keep your workspace active."
     },

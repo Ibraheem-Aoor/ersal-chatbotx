@@ -22,6 +22,7 @@ import { emit } from "@chatbotx.io/event-bus"
 import { emitContactCreated } from "@chatbotx.io/events"
 import { createId } from "@chatbotx.io/utils"
 import { type CountryCode, parsePhoneNumberFromString } from "libphonenumber-js"
+import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { randomString } from "remeda"
 import {
@@ -241,9 +242,10 @@ export const createContact = async ({
   })
 
   if (!result.ok) {
+    const t = await getTranslations("billing.errors")
     return returnValidationErrors(createContactRequest, {
-      _errors: ["Validation Exception"],
-      phoneNumber: { _errors: ["Contact limit reached"] },
+      _errors: [t("contactLimitReached")],
+      phoneNumber: { _errors: [t("contactLimitReached")] },
     })
   }
 

@@ -2,6 +2,7 @@
 
 import { workspaceService } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
+import { getTranslations } from "next-intl/server"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -25,20 +26,17 @@ export const updateWorkspaceStatusAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: UpdateWorkspaceStatusRequest
     }) => {
+      const t = await getTranslations("billing.errors")
       const currentUserAndTargetWorkspace =
         await getCurrentUserAndTargetWorkspace(workspaceId)
       if (!currentUserAndTargetWorkspace) {
-        throw new ChatbotXException(
-          "You are not authorized to update this workspace",
-        )
+        throw new ChatbotXException(t("notAuthorizedUpdateWorkspace"))
       }
 
       const { permissions } =
         currentUserAndTargetWorkspace.targetWorkspaceMember
       if (!hasWorkspacePermission(permissions, "superAdmin")) {
-        throw new ChatbotXException(
-          "You need to be a super admin to change workspace active hours",
-        )
+        throw new ChatbotXException(t("superAdminRequiredSchedule"))
       }
 
       await workspaceService.update({ id: workspaceId, data: parsedInput })
