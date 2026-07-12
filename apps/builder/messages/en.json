@@ -298,7 +298,10 @@
       "contactLimitReached": "Contact limit reached",
       "channelDuplicated": "This account is already connected to another workspace.",
       "phoneNumberExists": "Phone number already exists",
-      "contactInboxNotFound": "Contact inbox not found"
+      "contactInboxNotFound": "Contact inbox not found",
+      "flowLimitReached": "Flow limit reached for this plan",
+      "broadcastLimitReached": "Broadcast limit reached for this plan",
+      "aiAgentsNotEnabled": "AI Agents are not available on your current plan"
     },
     "pastDue": {
       "message": "Your last payment failed. Update your payment method to keep your workspace active."

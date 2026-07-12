@@ -11,6 +11,8 @@ const ALL_METRICS: readonly QuotaMetric[] = [
   "teamMembers",
   "contacts",
   "mac",
+  "flows",
+  "broadcasts",
 ]
 
 const LOCK_TIMEOUT_SECONDS = 30

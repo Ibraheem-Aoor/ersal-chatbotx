@@ -84,7 +84,7 @@ export function PlanFormDialog({
             channels: 3,
             teamMembers: 2,
             flows: 5,
-            broadcasts: false,
+            broadcasts: 0,
             aiAgents: false,
             removeBranding: false,
           },
@@ -219,17 +219,14 @@ export function PlanFormDialog({
               />
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <SwitchField
+              <InputField
                 label={t("plans.limits.broadcasts")}
                 name="limits.broadcasts"
+                type="number"
               />
               <SwitchField
                 label={t("plans.limits.aiAgents")}
                 name="limits.aiAgents"
-              />
-              <SwitchField
-                label={t("plans.limits.removeBranding")}
-                name="limits.removeBranding"
               />
             </div>
 

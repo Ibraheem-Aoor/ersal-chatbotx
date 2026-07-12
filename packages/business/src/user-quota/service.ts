@@ -11,7 +11,9 @@ import {
 } from "@chatbotx.io/database/client"
 import { planStatuses } from "@chatbotx.io/database/partials"
 import {
+  broadcastModel,
   contactModel,
+  flowModel,
   inboxModel,
   ROOT_TENANT_ID,
   userQuotaModel,
@@ -55,11 +57,17 @@ const BOOTSTRAP_TRIAL_FALLBACK = {
   channelsLimit: 0,
   teamMembersLimit: 0,
   contactsLimit: 0,
+  flowsLimit: 0,
+  broadcastsLimit: 0,
+  aiAgentsEnabled: false,
 } as const
 
 interface DefaultPlanSnapshot {
+  aiAgentsEnabled?: boolean
+  broadcastsLimit?: number | null
   channelsLimit: number | null
   contactsLimit: number | null
+  flowsLimit?: number | null
   macLimit: number | null
   planName: string
   saasMode: boolean
@@ -72,14 +80,16 @@ interface DefaultPlanSnapshot {
 
 type BootstrapPlanSnapshot = Pick<
   DefaultPlanSnapshot,
+  | "broadcastsLimit"
   | "channelsLimit"
   | "contactsLimit"
+  | "flowsLimit"
   | "macLimit"
   | "planName"
   | "teamMembersLimit"
   | "trialDays"
   | "workspacesLimit"
->
+> & { aiAgentsEnabled?: boolean }
 
 /**
  * Result of evaluating whether a user may access the app. `blocked` is the only
@@ -107,6 +117,8 @@ class UserQuotaService extends BaseService {
       teamMembers: userQuotaModel.teamMembersUsed,
       contacts: userQuotaModel.contactsUsed,
       mac: userQuotaModel.macUsed,
+      flows: userQuotaModel.flowsUsed,
+      broadcasts: userQuotaModel.broadcastsUsed,
     },
     getUsed: (quota, metric) => this.getUsedValue(quota, metric),
     fetchRow: (userId) =>
@@ -133,6 +145,10 @@ class UserQuotaService extends BaseService {
         return quota.teamMembersUsed
       case "mac":
         return quota.macUsed
+      case "flows":
+        return quota.flowsUsed
+      case "broadcasts":
+        return quota.broadcastsUsed
       default:
         return 0
     }
@@ -151,6 +167,9 @@ class UserQuotaService extends BaseService {
     workspacesLimit: number
     channelsLimit: number
     teamMembersLimit: number
+    flowsLimit: number
+    broadcastsLimit: number
+    aiAgentsEnabled: boolean
     periodStart: Date
     periodEnd: Date
   }): Promise<void> {
@@ -164,6 +183,9 @@ class UserQuotaService extends BaseService {
         workspacesLimit: limits.workspacesLimit,
         channelsLimit: limits.channelsLimit,
         teamMembersLimit: limits.teamMembersLimit,
+        flowsLimit: limits.flowsLimit,
+        broadcastsLimit: limits.broadcastsLimit,
+        aiAgentsEnabled: limits.aiAgentsEnabled,
         planName: limits.planName,
         planStatus: "active",
         periodStart: limits.periodStart,
@@ -178,6 +200,9 @@ class UserQuotaService extends BaseService {
           workspacesLimit: limits.workspacesLimit,
           channelsLimit: limits.channelsLimit,
           teamMembersLimit: limits.teamMembersLimit,
+          flowsLimit: limits.flowsLimit,
+          broadcastsLimit: limits.broadcastsLimit,
+          aiAgentsEnabled: limits.aiAgentsEnabled,
           planName: limits.planName,
           planStatus: "active",
           periodStart: limits.periodStart,
@@ -275,6 +300,9 @@ class UserQuotaService extends BaseService {
         channelsLimit: snapshot.channelsLimit,
         teamMembersLimit: snapshot.teamMembersLimit,
         macLimit: snapshot.macLimit,
+        flowsLimit: snapshot.flowsLimit ?? null,
+        broadcastsLimit: snapshot.broadcastsLimit ?? null,
+        aiAgentsEnabled: snapshot.aiAgentsEnabled ?? true,
         whiteLabel: false,
         ssoSaml: false,
         saasMode: false,
@@ -357,6 +385,11 @@ class UserQuotaService extends BaseService {
       teamMembersUsed: 0,
       macLimit: null,
       macUsed: 0,
+      flowsLimit: null,
+      flowsUsed: 0,
+      broadcastsLimit: null,
+      broadcastsUsed: 0,
+      aiAgentsEnabled: true,
       whiteLabel: false,
       ssoSaml: false,
       saasMode: false,
@@ -378,6 +411,9 @@ class UserQuotaService extends BaseService {
       // `macLimit`, NOT `contactsLimit`; without this the free-tier overlay would
       // leave macLimit null (unlimited MAC) even when the default plan caps it.
       macLimit: base.macLimit ?? snapshot.macLimit,
+      flowsLimit: base.flowsLimit ?? snapshot.flowsLimit ?? null,
+      broadcastsLimit: base.broadcastsLimit ?? snapshot.broadcastsLimit ?? null,
+      aiAgentsEnabled: snapshot.aiAgentsEnabled ?? base.aiAgentsEnabled,
       whiteLabel: base.whiteLabel || snapshot.whiteLabel,
       ssoSaml: base.ssoSaml || snapshot.ssoSaml,
       saasMode: base.saasMode || snapshot.saasMode,
@@ -603,6 +639,8 @@ class UserQuotaService extends BaseService {
       [workspacesResult],
       [channelsResult],
       [macResult],
+      [flowsResult],
+      [broadcastsResult],
     ] = await Promise.all([
       db
         .select({ count: count() })
@@ -655,6 +693,21 @@ class UserQuotaService extends BaseService {
             gt(workspaceMacModel.periodEnd, sql`now()`),
           ),
         ),
+
+      db
+        .select({ count: count() })
+        .from(flowModel)
+        .innerJoin(workspaceModel, eq(flowModel.workspaceId, workspaceModel.id))
+        .where(eq(workspaceModel.tenantId, tenantId)),
+
+      db
+        .select({ count: count() })
+        .from(broadcastModel)
+        .innerJoin(
+          workspaceModel,
+          eq(broadcastModel.workspaceId, workspaceModel.id),
+        )
+        .where(eq(workspaceModel.tenantId, tenantId)),
     ])
 
     const contactsUsed = contactsResult?.count ?? 0
@@ -663,6 +716,8 @@ class UserQuotaService extends BaseService {
     const channelsUsed = channelsResult?.count ?? 0
     // `sum()` returns a numeric string (or null when no rows match).
     const macUsed = Number(macResult?.total ?? 0)
+    const flowsUsed = flowsResult?.count ?? 0
+    const broadcastsUsed = broadcastsResult?.count ?? 0
 
     await db
       .insert(userQuotaModel)
@@ -673,19 +728,20 @@ class UserQuotaService extends BaseService {
         workspacesUsed,
         channelsUsed,
         macUsed,
+        flowsUsed,
+        broadcastsUsed,
         syncedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: userQuotaModel.userId,
         set: {
-          // Authoritative current counts — assigned directly, NOT GREATEST — so
-          // deletions across the pool free quota. Only `*Used` is touched; the
-          // owner's limits / plan identity are written by the billing layer.
           contactsUsed,
           teamMembersUsed,
           workspacesUsed,
           channelsUsed,
           macUsed,
+          flowsUsed,
+          broadcastsUsed,
           syncedAt: new Date(),
           updatedAt: sql`CURRENT_TIMESTAMP`,
         },
@@ -709,6 +765,10 @@ class UserQuotaService extends BaseService {
       String(channelsUsed),
       "mac",
       String(macUsed),
+      "flows",
+      String(flowsUsed),
+      "broadcasts",
+      String(broadcastsUsed),
     )
 
     await this.store.invalidate(ownerId)
@@ -744,9 +804,24 @@ class UserQuotaService extends BaseService {
         return { limit: quota.contactsLimit, used: quota.contactsUsed }
       case "mac":
         return { limit: quota.macLimit, used: quota.macUsed }
+      case "flows":
+        return { limit: quota.flowsLimit, used: quota.flowsUsed }
+      case "broadcasts":
+        return { limit: quota.broadcastsLimit, used: quota.broadcastsUsed }
       default:
         return { limit: null, used: 0 }
     }
+  }
+
+  async isFeatureEnabled(
+    userId: string,
+    feature: "aiAgentsEnabled",
+  ): Promise<boolean> {
+    const quota = await this.getForUser(userId)
+    if (!quota) {
+      return true
+    }
+    return quota[feature]
   }
 }
 

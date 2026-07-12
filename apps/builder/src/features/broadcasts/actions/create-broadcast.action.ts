@@ -1,8 +1,11 @@
 "use server"
 
+import { quotaEnforcementService } from "@chatbotx.io/business"
+import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
 import { broadcastModel } from "@chatbotx.io/database/schema"
 import { startOfMinute } from "date-fns"
+import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
@@ -14,7 +17,21 @@ export const createBroadcastAction = workspaceActionClient
     const {
       bindArgsParsedInputs: [workspaceId],
       parsedInput,
+      ctx,
     } = props
+
+    const consumed = await quotaEnforcementService.tryConsume({
+      userId: ctx.workspace.ownerId,
+      metric: "broadcasts",
+    })
+    if (!consumed.ok) {
+      const t = await getTranslations("billing.quotaLimits")
+      throw new ChatbotXException(
+        t("broadcastLimitReached"),
+        "quotaExceeded",
+        422,
+      )
+    }
 
     let broadcastName = "Broadcast"
 

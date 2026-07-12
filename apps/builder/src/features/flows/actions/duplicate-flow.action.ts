@@ -1,5 +1,7 @@
 "use server"
 
+import { quotaEnforcementService } from "@chatbotx.io/business"
+import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, findOrFail } from "@chatbotx.io/database/client"
 import {
   flowAnalyticsSessionModel,
@@ -7,6 +9,7 @@ import {
   flowVersionModel,
 } from "@chatbotx.io/database/schema"
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import { workspaceActionClient } from "@/lib/safe-action"
 
 export const duplicateFlowAction = workspaceActionClient
@@ -14,7 +17,17 @@ export const duplicateFlowAction = workspaceActionClient
   .action(async (props) => {
     const {
       bindArgsParsedInputs: [workspaceId, id],
+      ctx,
     } = props
+
+    const consumed = await quotaEnforcementService.tryConsume({
+      userId: ctx.workspace.ownerId,
+      metric: "flows",
+    })
+    if (!consumed.ok) {
+      const t = await getTranslations("billing.quotaLimits")
+      throw new ChatbotXException(t("flowLimitReached"), "quotaExceeded", 422)
+    }
 
     await duplicateFlow({ workspaceId, id })
   })

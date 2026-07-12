@@ -77,6 +77,9 @@ export async function GET(req: NextRequest) {
       workspacesLimit: plan.limits.workspaces,
       channelsLimit: plan.limits.channels,
       teamMembersLimit: plan.limits.teamMembers,
+      flowsLimit: plan.limits.flows,
+      broadcastsLimit: plan.limits.broadcasts,
+      aiAgentsEnabled: plan.limits.aiAgents,
       periodStart: now,
       periodEnd,
     })

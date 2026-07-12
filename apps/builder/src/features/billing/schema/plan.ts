@@ -7,7 +7,7 @@ export const planLimitsSchema = z.object({
   channels: z.coerce.number().int().min(0),
   teamMembers: z.coerce.number().int().min(0),
   flows: z.coerce.number().int().min(0),
-  broadcasts: z.boolean(),
+  broadcasts: z.coerce.number().int().min(0),
   aiAgents: z.boolean(),
   removeBranding: z.boolean(),
 })

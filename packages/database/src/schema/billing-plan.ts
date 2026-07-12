@@ -22,7 +22,7 @@ export type BillingPlanLimits = {
   channels: number
   teamMembers: number
   flows: number
-  broadcasts: boolean
+  broadcasts: number
   aiAgents: boolean
   removeBranding: boolean
 }
