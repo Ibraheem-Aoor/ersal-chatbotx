@@ -26,6 +26,7 @@ import {
   Crown,
   Settings2,
   ShieldCheck,
+  SparklesIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -129,15 +130,24 @@ export function NavUser({
                 <DropdownMenuSeparator />
               </>
             )}
-            {planName && workspaceId && (
+            {workspaceId && (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/space/${workspaceId}/billing`}>
-                      <CreditCardIcon className="h-4 w-4" />
-                      {t("billing.manage.manageSubscription")}
-                    </Link>
-                  </DropdownMenuItem>
+                  {planName ? (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/space/${workspaceId}/billing`}>
+                        <CreditCardIcon className="h-4 w-4" />
+                        {t("billing.manage.manageSubscription")}
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem asChild>
+                      <Link href="/pricing">
+                        <SparklesIcon className="h-4 w-4" />
+                        {t("actions.subscribe")}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
