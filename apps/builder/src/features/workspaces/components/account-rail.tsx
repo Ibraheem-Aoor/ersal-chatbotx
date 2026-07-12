@@ -64,7 +64,7 @@ export const AccountRail = async ({
         </div>
       </div>
 
-      {cloud && (
+      {(planName || metrics.length > 0) && (
         <div className="flex flex-col gap-4 border-t pt-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
@@ -72,10 +72,12 @@ export const AccountRail = async ({
                 plan: planName ?? t("billing.plan.free"),
               })}
             </span>
-            <UpgradePlanButton size="sm" variant="outline">
-              <CrownIcon aria-hidden className="size-3.5" />
-              {t("actions.upgradePlan")}
-            </UpgradePlanButton>
+            {cloud && (
+              <UpgradePlanButton size="sm" variant="outline">
+                <CrownIcon aria-hidden className="size-3.5" />
+                {t("actions.upgradePlan")}
+              </UpgradePlanButton>
+            )}
           </div>
           {metrics.length > 0 && (
             <UsageBars labels={usageLabels} metrics={metrics} />

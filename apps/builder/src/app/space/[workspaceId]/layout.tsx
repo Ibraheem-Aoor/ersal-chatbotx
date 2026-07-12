@@ -40,8 +40,6 @@ export default async function WorkspaceLayout({
 
   enforcePasswordCurrent(user)
 
-  // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
-  // community/enterprise installs use every feature freely — no quota gating.
   const cloud = isCloud()
 
   // Check if user is a member of the workspace
@@ -50,8 +48,8 @@ export default async function WorkspaceLayout({
       workspaceMemberService.listByUserId({ userId: user.id }),
       getTenantSettings(),
       isPlatformAdmin(user),
-      cloud ? userQuotaService.getForUser(user.id) : Promise.resolve(null),
-      cloud ? quotaEnforcementService.getUsageSummary(user.id) : null,
+      userQuotaService.getForUser(user.id),
+      quotaEnforcementService.getUsageSummary(user.id),
     ])
   const targetWorkspaceMember = allWorkspaceMembers.find(
     (workspaceMember) => workspaceMember.workspace.id === workspaceId,

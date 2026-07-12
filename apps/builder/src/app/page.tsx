@@ -25,13 +25,11 @@ export default async function MainPage() {
   // else. Enforced in every protected layout/page, not just here.
   enforcePasswordCurrent(user)
 
-  // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
-  // community/enterprise installs use every feature freely — no quota gating.
   const cloud = isCloud()
   const [usageSummary, atLimit, quota, platformAdmin] = await Promise.all([
-    cloud ? quotaEnforcementService.getUsageSummary(user.id) : null,
-    cloud ? quotaEnforcementService.getAtLimitMap(user.id) : null,
-    cloud ? userQuotaService.getForUser(user.id) : null,
+    quotaEnforcementService.getUsageSummary(user.id),
+    quotaEnforcementService.getAtLimitMap(user.id),
+    userQuotaService.getForUser(user.id),
     isPlatformAdmin(user),
   ])
 

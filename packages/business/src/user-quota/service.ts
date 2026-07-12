@@ -24,7 +24,6 @@ import {
 import type { UserQuotaModel } from "@chatbotx.io/database/types"
 import { cacheConnections, distributedStore } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
-import { isCloud } from "../keys"
 import { logger } from "../logger"
 import {
   LiveCounterStore,
@@ -270,10 +269,6 @@ class UserQuotaService extends BaseService {
     tenantId?: string | null
     userId: string
   }): Promise<void> {
-    if (!isCloud()) {
-      return
-    }
-
     const { tenantId, userId } = input
 
     const snapshot: BootstrapPlanSnapshot =
