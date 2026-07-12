@@ -20,7 +20,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@chatbotx.io/ui/components/ui/sidebar"
-import { ChevronsUpDown, Crown, Settings2, ShieldCheck } from "lucide-react"
+import {
+  ChevronsUpDown,
+  CreditCardIcon,
+  Crown,
+  Settings2,
+  ShieldCheck,
+} from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
@@ -116,6 +122,19 @@ export function NavUser({
                   >
                     <Crown className="mr-2 h-4 w-4" />
                     {t("actions.upgradePlan")}
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {planName && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link href="/billing/manage">
+                      <CreditCardIcon className="h-4 w-4" />
+                      {t("billing.manage.manageSubscription")}
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />

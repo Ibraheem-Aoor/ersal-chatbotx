@@ -268,7 +268,9 @@
       "mac": "Monthly active contacts",
       "workspaces": "Workspaces",
       "channels": "Channels",
-      "teamMembers": "Team members"
+      "teamMembers": "Team members",
+      "flows": "Flows",
+      "broadcasts": "Broadcasts"
     },
     "limitReached": {
       "workspaces": "You've reached your workspace limit. Upgrade your plan to create more.",
@@ -316,6 +318,27 @@
       "title": "Your free trial has ended",
       "description": "Subscribe to a plan to keep using your workspaces.",
       "cta": "View plans"
+    },
+    "manage": {
+      "title": "Manage Subscription",
+      "currentPlan": "Current Plan",
+      "planDetails": "Plan Details",
+      "planName": "Plan Name",
+      "price": "Price",
+      "cycle": "Billing Cycle",
+      "period": "Subscription Period",
+      "usageSummary": "Usage Summary",
+      "of": "of",
+      "unlimited": "Unlimited",
+      "changePlan": "Change Plan",
+      "cancelSubscription": "Cancel Subscription",
+      "comingSoon": "Coming soon",
+      "paymentHistory": "Payment History",
+      "noPayments": "No payment records found",
+      "noPlan": "No active subscription",
+      "noPlanDescription": "You don't have an active subscription. Browse our plans to get started.",
+      "viewPlans": "View Plans",
+      "manageSubscription": "Manage Subscription"
     }
   },
   "broadcasts": {
@@ -3315,7 +3338,8 @@
     "portalCustomDomain": "Custom Domain",
     "portalPaymentProcessor": "Payment Processor",
     "portalSmtp": "SMTP Settings",
-    "portalPricingPage": "Pricing"
+    "portalPricingPage": "Pricing",
+    "financeGroup": "Finance"
   },
   "unsubscribePage": {
     "title": "You have been unsubscribed.",
@@ -3518,6 +3542,33 @@
       "updated": "Plan updated successfully",
       "deleted": "Plan deleted successfully",
       "checkoutFailed": "Failed to start checkout"
+    }
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "description": "View and manage all user subscriptions",
+    "noSubscriptions": "No subscriptions found",
+    "columns": {
+      "user": "User",
+      "plan": "Plan",
+      "amount": "Amount",
+      "cycle": "Billing Cycle",
+      "status": "Status",
+      "period": "Period",
+      "gateway": "Payment Gateway",
+      "gatewayId": "Payment ID",
+      "createdAt": "Created"
+    },
+    "status": {
+      "active": "Active",
+      "trial": "Trial",
+      "expired": "Expired",
+      "past_due": "Past Due",
+      "cancelled": "Cancelled"
+    },
+    "filters": {
+      "allStatuses": "All Statuses",
+      "searchPlaceholder": "Search by email..."
     }
   }
 }

@@ -7,11 +7,13 @@ import {
   SidebarHeader,
 } from "@chatbotx.io/ui/components/ui/sidebar"
 import {
+  BanknoteIcon,
   CircleHelpIcon,
   Grid2x2PlusIcon,
   ListTodoIcon,
   MailIcon,
   PaletteIcon,
+  ReceiptTextIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -71,6 +73,19 @@ export function AdminSidebar({
       : []),
   ]
 
+  const financeItems = [
+    {
+      title: t("plans.title"),
+      url: "/admin/plans",
+      icon: BanknoteIcon,
+    },
+    {
+      title: t("subscriptions.title"),
+      url: "/admin/subscriptions",
+      icon: ReceiptTextIcon,
+    },
+  ]
+
   const toolsItems = [
     {
       title: t("platformAdmin.queues.title"),
@@ -92,6 +107,7 @@ export function AdminSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={platformItems} label={tManage("platformGroup")} />
+        <NavMain items={financeItems} label={tManage("financeGroup")} />
         <NavMain items={toolsItems} label={tManage("toolsGroup")} />
       </SidebarContent>
       <SidebarFooter>

@@ -268,7 +268,9 @@
       "mac": "جهات الاتصال النشطة شهرياً",
       "workspaces": "مساحات العمل",
       "channels": "القنوات",
-      "teamMembers": "أعضاء الفريق"
+      "teamMembers": "أعضاء الفريق",
+      "flows": "التدفقات",
+      "broadcasts": "الرسائل الجماعية"
     },
     "limitReached": {
       "workspaces": "لقد وصلت إلى الحد الأقصى لمساحات العمل. قم بترقية باقتك لإنشاء المزيد.",
@@ -316,6 +318,27 @@
       "title": "انتهت الفترة التجريبية المجانية",
       "description": "اشترك في باقة للاستمرار في استخدام مساحات العمل.",
       "cta": "عرض الباقات"
+    },
+    "manage": {
+      "title": "إدارة الاشتراك",
+      "currentPlan": "الباقة الحالية",
+      "planDetails": "تفاصيل الباقة",
+      "planName": "اسم الباقة",
+      "price": "السعر",
+      "cycle": "دورة الفوترة",
+      "period": "فترة الاشتراك",
+      "usageSummary": "ملخص الاستخدام",
+      "of": "من",
+      "unlimited": "غير محدود",
+      "changePlan": "تغيير الباقة",
+      "cancelSubscription": "إلغاء الاشتراك",
+      "comingSoon": "قريباً",
+      "paymentHistory": "سجل المدفوعات",
+      "noPayments": "لا توجد سجلات دفع",
+      "noPlan": "لا يوجد اشتراك نشط",
+      "noPlanDescription": "ليس لديك اشتراك نشط. تصفح الباقات للبدء.",
+      "viewPlans": "عرض الباقات",
+      "manageSubscription": "إدارة الاشتراك"
     }
   },
   "broadcasts": {
@@ -3274,7 +3297,8 @@
     "portalPaymentProcessor": "معالج الدفع",
     "portalSmtp": "إعدادات SMTP",
     "portalPricingPage": "التسعير",
-    "toolsGroup": "الأدوات"
+    "toolsGroup": "الأدوات",
+    "financeGroup": "المالية"
   },
   "unsubscribePage": {
     "title": "تم إلغاء اشتراكك.",
@@ -3477,6 +3501,33 @@
       "updated": "تم تحديث الباقة بنجاح",
       "deleted": "تم حذف الباقة بنجاح",
       "checkoutFailed": "فشل بدء عملية الدفع"
+    }
+  },
+  "subscriptions": {
+    "title": "الاشتراكات",
+    "description": "عرض وإدارة جميع اشتراكات المستخدمين",
+    "noSubscriptions": "لا توجد اشتراكات",
+    "columns": {
+      "user": "المستخدم",
+      "plan": "الباقة",
+      "amount": "المبلغ",
+      "cycle": "دورة الفوترة",
+      "status": "الحالة",
+      "period": "الفترة",
+      "gateway": "بوابة الدفع",
+      "gatewayId": "رقم العملية",
+      "createdAt": "تاريخ الإنشاء"
+    },
+    "status": {
+      "active": "نشط",
+      "trial": "تجريبي",
+      "expired": "منتهي",
+      "past_due": "متأخر الدفع",
+      "cancelled": "ملغي"
+    },
+    "filters": {
+      "allStatuses": "جميع الحالات",
+      "searchPlaceholder": "بحث بالبريد الإلكتروني..."
     }
   },
   "openaiCompatible": {
