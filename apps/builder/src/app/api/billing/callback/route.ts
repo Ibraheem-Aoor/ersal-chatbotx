@@ -70,22 +70,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    await paymentHistoryService.create({
-      data: {
-        userId: user.id,
-        planId: plan.id,
-        planName: plan.name,
-        amount: plan.price,
-        currency: plan.currency,
-        paymentGateway: gateway.name(),
-        gatewayPaymentId: paymentId,
-        type: paymentType,
-        status: "paid",
-        metadata: result.rawResponse,
-      },
-    })
-
-    await subscriptionService.createOrUpdate({
+    const subscription = await subscriptionService.createOrUpdate({
       data: {
         userId: user.id,
         planId: plan.id,
@@ -97,6 +82,22 @@ export async function GET(req: NextRequest) {
         gatewayPaymentId: paymentId,
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
+      },
+    })
+
+    await paymentHistoryService.create({
+      data: {
+        userId: user.id,
+        subscriptionId: subscription?.id ?? null,
+        planId: plan.id,
+        planName: plan.name,
+        amount: plan.price,
+        currency: plan.currency,
+        paymentGateway: gateway.name(),
+        gatewayPaymentId: paymentId,
+        type: paymentType,
+        status: "paid",
+        metadata: result.rawResponse,
       },
     })
 

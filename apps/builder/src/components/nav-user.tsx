@@ -5,6 +5,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@chatbotx.io/ui/components/ui/avatar"
+import { Badge } from "@chatbotx.io/ui/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,19 +133,24 @@ export function NavUser({
             )}
             {workspaceId && (
               <>
+                {planName && (
+                  <DropdownMenuLabel className="flex items-center gap-2 py-1">
+                    <Badge variant="secondary">{planName}</Badge>
+                  </DropdownMenuLabel>
+                )}
                 <DropdownMenuGroup>
                   {planName ? (
                     <DropdownMenuItem asChild>
                       <Link href={`/space/${workspaceId}/billing`}>
                         <CreditCardIcon className="h-4 w-4" />
-                        {t("billing.manage.manageSubscription")}
+                        {t("actions.manageSubscription")}
                       </Link>
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem asChild>
                       <Link href="/pricing">
                         <SparklesIcon className="h-4 w-4" />
-                        {t("actions.subscribe")}
+                        {t("actions.subscribeNow")}
                       </Link>
                     </DropdownMenuItem>
                   )}
