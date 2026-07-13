@@ -508,15 +508,23 @@ class UserQuotaService extends BaseService {
   }
 
   async isLimitReached(userId: string, metric: QuotaMetric): Promise<boolean> {
-    const [quota, liveCount] = await Promise.all([
-      this.getForUser(userId),
-      this.store.getLiveCount(userId, metric),
-    ])
+    const quota = await this.getForUser(userId)
     if (!quota) {
       return false
     }
     const { limit } = this.readMetricValues(quota, metric)
-    return limit !== null && liveCount >= limit
+    if (limit === null) {
+      return false
+    }
+    if (metric === "workspaces") {
+      const [row] = await db
+        .select({ count: count() })
+        .from(workspaceModel)
+        .where(eq(workspaceModel.ownerId, userId))
+      return (row?.count ?? 0) >= limit
+    }
+    const liveCount = await this.store.getLiveCount(userId, metric)
+    return liveCount >= limit
   }
 
   async getRemainingSlots(

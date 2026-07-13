@@ -27,6 +27,7 @@ type WorkspacesListProps = {
   }
   workspaces: WorkspaceResource[]
   workspacesLimit?: number | null
+  ownedCount?: number
   isAtLimit?: boolean
   ownerWorkspaceIds?: string[]
   superAdminWorkspaceIds?: string[]
@@ -176,6 +177,7 @@ const WorkspacesList = async ({
   user,
   workspaces,
   workspacesLimit,
+  ownedCount = 0,
   isAtLimit = false,
   ownerWorkspaceIds = [],
   superAdminWorkspaceIds = [],
@@ -189,7 +191,7 @@ const WorkspacesList = async ({
   const superAdminIds = new Set(superAdminWorkspaceIds)
   const ownerLabel = t("home.owner")
 
-  const usedCount = workspaces.length
+  const usedCount = ownedCount
   const hasLimit = typeof workspacesLimit === "number"
   const greetingName = user.name?.trim() || user.email
   const hasWorkspaces = workspaces.length > 0

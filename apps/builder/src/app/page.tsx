@@ -66,6 +66,7 @@ export default async function MainPage() {
 
       <WorkspacesList
         isAtLimit={atLimit?.workspaces ?? false}
+        ownedCount={usageSummary?.workspaces.used ?? 0}
         ownerWorkspaceIds={ownerWorkspaceIds}
         superAdminWorkspaceIds={superAdminWorkspaceIds}
         user={userInfo}
