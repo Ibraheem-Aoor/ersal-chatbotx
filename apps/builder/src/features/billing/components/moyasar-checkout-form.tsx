@@ -4,7 +4,7 @@ import { ArrowRightIcon, Loader2Icon } from "lucide-react"
 import Link from "next/link"
 import Script from "next/script"
 import { useTranslations } from "next-intl"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 type MoyasarCheckoutProps = {
   publishableKey: string
@@ -30,25 +30,38 @@ export function MoyasarCheckoutForm({
   billingCycle,
 }: MoyasarCheckoutProps) {
   const t = useTranslations()
-  const formRef = useRef<HTMLDivElement>(null)
+  const [scriptLoaded, setScriptLoaded] = useState(false)
   const initializedRef = useRef(false)
-  const [scriptReady, setScriptReady] = useState(false)
 
-  const initForm = useCallback(() => {
-    if (!formRef.current || initializedRef.current) {
+  useEffect(() => {
+    if (!scriptLoaded || initializedRef.current) {
       return
     }
+
     const win = window as unknown as Record<string, unknown>
     if (typeof win.Moyasar !== "object" || !win.Moyasar) {
+      console.error("[Moyasar] script loaded but window.Moyasar not found")
+      return
+    }
+
+    const container = document.querySelector(".mysr-form")
+    if (!container) {
+      console.error("[Moyasar] .mysr-form container not found in DOM")
       return
     }
 
     initializedRef.current = true
+    console.log("[Moyasar] initializing form", {
+      amount,
+      currency,
+      publishableKey: publishableKey ? "set" : "MISSING",
+    })
+
     const moyasar = win.Moyasar as {
       init: (opts: Record<string, unknown>) => void
     }
     moyasar.init({
-      element: formRef.current,
+      element: ".mysr-form",
       amount,
       currency,
       description,
@@ -63,13 +76,17 @@ export function MoyasarCheckoutForm({
       supported_networks: ["mada", "visa", "mastercard", "amex"],
       metadata,
     })
-  }, [amount, currency, description, publishableKey, callbackUrl, metadata])
 
-  useEffect(() => {
-    if (scriptReady) {
-      initForm()
-    }
-  }, [scriptReady, initForm])
+    console.log("[Moyasar] init called successfully")
+  }, [
+    scriptLoaded,
+    amount,
+    currency,
+    description,
+    publishableKey,
+    callbackUrl,
+    metadata,
+  ])
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center p-6">
@@ -79,7 +96,10 @@ export function MoyasarCheckoutForm({
         rel="stylesheet"
       />
       <Script
-        onReady={() => setScriptReady(true)}
+        onLoad={() => {
+          console.log("[Moyasar] script onLoad fired")
+          setScriptLoaded(true)
+        }}
         src="https://cdn.moyasar.com/mpf/1.14.0/moyasar.js"
         strategy="afterInteractive"
       />
@@ -117,12 +137,12 @@ export function MoyasarCheckoutForm({
         </div>
 
         <div className="rounded-lg border bg-card p-5">
-          {!scriptReady && (
+          {!scriptLoaded && (
             <div className="flex min-h-[200px] items-center justify-center">
               <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
             </div>
           )}
-          <div ref={formRef} />
+          <div className="mysr-form" />
         </div>
 
         <div className="text-center">
