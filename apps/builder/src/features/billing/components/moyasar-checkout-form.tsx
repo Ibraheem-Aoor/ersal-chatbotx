@@ -2,9 +2,16 @@
 
 import { ArrowRightIcon, Loader2Icon } from "lucide-react"
 import Link from "next/link"
-import Script from "next/script"
 import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState } from "react"
+
+declare global {
+  interface Window {
+    Moyasar: {
+      init: (config: Record<string, unknown>) => void
+    }
+  }
+}
 
 type MoyasarCheckoutProps = {
   publishableKey: string
@@ -30,80 +37,64 @@ export function MoyasarCheckoutForm({
   billingCycle,
 }: MoyasarCheckoutProps) {
   const t = useTranslations()
-  const [scriptLoaded, setScriptLoaded] = useState(false)
+  const [loading, setLoading] = useState(true)
   const initializedRef = useRef(false)
 
   useEffect(() => {
-    if (!scriptLoaded || initializedRef.current) {
+    if (initializedRef.current) {
       return
     }
-
-    const win = window as unknown as Record<string, unknown>
-    if (typeof win.Moyasar !== "object" || !win.Moyasar) {
-      console.error("[Moyasar] script loaded but window.Moyasar not found")
-      return
-    }
-
-    const container = document.querySelector(".mysr-form")
-    if (!container) {
-      console.error("[Moyasar] .mysr-form container not found in DOM")
-      return
-    }
-
     initializedRef.current = true
-    console.log("[Moyasar] initializing form", {
-      amount,
-      currency,
-      publishableKey: publishableKey ? "set" : "MISSING",
-    })
 
-    const moyasar = win.Moyasar as {
-      init: (opts: Record<string, unknown>) => void
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.href = "https://cdn.moyasar.com/mpf/1.14.0/moyasar.css"
+    document.head.appendChild(link)
+
+    const script = document.createElement("script")
+    script.src = "https://cdn.moyasar.com/mpf/1.14.0/moyasar.js"
+    script.async = true
+    script.onload = () => {
+      console.log(
+        "[Moyasar] script loaded, window.Moyasar:",
+        typeof window.Moyasar,
+      )
+      if (window.Moyasar) {
+        window.Moyasar.init({
+          element: ".mysr-form",
+          amount,
+          currency,
+          description,
+          publishable_api_key: publishableKey,
+          callback_url: callbackUrl,
+          methods: ["creditcard", "stcpay", "applepay"],
+          apple_pay: {
+            country: "SA",
+            label: description,
+            validate_merchant_url:
+              "https://api.moyasar.com/v1/applepay/initiate",
+          },
+          supported_networks: ["mada", "visa", "mastercard", "amex"],
+          metadata,
+        })
+        console.log("[Moyasar] init called")
+      }
+      setLoading(false)
     }
-    moyasar.init({
-      element: ".mysr-form",
-      amount,
-      currency,
-      description,
-      publishable_api_key: publishableKey,
-      callback_url: callbackUrl,
-      methods: ["creditcard", "stcpay", "applepay"],
-      apple_pay: {
-        country: "SA",
-        label: description,
-        validate_merchant_url: "https://api.moyasar.com/v1/applepay/initiate",
-      },
-      supported_networks: ["mada", "visa", "mastercard", "amex"],
-      metadata,
-    })
+    script.onerror = () => {
+      console.error("[Moyasar] failed to load script")
+      setLoading(false)
+    }
+    document.head.appendChild(script)
 
-    console.log("[Moyasar] init called successfully")
-  }, [
-    scriptLoaded,
-    amount,
-    currency,
-    description,
-    publishableKey,
-    callbackUrl,
-    metadata,
-  ])
+    return () => {
+      document.head.removeChild(script)
+      document.head.removeChild(link)
+    }
+  }, [amount, currency, description, publishableKey, callbackUrl, metadata])
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center p-6">
-      {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <link
-        href="https://cdn.moyasar.com/mpf/1.14.0/moyasar.css"
-        rel="stylesheet"
-      />
-      <Script
-        onLoad={() => {
-          console.log("[Moyasar] script onLoad fired")
-          setScriptLoaded(true)
-        }}
-        src="https://cdn.moyasar.com/mpf/1.14.0/moyasar.js"
-        strategy="afterInteractive"
-      />
-
       <div className="w-full space-y-6">
         <div className="text-center">
           <h1 className="font-bold text-2xl">{t("plans.checkout")}</h1>
@@ -137,7 +128,7 @@ export function MoyasarCheckoutForm({
         </div>
 
         <div className="rounded-lg border bg-card p-5">
-          {!scriptLoaded && (
+          {loading && (
             <div className="flex min-h-[200px] items-center justify-center">
               <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
             </div>
