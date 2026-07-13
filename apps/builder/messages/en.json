@@ -299,6 +299,7 @@
     },
     "quotaLimits": {
       "workspaceLimitReached": "Workspace limit reached for this plan",
+      "channelLimitReached": "Channel limit reached for this plan",
       "contactLimitReached": "Contact limit reached",
       "channelDuplicated": "This account is already connected to another workspace.",
       "phoneNumberExists": "Phone number already exists",

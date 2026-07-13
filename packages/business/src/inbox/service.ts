@@ -19,6 +19,7 @@ import type {
 import { getPaginationWithDefaults } from "@chatbotx.io/database/utils"
 import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
+import { ChatbotXException } from "../errors"
 import { quotaEnforcementService } from "../quota-enforcement/service"
 import type { ListInboxesRequest, ListInboxesResponse } from "./schema"
 
@@ -177,7 +178,7 @@ class InboxService extends BaseService {
       metric: "channels",
     })
     if (!consumed.ok) {
-      throw new Error("Channel limit reached for this plan")
+      throw new ChatbotXException("Channel limit reached for this plan")
     }
 
     const [inbox] = await tx

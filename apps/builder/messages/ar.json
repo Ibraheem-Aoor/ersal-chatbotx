@@ -299,6 +299,7 @@
     },
     "quotaLimits": {
       "workspaceLimitReached": "تم الوصول إلى الحد الأقصى لمساحات العمل في هذه الباقة",
+      "channelLimitReached": "تم الوصول إلى الحد الأقصى للقنوات في هذه الباقة",
       "contactLimitReached": "تم الوصول إلى الحد الأقصى لجهات الاتصال",
       "channelDuplicated": "هذا الحساب مرتبط بالفعل بمساحة عمل أخرى.",
       "phoneNumberExists": "رقم الهاتف موجود بالفعل",

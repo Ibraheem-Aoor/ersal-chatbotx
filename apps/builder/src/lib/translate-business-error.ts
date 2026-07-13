@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server"
 
 const QUOTA_ERROR_MAP: Record<string, string> = {
   "Workspace limit reached for this plan": "workspaceLimitReached",
+  "Channel limit reached for this plan": "channelLimitReached",
   "Contact limit reached": "contactLimitReached",
   "This account is already connected to another workspace.":
     "channelDuplicated",

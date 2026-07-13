@@ -1,6 +1,10 @@
 import { macTrackingService } from "@chatbotx.io/analytics"
 import { count, db, eq, type Transaction } from "@chatbotx.io/database/client"
-import { ROOT_TENANT_ID, workspaceModel } from "@chatbotx.io/database/schema"
+import {
+  inboxModel,
+  ROOT_TENANT_ID,
+  workspaceModel,
+} from "@chatbotx.io/database/schema"
 import { distributedLock } from "@chatbotx.io/redis"
 import { tenantService } from "../enterprise/tenant/service"
 import { type QuotaMetric, userQuotaService } from "../user-quota/service"
@@ -447,14 +451,24 @@ class QuotaEnforcementService {
       ) as QuotaUsageSummary
     }
 
-    const [liveUsed, quota, [workspacesRow]] = await Promise.all([
-      userQuotaService.getLiveUsage(userId),
-      userQuotaService.getForUser(userId),
-      db
-        .select({ count: count() })
-        .from(workspaceModel)
-        .where(eq(workspaceModel.ownerId, userId)),
-    ])
+    const [liveUsed, quota, [workspacesRow], [channelsRow]] = await Promise.all(
+      [
+        userQuotaService.getLiveUsage(userId),
+        userQuotaService.getForUser(userId),
+        db
+          .select({ count: count() })
+          .from(workspaceModel)
+          .where(eq(workspaceModel.ownerId, userId)),
+        db
+          .select({ count: count() })
+          .from(inboxModel)
+          .innerJoin(
+            workspaceModel,
+            eq(inboxModel.workspaceId, workspaceModel.id),
+          )
+          .where(eq(workspaceModel.ownerId, userId)),
+      ],
+    )
     const summary = Object.fromEntries(
       ALL_METRICS.map((metric) => [
         metric,
@@ -465,6 +479,7 @@ class QuotaEnforcementService {
       ]),
     ) as QuotaUsageSummary
     summary.workspaces.used = workspacesRow?.count ?? 0
+    summary.channels.used = channelsRow?.count ?? 0
     return summary
   }
 

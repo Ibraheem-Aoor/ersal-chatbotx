@@ -523,6 +523,17 @@ class UserQuotaService extends BaseService {
         .where(eq(workspaceModel.ownerId, userId))
       return (row?.count ?? 0) >= limit
     }
+    if (metric === "channels") {
+      const [row] = await db
+        .select({ count: count() })
+        .from(inboxModel)
+        .innerJoin(
+          workspaceModel,
+          eq(inboxModel.workspaceId, workspaceModel.id),
+        )
+        .where(eq(workspaceModel.ownerId, userId))
+      return (row?.count ?? 0) >= limit
+    }
     const liveCount = await this.store.getLiveCount(userId, metric)
     return liveCount >= limit
   }
@@ -603,6 +614,17 @@ class UserQuotaService extends BaseService {
       const [row] = await db
         .select({ count: count() })
         .from(workspaceModel)
+        .where(eq(workspaceModel.ownerId, userId))
+      return (row?.count ?? 0) < limit
+    }
+    if (metric === "channels") {
+      const [row] = await db
+        .select({ count: count() })
+        .from(inboxModel)
+        .innerJoin(
+          workspaceModel,
+          eq(inboxModel.workspaceId, workspaceModel.id),
+        )
         .where(eq(workspaceModel.ownerId, userId))
       return (row?.count ?? 0) < limit
     }
