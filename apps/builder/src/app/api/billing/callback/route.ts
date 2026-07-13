@@ -13,7 +13,9 @@ import { getCurrentUser } from "@/lib/auth/utils"
 
 export async function GET(req: NextRequest) {
   const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-  const paymentId = req.nextUrl.searchParams.get("paymentId")
+  const paymentId =
+    req.nextUrl.searchParams.get("paymentId") ??
+    req.nextUrl.searchParams.get("id")
 
   if (!paymentId) {
     return NextResponse.redirect(`${baseUrl}/pricing?error=missing_payment_id`)
@@ -144,6 +146,12 @@ function extractMetadata(
     if (typeof udf === "string") {
       return JSON.parse(udf)
     }
+
+    const moyasarMeta = rawResponse.metadata
+    if (moyasarMeta && typeof moyasarMeta === "object") {
+      return moyasarMeta as Record<string, string>
+    }
+
     return null
   } catch {
     return null

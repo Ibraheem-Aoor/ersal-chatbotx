@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       redirectUrl: initiation.redirectUrl,
       paymentId: initiation.paymentId,
       type: initiation.type,
+      formConfig: initiation.formConfig,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Checkout failed"
