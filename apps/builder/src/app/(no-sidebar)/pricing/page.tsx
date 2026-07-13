@@ -1,4 +1,8 @@
-import { billingPlanService, subscriptionService } from "@chatbotx.io/business"
+import {
+  billingPlanService,
+  getPaymentGateway,
+  subscriptionService,
+} from "@chatbotx.io/business"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
@@ -32,7 +36,11 @@ export default async function PricingPage() {
         </p>
       </div>
 
-      <PricingCards currentPlanId={activeSub?.planId} plans={plans} />
+      <PricingCards
+        currentPlanId={activeSub?.planId}
+        gatewayType={getPaymentGateway().name()}
+        plans={plans}
+      />
     </div>
   )
 }
