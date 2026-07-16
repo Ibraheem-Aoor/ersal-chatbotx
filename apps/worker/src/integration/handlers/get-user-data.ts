@@ -16,6 +16,7 @@ import {
 } from "@chatbotx.io/flow-config"
 import { IntegrationException, type Variable } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
+import { resolveContactVariablesDeep } from "@chatbotx.io/variables"
 import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
 import { add, isBefore } from "date-fns"
 import { logger } from "../../lib/logger"
@@ -253,12 +254,21 @@ async function sendMessage(
     )
   }
 
+  const resolvedText = await resolveContactVariablesDeep(
+    conversation.contactId,
+    text,
+    {
+      contactInbox,
+      conversation,
+    },
+  )
+
   const job = await chatQueue.add(ChatJobAction.sendChatMessage, {
     type: ChatJobAction.sendChatMessage,
     data: {
       contactInbox,
       conversation,
-      text,
+      text: resolvedText,
     },
   })
 
