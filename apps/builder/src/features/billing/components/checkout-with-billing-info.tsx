@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "@chatbotx.io/ui/components/ui/card"
 import { EditIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
 import { BillingInfoForm } from "./billing-info-form"
 import { MoyasarCheckoutForm } from "./moyasar-checkout-form"
 
@@ -33,17 +33,21 @@ type Props = {
   planPrice: string
   billingCycle: "monthly" | "yearly"
   billingInfo: BillingInfoData | null
+  editingBillingInfo: BillingInfoData | null
+  planId: string
 }
 
 export function CheckoutWithBillingInfo({
   billingInfo,
+  editingBillingInfo,
+  planId,
+  billingCycle,
   ...moyasarProps
 }: Props) {
   const t = useTranslations()
-  const [showPayment, setShowPayment] = useState(!!billingInfo)
-  const [editing, setEditing] = useState(false)
+  const router = useRouter()
 
-  if (!showPayment || editing) {
+  if (!billingInfo) {
     return (
       <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center p-6">
         <div className="w-full space-y-6">
@@ -51,10 +55,12 @@ export function CheckoutWithBillingInfo({
             <h1 className="font-bold text-2xl">{t("plans.checkout")}</h1>
           </div>
           <BillingInfoForm
-            billingInfo={billingInfo}
+            billingInfo={editingBillingInfo}
             onSaved={() => {
-              setShowPayment(true)
-              setEditing(false)
+              router.push(
+                `/billing/checkout?planId=${planId}&billingCycle=${billingCycle}`,
+              )
+              router.refresh()
             }}
           />
         </div>
@@ -65,33 +71,38 @@ export function CheckoutWithBillingInfo({
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center p-6">
       <div className="w-full space-y-4">
-        {billingInfo && (
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-sm">
-                {t("billing.billingInfo.title")}
-              </CardTitle>
-              <Button
-                onClick={() => setEditing(true)}
-                size="sm"
-                variant="ghost"
-              >
-                <EditIcon className="size-3.5" />
-                {t("billing.billingInfo.edit")}
-              </Button>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <p className="font-medium">{billingInfo.companyName}</p>
-              {billingInfo.vatNumber && (
-                <p className="text-muted-foreground">{billingInfo.vatNumber}</p>
-              )}
-              <p className="text-muted-foreground">
-                {billingInfo.billingEmail}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        <MoyasarCheckoutForm {...moyasarProps} />
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="text-sm">
+              {t("billing.billingInfo.title")}
+            </CardTitle>
+            <Button
+              onClick={() =>
+                router.push(
+                  `/billing/checkout?planId=${planId}&billingCycle=${billingCycle}&edit=billing`,
+                )
+              }
+              size="sm"
+              variant="ghost"
+            >
+              <EditIcon className="size-3.5" />
+              {t("billing.billingInfo.edit")}
+            </Button>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <p className="font-medium">{billingInfo.companyName}</p>
+            {billingInfo.vatNumber && (
+              <p className="text-muted-foreground">{billingInfo.vatNumber}</p>
+            )}
+            <p className="text-muted-foreground">{billingInfo.billingEmail}</p>
+          </CardContent>
+        </Card>
+        <MoyasarCheckoutForm
+          {...moyasarProps}
+          billingCycle={billingCycle}
+          planName={moyasarProps.planName}
+          planPrice={moyasarProps.planPrice}
+        />
       </div>
     </div>
   )

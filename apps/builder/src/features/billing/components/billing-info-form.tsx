@@ -116,7 +116,9 @@ export function BillingInfoForm({
                 {form.formState.isSubmitting && (
                   <Loader2Icon className="size-4 animate-spin" />
                 )}
-                {t("actions.save")}
+                {onSaved
+                  ? t("billing.billingInfo.continueToPayment")
+                  : t("actions.save")}
               </Button>
             </div>
           </form>

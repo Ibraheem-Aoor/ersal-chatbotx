@@ -37,29 +37,31 @@ export default async function BillingCheckoutPage(props: {
 
   const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
   const publishableKey = process.env.MOYASAR_PUBLISHABLE_KEY ?? ""
+  const editBilling = searchParams.edit === "billing"
   const billingInfo = await billingInfoService.findByUserId({
     userId: user.id,
   })
+
+  const billingInfoData = billingInfo
+    ? {
+        companyName: billingInfo.companyName,
+        vatNumber: billingInfo.vatNumber,
+        billingEmail: billingInfo.billingEmail,
+        country: billingInfo.country,
+        city: billingInfo.city,
+        address: billingInfo.address,
+      }
+    : null
 
   return (
     <CheckoutWithBillingInfo
       amount={Math.round(Number(plan.price) * 100)}
       billingCycle={billingCycle}
-      billingInfo={
-        billingInfo
-          ? {
-              companyName: billingInfo.companyName,
-              vatNumber: billingInfo.vatNumber,
-              billingEmail: billingInfo.billingEmail,
-              country: billingInfo.country,
-              city: billingInfo.city,
-              address: billingInfo.address,
-            }
-          : null
-      }
+      billingInfo={editBilling ? null : billingInfoData}
       callbackUrl={`${baseUrl}/api/billing/callback`}
       currency={plan.currency}
       description={plan.name}
+      editingBillingInfo={editBilling ? billingInfoData : null}
       metadata={{
         userId: user.id,
         userEmail: user.email,
@@ -69,6 +71,7 @@ export default async function BillingCheckoutPage(props: {
         companyName: billingInfo?.companyName ?? "",
         billingEmail: billingInfo?.billingEmail ?? user.email,
       }}
+      planId={plan.id}
       planName={plan.name}
       planPrice={plan.price}
       publishableKey={publishableKey}
