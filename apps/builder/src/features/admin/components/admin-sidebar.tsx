@@ -49,13 +49,17 @@ export function AdminSidebar({
       url: "/admin/platform-credentials",
       icon: Grid2x2PlusIcon,
     },
-    ...(showEnterpriseItems && !isCloud()
-      ? [
+    ...(isCloud()
+      ? []
+      : [
           {
             title: t("platformBranding.title"),
             url: "/admin/branding",
             icon: PaletteIcon,
           },
+        ]),
+    ...(showEnterpriseItems && !isCloud()
+      ? [
           {
             title: t("platformEmailTemplates.title"),
             url: "/admin/email-templates",

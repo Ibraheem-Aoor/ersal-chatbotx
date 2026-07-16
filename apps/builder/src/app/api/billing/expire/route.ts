@@ -1,4 +1,5 @@
-import { renewalService } from "@chatbotx.io/business"
+import { renewalService, tenantService } from "@chatbotx.io/business"
+import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
 import { sendSubscriptionExpired } from "@chatbotx.io/mail"
 import { type NextRequest, NextResponse } from "next/server"
 import { env } from "@/env"
@@ -13,19 +14,21 @@ export async function GET(req: NextRequest) {
 
   try {
     const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-    const brandName = process.env.BRAND_NAME ?? "ChatbotX"
-    const brandLogoUrl = `${baseUrl}/logo.svg`
+    const tenant = await tenantService.findById(ROOT_TENANT_ID)
+    const brandName = tenant?.brandName ?? "Ersal"
+    const brandLogoUrl = `${baseUrl}/brand/logo.svg`
 
     const result = await renewalService.expirePastDue(3)
 
     for (const sub of result.expiredSubs) {
       try {
         await sendSubscriptionExpired(sub.userEmail, {
-          subject: `Your ${sub.planName} subscription has expired`,
+          subject: `انتهى اشتراكك في باقة ${sub.planName}`,
           brandName,
           brandLogoUrl,
           brandUrl: baseUrl,
-          userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "Customer",
+          dir: "rtl",
+          userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
           planName: sub.planName,
           renewUrl: `${baseUrl}/pricing`,
         })

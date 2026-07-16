@@ -3,6 +3,7 @@ export type BaseEmailProps = {
   brandLogoUrl: string
   brandUrl: string
   subject: string
+  dir?: "ltr" | "rtl"
 }
 
 export function esc(value: string): string {
@@ -18,7 +19,12 @@ export function buildSystemEmail(
   props: BaseEmailProps,
   bodyMjml: string,
 ): string {
-  const { brandName, brandLogoUrl, brandUrl, subject } = props
+  const { brandName, brandLogoUrl, brandUrl, subject, dir } = props
+  const isRtl = dir === "rtl"
+  const logoAlign = isRtl ? "right" : "left"
+  const textAlign = isRtl ? "right" : "left"
+  const signoff = isRtl ? "مع تحياتنا،" : "Sincerely,"
+  const teamSuffix = isRtl ? `فريق ${esc(brandName)}` : `${esc(brandName)} Team`
 
   return `
 <mjml>
@@ -33,21 +39,21 @@ export function buildSystemEmail(
   <mj-body background-color="#ffffff">
     <mj-section padding="32px 0 0 0">
       <mj-column>
-        <mj-image width="75px" height="45px" src="${esc(brandLogoUrl)}" alt="${esc(brandName)}" href="${esc(brandUrl)}" align="left" />
+        <mj-image width="75px" height="45px" src="${esc(brandLogoUrl)}" alt="${esc(brandName)}" href="${esc(brandUrl)}" align="${logoAlign}" />
       </mj-column>
     </mj-section>
-    <mj-section padding="16px 0 8px 0">
+    <mj-section padding="16px 0 8px 0"${isRtl ? ' direction="rtl"' : ""}>
       <mj-column>
-        <mj-text font-size="28px" font-weight="700" color="#1d1c1d" line-height="36px" padding="0">
+        <mj-text font-size="28px" font-weight="700" color="#1d1c1d" line-height="36px" padding="0" align="${textAlign}">
           ${esc(subject)}
         </mj-text>
       </mj-column>
     </mj-section>
     ${bodyMjml}
-    <mj-section padding="16px 0 32px 0">
+    <mj-section padding="16px 0 32px 0"${isRtl ? ' direction="rtl"' : ""}>
       <mj-column>
-        <mj-text padding="0">Sincerely,</mj-text>
-        <mj-text padding="0">${esc(brandName)} Team</mj-text>
+        <mj-text padding="0" align="${textAlign}">${signoff}</mj-text>
+        <mj-text padding="0" align="${textAlign}">${teamSuffix}</mj-text>
       </mj-column>
     </mj-section>
   </mj-body>

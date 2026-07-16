@@ -1,4 +1,5 @@
-import { renewalService } from "@chatbotx.io/business"
+import { renewalService, tenantService } from "@chatbotx.io/business"
+import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
 import { sendPaymentFailed } from "@chatbotx.io/mail"
 import { type NextRequest, NextResponse } from "next/server"
 import { env } from "@/env"
@@ -17,8 +18,9 @@ export async function GET(req: NextRequest) {
     let failed = 0
 
     const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-    const brandName = process.env.BRAND_NAME ?? "ChatbotX"
-    const brandLogoUrl = `${baseUrl}/logo.svg`
+    const tenant = await tenantService.findById(ROOT_TENANT_ID)
+    const brandName = tenant?.brandName ?? "Ersal"
+    const brandLogoUrl = `${baseUrl}/brand/logo.svg`
 
     for (const sub of due) {
       if (!sub.paymentToken) {
@@ -45,11 +47,12 @@ export async function GET(req: NextRequest) {
         failed++
         try {
           await sendPaymentFailed(sub.userEmail, {
-            subject: `Payment failed for your ${sub.planName} subscription`,
+            subject: `فشل دفع اشتراك ${sub.planName}`,
             brandName,
             brandLogoUrl,
             brandUrl: baseUrl,
-            userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "Customer",
+            dir: "rtl",
+            userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
             planName: sub.planName,
             renewUrl: `${baseUrl}/pricing`,
           })
