@@ -80,7 +80,8 @@ export function MoyasarCheckoutForm({
                 body: JSON.stringify({
                   token: source.token,
                   brand: source.company ?? "",
-                  lastFour: typeof source.number === "string" ? source.number : "",
+                  lastFour:
+                    typeof source.number === "string" ? source.number : "",
                 }),
               }).catch(() => {
                 // fire-and-forget: token will also be extracted from verify response

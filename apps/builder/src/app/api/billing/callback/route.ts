@@ -153,8 +153,7 @@ function extractTokenData(
     return {
       token: source.token,
       brand: typeof source.company === "string" ? source.company : undefined,
-      lastFour:
-        typeof source.number === "string" ? source.number : undefined,
+      lastFour: typeof source.number === "string" ? source.number : undefined,
     }
   } catch {
     return null

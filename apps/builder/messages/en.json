@@ -309,7 +309,15 @@
       "aiAgentsNotEnabled": "AI Agents are not available on your current plan"
     },
     "pastDue": {
-      "message": "Your last payment failed. Update your payment method to keep your workspace active."
+      "message": "Your last payment failed. Update your payment method to keep your workspace active.",
+      "gracePeriod": "You have {days} days to update your payment before your subscription is suspended."
+    },
+    "renewal": {
+      "subject": "Your subscription will renew soon",
+      "message": "Your {planName} subscription ({amount} {currency}/{cycle}) will auto-renew on {date}.",
+      "failed": "Automatic renewal failed for your {planName} subscription. Please update your payment method.",
+      "success": "Your {planName} subscription has been renewed successfully.",
+      "expired": "Your subscription has expired due to payment failure. Subscribe again to restore access."
     },
     "trial": {
       "daysLeft": "Trial: {days} days left",
