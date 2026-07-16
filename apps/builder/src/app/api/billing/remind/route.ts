@@ -2,7 +2,11 @@ import {
   renewalService,
   resolveTenantSettingsByDomain,
 } from "@chatbotx.io/business"
-import { sendRenewalReminder } from "@chatbotx.io/mail"
+import {
+  sendActiveNoTokenReminder,
+  sendRenewalReminder,
+  sendTrialExpiryReminder,
+} from "@chatbotx.io/mail"
 import { format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
 
@@ -22,20 +26,46 @@ export async function GET(req: NextRequest) {
 
     for (const sub of expiring) {
       try {
-        await sendRenewalReminder(sub.userEmail, {
-          subject: `تجديد اشتراك ${sub.planName} قريباً`,
+        const userName = sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل"
+        const expiryDate = format(sub.currentPeriodEnd, "dd MMM yyyy")
+        const baseProps = {
           brandName: settings.name,
           brandLogoUrl: settings.logoLightUrl,
           brandUrl: settings.appUrl,
-          dir: "rtl",
-          userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
-          planName: sub.planName,
-          amount: sub.amount,
-          currency: sub.currency,
-          cycle: sub.cycle,
-          expiryDate: format(sub.currentPeriodEnd, "dd MMM yyyy"),
-          renewUrl: settings.appUrl,
-        })
+          dir: "rtl" as const,
+        }
+
+        if (sub.status === "trial") {
+          await sendTrialExpiryReminder(sub.userEmail, {
+            ...baseProps,
+            subject: "فترة تجربتك تنتهي قريباً",
+            userName,
+            planName: sub.planName,
+            expiryDate,
+            renewUrl: `${settings.appUrl}/pricing`,
+          })
+        } else if (sub.paymentToken) {
+          await sendRenewalReminder(sub.userEmail, {
+            ...baseProps,
+            subject: "سيتم تجديد اشتراكك قريباً",
+            userName,
+            planName: sub.planName,
+            amount: sub.amount,
+            currency: sub.currency,
+            cycle: sub.cycle,
+            expiryDate,
+            renewUrl: settings.appUrl,
+          })
+        } else {
+          await sendActiveNoTokenReminder(sub.userEmail, {
+            ...baseProps,
+            subject: "اشتراكك ينتهي قريباً",
+            userName,
+            planName: sub.planName,
+            expiryDate,
+            renewUrl: settings.appUrl,
+          })
+        }
         sent++
       } catch (err) {
         console.error(
@@ -52,6 +82,7 @@ export async function GET(req: NextRequest) {
         id: s.id,
         userId: s.userId,
         planName: s.planName,
+        status: s.status,
         expiresAt: s.currentPeriodEnd.toISOString(),
       })),
     })

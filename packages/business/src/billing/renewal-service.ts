@@ -1,4 +1,4 @@
-import { and, db, eq, isNotNull, lte } from "@chatbotx.io/database/client"
+import { and, db, eq, isNotNull, lte, or } from "@chatbotx.io/database/client"
 import {
   billingPlanModel,
   subscriptionModel,
@@ -100,9 +100,11 @@ export class RenewalService {
         id: subscriptionModel.id,
         userId: subscriptionModel.userId,
         planId: subscriptionModel.planId,
+        status: subscriptionModel.status,
         cycle: subscriptionModel.cycle,
         amount: subscriptionModel.amount,
         currency: subscriptionModel.currency,
+        paymentToken: subscriptionModel.paymentToken,
         currentPeriodEnd: subscriptionModel.currentPeriodEnd,
         planName: billingPlanModel.name,
         userEmail: userModel.email,
@@ -116,7 +118,10 @@ export class RenewalService {
       .innerJoin(userModel, eq(subscriptionModel.userId, userModel.id))
       .where(
         and(
-          eq(subscriptionModel.status, "active"),
+          or(
+            eq(subscriptionModel.status, "active"),
+            eq(subscriptionModel.status, "trial"),
+          ),
           lte(subscriptionModel.currentPeriodEnd, cutoff),
         ),
       )

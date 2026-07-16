@@ -17,10 +17,6 @@ export const RENEWAL_REMINDER_BODY_MJML = `<mj-section padding="0 0 16px 0">
           سيتم تجديد اشتراكك في باقة <strong>{{planName}}</strong> ({{amount}} {{currency}}/{{cycle}})
           تلقائياً بتاريخ <strong>{{expiryDate}}</strong>.
         </div></mj-text>
-        <mj-text padding="8px 0 0 0" align="right"><div dir="rtl" style="text-align: right;">
-          إذا كانت لديك طريقة دفع محفوظة، سيتم التجديد تلقائياً.
-          وإلا، يرجى تحديث طريقة الدفع لتجنب انقطاع الخدمة.
-        </div></mj-text>
       </mj-column>
     </mj-section>
     <mj-section padding="0 0 16px 0">
@@ -38,6 +34,74 @@ export function buildRenewalReminderMjml(props: BillingReminderProps): string {
     .replace(/\{\{amount\}\}/g, esc(props.amount))
     .replace(/\{\{currency\}\}/g, esc(props.currency))
     .replace(/\{\{cycle\}\}/g, esc(props.cycle))
+    .replace(/\{\{expiryDate\}\}/g, esc(props.expiryDate))
+    .replace(/\{\{renewUrl\}\}/g, esc(props.renewUrl))
+  return buildSystemEmail(props, body)
+}
+
+export type TrialExpiryProps = BaseEmailProps & {
+  userName: string
+  planName: string
+  expiryDate: string
+  renewUrl: string
+}
+
+export const TRIAL_EXPIRY_BODY_MJML = `<mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
+          فترة تجربتك لباقة <strong>{{planName}}</strong> تنتهي في <strong>{{expiryDate}}</strong>.
+          اشترك في باقة مدفوعة للمتابعة والاستفادة من جميع الميزات.
+        </div></mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-button href="{{renewUrl}}" align="right">اشترك الآن</mj-button>
+      </mj-column>
+    </mj-section>`
+
+export function buildTrialExpiryMjml(props: TrialExpiryProps): string {
+  const body = TRIAL_EXPIRY_BODY_MJML.replace(
+    /\{\{userName\}\}/g,
+    esc(props.userName),
+  )
+    .replace(/\{\{planName\}\}/g, esc(props.planName))
+    .replace(/\{\{expiryDate\}\}/g, esc(props.expiryDate))
+    .replace(/\{\{renewUrl\}\}/g, esc(props.renewUrl))
+  return buildSystemEmail(props, body)
+}
+
+export type ActiveNoTokenReminderProps = BaseEmailProps & {
+  userName: string
+  planName: string
+  expiryDate: string
+  renewUrl: string
+}
+
+export const ACTIVE_NO_TOKEN_REMINDER_BODY_MJML = `<mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
+          اشتراكك في باقة <strong>{{planName}}</strong> ينتهي في <strong>{{expiryDate}}</strong>.
+          يرجى تحديث طريقة الدفع لتجنب انقطاع الخدمة.
+        </div></mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-button href="{{renewUrl}}" align="right" background-color="#f59e0b">تحديث طريقة الدفع</mj-button>
+      </mj-column>
+    </mj-section>`
+
+export function buildActiveNoTokenReminderMjml(
+  props: ActiveNoTokenReminderProps,
+): string {
+  const body = ACTIVE_NO_TOKEN_REMINDER_BODY_MJML.replace(
+    /\{\{userName\}\}/g,
+    esc(props.userName),
+  )
+    .replace(/\{\{planName\}\}/g, esc(props.planName))
     .replace(/\{\{expiryDate\}\}/g, esc(props.expiryDate))
     .replace(/\{\{renewUrl\}\}/g, esc(props.renewUrl))
   return buildSystemEmail(props, body)

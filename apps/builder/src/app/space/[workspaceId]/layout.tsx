@@ -71,8 +71,17 @@ export default async function WorkspaceLayout({
     const subscription = await subscriptionService.findByUserId({
       userId: user.id,
     })
-    if (subscription?.status === "expired") {
-      redirect("/pricing")
+    if (subscription) {
+      const now = Date.now()
+      const periodEnd = new Date(subscription.currentPeriodEnd).getTime()
+      const shouldBlock =
+        subscription.status === "expired" ||
+        (subscription.status === "trial" && periodEnd < now) ||
+        (subscription.status === "past_due" &&
+          periodEnd + 3 * 24 * 60 * 60 * 1000 < now)
+      if (shouldBlock) {
+        redirect("/pricing")
+      }
     }
   }
 

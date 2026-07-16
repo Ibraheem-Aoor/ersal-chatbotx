@@ -1,12 +1,16 @@
 import mjml2html from "mjml"
 import { esc } from "./emails/base-template"
 import {
+  type ActiveNoTokenReminderProps,
   type BillingReminderProps,
+  buildActiveNoTokenReminderMjml,
   buildPaymentFailedMjml,
   buildRenewalReminderMjml,
   buildSubscriptionExpiredMjml,
+  buildTrialExpiryMjml,
   type PaymentFailedProps,
   type SubscriptionExpiredProps,
+  type TrialExpiryProps,
 } from "./emails/billing-reminder"
 import {
   buildResetPasswordMjml,
@@ -238,5 +242,21 @@ export const sendSubscriptionExpired = async (
   props: SubscriptionExpiredProps,
 ) => {
   const html = await compileMjml(buildSubscriptionExpiredMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendTrialExpiryReminder = async (
+  email: string,
+  props: TrialExpiryProps,
+) => {
+  const html = await compileMjml(buildTrialExpiryMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendActiveNoTokenReminder = async (
+  email: string,
+  props: ActiveNoTokenReminderProps,
+) => {
+  const html = await compileMjml(buildActiveNoTokenReminderMjml(props))
   await sendMail(email, props.subject, html)
 }
