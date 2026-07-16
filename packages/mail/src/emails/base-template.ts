@@ -25,6 +25,7 @@ export function buildSystemEmail(
   const textAlign = isRtl ? "right" : "left"
   const signoff = isRtl ? "مع تحياتنا،" : "Sincerely,"
   const teamSuffix = isRtl ? `فريق ${esc(brandName)}` : `${esc(brandName)} Team`
+  const dirAttr = isRtl ? ' dir="rtl" style="text-align: right;"' : ""
 
   return `
 <mjml>
@@ -42,18 +43,18 @@ export function buildSystemEmail(
         <mj-image width="75px" height="45px" src="${esc(brandLogoUrl)}" alt="${esc(brandName)}" href="${esc(brandUrl)}" align="${logoAlign}" />
       </mj-column>
     </mj-section>
-    <mj-section padding="16px 0 8px 0"${isRtl ? ' direction="rtl"' : ""}>
+    <mj-section padding="16px 0 8px 0">
       <mj-column>
-        <mj-text font-size="28px" font-weight="700" color="#1d1c1d" line-height="36px" padding="0" align="${textAlign}">
+        <mj-text font-size="28px" font-weight="700" color="#1d1c1d" line-height="36px" padding="0" align="${textAlign}"><div${dirAttr}>
           ${esc(subject)}
-        </mj-text>
+        </div></mj-text>
       </mj-column>
     </mj-section>
     ${bodyMjml}
-    <mj-section padding="16px 0 32px 0"${isRtl ? ' direction="rtl"' : ""}>
+    <mj-section padding="16px 0 32px 0">
       <mj-column>
-        <mj-text padding="0" align="${textAlign}">${signoff}</mj-text>
-        <mj-text padding="0" align="${textAlign}">${teamSuffix}</mj-text>
+        <mj-text padding="0" align="${textAlign}"><div${dirAttr}>${signoff}</div></mj-text>
+        <mj-text padding="0" align="${textAlign}"><div${dirAttr}>${teamSuffix}</div></mj-text>
       </mj-column>
     </mj-section>
   </mj-body>

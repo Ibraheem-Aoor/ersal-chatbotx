@@ -62,8 +62,17 @@ const buildDefaults = (helpItems: TenantHelpItemModel[]): TenantSettings => {
 }
 
 const getDefaultSettings = async (): Promise<TenantSettings> => {
-  const helpItems = await tenantHelpItemService.listByTenant(ROOT_TENANT_ID)
-  return buildDefaults(helpItems)
+  const [helpItems, rootTenant] = await Promise.all([
+    tenantHelpItemService.listByTenant(ROOT_TENANT_ID),
+    tenantService.findById(ROOT_TENANT_ID),
+  ])
+  const defaults = buildDefaults(helpItems)
+
+  if (rootTenant?.brandName || rootTenant?.logoLightPath) {
+    return applyTenantSetting(defaults, rootTenant, helpItems, true)
+  }
+
+  return defaults
 }
 
 /**

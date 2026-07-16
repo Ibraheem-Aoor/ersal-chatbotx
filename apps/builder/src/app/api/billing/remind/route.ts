@@ -1,9 +1,10 @@
-import { renewalService, tenantService } from "@chatbotx.io/business"
-import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
+import {
+  renewalService,
+  resolveTenantSettingsByDomain,
+} from "@chatbotx.io/business"
 import { sendRenewalReminder } from "@chatbotx.io/mail"
 import { format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
-import { env } from "@/env"
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret")
@@ -17,18 +18,15 @@ export async function GET(req: NextRequest) {
     const expiring = await renewalService.findExpiringIn(3)
     let sent = 0
 
-    const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-    const tenant = await tenantService.findById(ROOT_TENANT_ID)
-    const brandName = tenant?.brandName ?? "Ersal"
-    const brandLogoUrl = `${baseUrl}/brand/logo.svg`
+    const settings = await resolveTenantSettingsByDomain(null)
 
     for (const sub of expiring) {
       try {
         await sendRenewalReminder(sub.userEmail, {
           subject: `تجديد اشتراك ${sub.planName} قريباً`,
-          brandName,
-          brandLogoUrl,
-          brandUrl: baseUrl,
+          brandName: settings.name,
+          brandLogoUrl: settings.logoLightUrl,
+          brandUrl: settings.appUrl,
           dir: "rtl",
           userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
           planName: sub.planName,
@@ -36,7 +34,7 @@ export async function GET(req: NextRequest) {
           currency: sub.currency,
           cycle: sub.cycle,
           expiryDate: format(sub.currentPeriodEnd, "dd MMM yyyy"),
-          renewUrl: `${baseUrl}/pricing`,
+          renewUrl: `${settings.appUrl}/pricing`,
         })
         sent++
       } catch (err) {

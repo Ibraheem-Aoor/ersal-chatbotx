@@ -1,8 +1,9 @@
-import { renewalService, tenantService } from "@chatbotx.io/business"
-import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
+import {
+  renewalService,
+  resolveTenantSettingsByDomain,
+} from "@chatbotx.io/business"
 import { sendSubscriptionExpired } from "@chatbotx.io/mail"
 import { type NextRequest, NextResponse } from "next/server"
-import { env } from "@/env"
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret")
@@ -13,10 +14,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-    const tenant = await tenantService.findById(ROOT_TENANT_ID)
-    const brandName = tenant?.brandName ?? "Ersal"
-    const brandLogoUrl = `${baseUrl}/brand/logo.svg`
+    const settings = await resolveTenantSettingsByDomain(null)
 
     const result = await renewalService.expirePastDue(3)
 
@@ -24,13 +22,13 @@ export async function GET(req: NextRequest) {
       try {
         await sendSubscriptionExpired(sub.userEmail, {
           subject: `انتهى اشتراكك في باقة ${sub.planName}`,
-          brandName,
-          brandLogoUrl,
-          brandUrl: baseUrl,
+          brandName: settings.name,
+          brandLogoUrl: settings.logoLightUrl,
+          brandUrl: settings.appUrl,
           dir: "rtl",
           userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
           planName: sub.planName,
-          renewUrl: `${baseUrl}/pricing`,
+          renewUrl: `${settings.appUrl}/pricing`,
         })
       } catch (err) {
         console.error(

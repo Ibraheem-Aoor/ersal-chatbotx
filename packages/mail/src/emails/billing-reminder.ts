@@ -10,17 +10,17 @@ export type BillingReminderProps = BaseEmailProps & {
   renewUrl: string
 }
 
-export const RENEWAL_REMINDER_BODY_MJML = `<mj-section padding="0 0 16px 0" direction="rtl" text-align="right">
+export const RENEWAL_REMINDER_BODY_MJML = `<mj-section padding="0 0 16px 0">
       <mj-column>
-        <mj-text padding="0 0 8px 0" direction="rtl" align="right">مرحباً {{userName}}،</mj-text>
-        <mj-text padding="0" direction="rtl" align="right">
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
           سيتم تجديد اشتراكك في باقة <strong>{{planName}}</strong> ({{amount}} {{currency}}/{{cycle}})
           تلقائياً بتاريخ <strong>{{expiryDate}}</strong>.
-        </mj-text>
-        <mj-text padding="8px 0 0 0" direction="rtl" align="right">
+        </div></mj-text>
+        <mj-text padding="8px 0 0 0" align="right"><div dir="rtl" style="text-align: right;">
           إذا كانت لديك طريقة دفع محفوظة، سيتم التجديد تلقائياً.
           وإلا، يرجى تحديث طريقة الدفع لتجنب انقطاع الخدمة.
-        </mj-text>
+        </div></mj-text>
       </mj-column>
     </mj-section>
     <mj-section padding="0 0 16px 0">
@@ -49,14 +49,14 @@ export type PaymentFailedProps = BaseEmailProps & {
   renewUrl: string
 }
 
-export const PAYMENT_FAILED_BODY_MJML = `<mj-section padding="0 0 16px 0" direction="rtl" text-align="right">
+export const PAYMENT_FAILED_BODY_MJML = `<mj-section padding="0 0 16px 0">
       <mj-column>
-        <mj-text padding="0 0 8px 0" direction="rtl" align="right">مرحباً {{userName}}،</mj-text>
-        <mj-text padding="0" direction="rtl" align="right">
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
           لم نتمكن من معالجة التجديد التلقائي لاشتراكك في باقة <strong>{{planName}}</strong>.
           حسابك الآن في فترة سماح — لديك <strong>3 أيام</strong> لتحديث طريقة الدفع
           قبل تخفيض اشتراكك.
-        </mj-text>
+        </div></mj-text>
       </mj-column>
     </mj-section>
     <mj-section padding="0 0 16px 0">
@@ -81,16 +81,16 @@ export type SubscriptionExpiredProps = BaseEmailProps & {
   renewUrl: string
 }
 
-export const SUBSCRIPTION_EXPIRED_BODY_MJML = `<mj-section padding="0 0 16px 0" direction="rtl" text-align="right">
+export const SUBSCRIPTION_EXPIRED_BODY_MJML = `<mj-section padding="0 0 16px 0">
       <mj-column>
-        <mj-text padding="0 0 8px 0" direction="rtl" align="right">مرحباً {{userName}}،</mj-text>
-        <mj-text padding="0" direction="rtl" align="right">
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
           انتهى اشتراكك في باقة <strong>{{planName}}</strong> بسبب فشل عملية الدفع.
           تم نقل حسابك إلى الباقة المجانية بميزات محدودة.
-        </mj-text>
-        <mj-text padding="8px 0 0 0" direction="rtl" align="right">
+        </div></mj-text>
+        <mj-text padding="8px 0 0 0" align="right"><div dir="rtl" style="text-align: right;">
           لاستعادة باقتك السابقة وجميع الميزات، يرجى إعادة الاشتراك.
-        </mj-text>
+        </div></mj-text>
       </mj-column>
     </mj-section>
     <mj-section padding="0 0 16px 0">

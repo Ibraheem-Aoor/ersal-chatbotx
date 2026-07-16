@@ -1,8 +1,9 @@
-import { renewalService, tenantService } from "@chatbotx.io/business"
-import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
+import {
+  renewalService,
+  resolveTenantSettingsByDomain,
+} from "@chatbotx.io/business"
 import { sendPaymentFailed } from "@chatbotx.io/mail"
 import { type NextRequest, NextResponse } from "next/server"
-import { env } from "@/env"
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret")
@@ -17,10 +18,7 @@ export async function GET(req: NextRequest) {
     let renewed = 0
     let failed = 0
 
-    const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
-    const tenant = await tenantService.findById(ROOT_TENANT_ID)
-    const brandName = tenant?.brandName ?? "Ersal"
-    const brandLogoUrl = `${baseUrl}/brand/logo.svg`
+    const settings = await resolveTenantSettingsByDomain(null)
 
     for (const sub of due) {
       if (!sub.paymentToken) {
@@ -48,13 +46,13 @@ export async function GET(req: NextRequest) {
         try {
           await sendPaymentFailed(sub.userEmail, {
             subject: `فشل دفع اشتراك ${sub.planName}`,
-            brandName,
-            brandLogoUrl,
-            brandUrl: baseUrl,
+            brandName: settings.name,
+            brandLogoUrl: settings.logoLightUrl,
+            brandUrl: settings.appUrl,
             dir: "rtl",
             userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
             planName: sub.planName,
-            renewUrl: `${baseUrl}/pricing`,
+            renewUrl: `${settings.appUrl}/pricing`,
           })
         } catch (err) {
           console.error(
