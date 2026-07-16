@@ -1,5 +1,8 @@
 import { renewalService } from "@chatbotx.io/business"
+import { sendRenewalReminder } from "@chatbotx.io/mail"
+import { format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
+import { env } from "@/env"
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret")
@@ -11,17 +14,39 @@ export async function GET(req: NextRequest) {
 
   try {
     const expiring = await renewalService.findExpiringIn(3)
+    let sent = 0
+
+    const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
+    const brandName = process.env.BRAND_NAME ?? "ChatbotX"
+    const brandLogoUrl = `${baseUrl}/logo.svg`
 
     for (const sub of expiring) {
-      console.log(
-        `[billing:remind] Subscription ${sub.id} for user ${sub.userId} ` +
-          `(${sub.userEmail}) expires at ${sub.currentPeriodEnd.toISOString()}. ` +
-          `Plan: ${sub.planName}, Amount: ${sub.amount} ${sub.currency}`,
-      )
+      try {
+        await sendRenewalReminder(sub.userEmail, {
+          subject: `Your ${sub.planName} subscription renews soon`,
+          brandName,
+          brandLogoUrl,
+          brandUrl: baseUrl,
+          userName: sub.userEmail.split("@")[0] ?? "Customer",
+          planName: sub.planName,
+          amount: sub.amount,
+          currency: sub.currency,
+          cycle: sub.cycle,
+          expiryDate: format(sub.currentPeriodEnd, "dd MMM yyyy"),
+          renewUrl: `${baseUrl}/pricing`,
+        })
+        sent++
+      } catch (err) {
+        console.error(
+          `[billing:remind] Failed to send reminder to ${sub.userEmail}:`,
+          err,
+        )
+      }
     }
 
     return NextResponse.json({
-      reminded: expiring.length,
+      found: expiring.length,
+      sent,
       subscriptions: expiring.map((s) => ({
         id: s.id,
         userId: s.userId,

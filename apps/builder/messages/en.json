@@ -312,6 +312,14 @@
       "message": "Your last payment failed. Update your payment method to keep your workspace active.",
       "gracePeriod": "You have {days} days to update your payment before your subscription is suspended."
     },
+    "banner": {
+      "expiring": "Your subscription expires in {days} days. Renew now to keep your services.",
+      "pastDue": "Your subscription payment is overdue. Your account will be downgraded in {days} days if payment is not made.",
+      "expired": "Your subscription has expired. You are now on the free plan. Upgrade to restore your services.",
+      "renewCta": "Renew Subscription",
+      "payCta": "Pay Now",
+      "upgradeCta": "Upgrade"
+    },
     "renewal": {
       "subject": "Your subscription will renew soon",
       "message": "Your {planName} subscription ({amount} {currency}/{cycle}) will auto-renew on {date}.",

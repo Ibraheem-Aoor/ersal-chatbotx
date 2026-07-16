@@ -1,7 +1,8 @@
-import { and, db, eq, isNotNull, lte, sql } from "@chatbotx.io/database/client"
+import { and, db, eq, isNotNull, lte } from "@chatbotx.io/database/client"
 import {
   billingPlanModel,
   subscriptionModel,
+  userModel,
 } from "@chatbotx.io/database/schema"
 import { userQuotaService } from "../user-quota"
 import { getPaymentGateway } from "./payment-gateway-factory"
@@ -47,12 +48,15 @@ export class RenewalService {
         planPrice: billingPlanModel.price,
         planCurrency: billingPlanModel.currency,
         planLimits: billingPlanModel.limits,
+        userEmail: userModel.email,
+        userName: userModel.name,
       })
       .from(subscriptionModel)
       .innerJoin(
         billingPlanModel,
         eq(subscriptionModel.planId, billingPlanModel.id),
       )
+      .innerJoin(userModel, eq(subscriptionModel.userId, userModel.id))
       .where(
         and(
           eq(subscriptionModel.status, "active"),
@@ -70,8 +74,16 @@ export class RenewalService {
         userId: subscriptionModel.userId,
         planId: subscriptionModel.planId,
         currentPeriodEnd: subscriptionModel.currentPeriodEnd,
+        planName: billingPlanModel.name,
+        userEmail: userModel.email,
+        userName: userModel.name,
       })
       .from(subscriptionModel)
+      .innerJoin(
+        billingPlanModel,
+        eq(subscriptionModel.planId, billingPlanModel.id),
+      )
+      .innerJoin(userModel, eq(subscriptionModel.userId, userModel.id))
       .where(
         and(
           eq(subscriptionModel.status, "past_due"),
@@ -93,13 +105,15 @@ export class RenewalService {
         currency: subscriptionModel.currency,
         currentPeriodEnd: subscriptionModel.currentPeriodEnd,
         planName: billingPlanModel.name,
-        userEmail: sql<string>`(SELECT email FROM "User" WHERE id = ${subscriptionModel.userId})`,
+        userEmail: userModel.email,
+        userName: userModel.name,
       })
       .from(subscriptionModel)
       .innerJoin(
         billingPlanModel,
         eq(subscriptionModel.planId, billingPlanModel.id),
       )
+      .innerJoin(userModel, eq(subscriptionModel.userId, userModel.id))
       .where(
         and(
           eq(subscriptionModel.status, "active"),
@@ -256,9 +270,14 @@ export class RenewalService {
     return { renewed, failed }
   }
 
-  async expirePastDue(graceDays = 3): Promise<{ expired: number }> {
+  async expirePastDue(graceDays = 3) {
     const overdue = await this.findExpiredPastDue(graceDays)
-    let expired = 0
+    const expiredSubs: {
+      userId: string
+      userEmail: string
+      userName: string | null
+      planName: string
+    }[] = []
 
     for (const sub of overdue) {
       await db
@@ -281,10 +300,15 @@ export class RenewalService {
         periodEnd: addYears(new Date(), 99),
       })
 
-      expired++
+      expiredSubs.push({
+        userId: sub.userId,
+        userEmail: sub.userEmail,
+        userName: sub.userName,
+        planName: sub.planName,
+      })
     }
 
-    return { expired }
+    return { expired: expiredSubs.length, expiredSubs }
   }
 }
 
