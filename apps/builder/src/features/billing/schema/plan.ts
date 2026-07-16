@@ -20,6 +20,8 @@ export const createPlanSchema = z.object({
   limits: planLimitsSchema,
   features: z.array(z.string()),
   isActive: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
+  trialDays: z.coerce.number().int().min(0).optional(),
   sortOrder: z.coerce.number().int().default(0),
 })
 

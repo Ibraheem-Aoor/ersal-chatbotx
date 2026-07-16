@@ -358,7 +358,13 @@
       "noPlan": "لا يوجد اشتراك نشط",
       "noPlanDescription": "ليس لديك اشتراك نشط. تصفح الباقات للبدء.",
       "viewPlans": "عرض الباقات",
-      "manageSubscription": "إدارة الاشتراك"
+      "manageSubscription": "إدارة الاشتراك",
+      "updatePayment": "تحديث طريقة الدفع",
+      "retryPayment": "إعادة المحاولة",
+      "retrySuccess": "تمت معالجة الدفع بنجاح!",
+      "retryFailed": "فشلت إعادة المحاولة. يرجى المحاولة مرة أخرى.",
+      "resubscribe": "أعد الاشتراك",
+      "subscribePlan": "اشترك في باقة"
     },
     "paymentHistory": {
       "columns": {
@@ -3496,6 +3502,8 @@
     "createPlan": "إنشاء باقة",
     "editPlan": "تعديل الباقة",
     "noPlans": "لا توجد باقات بعد. أنشئ أول باقة.",
+    "defaultBadge": "افتراضية",
+    "trialDaysBadge": "{days} يوم تجربة",
     "active": "مفعّلة",
     "inactive": "معطّلة",
     "currentPlan": "الباقة الحالية",
@@ -3512,7 +3520,9 @@
       "price": "السعر (ر.س)",
       "billingCycle": "دورة الفوترة",
       "isActive": "مفعّلة",
-      "sortOrder": "ترتيب العرض"
+      "sortOrder": "ترتيب العرض",
+      "isDefault": "الباقة الافتراضية",
+      "trialDays": "فترة التجربة (أيام)"
     },
     "billingCycleOptions": {
       "monthly": "شهري",

@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
             dir: "rtl",
             userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
             planName: sub.planName,
-            renewUrl: `${settings.appUrl}/pricing`,
+            renewUrl: settings.appUrl,
           })
         } catch (err) {
           console.error(

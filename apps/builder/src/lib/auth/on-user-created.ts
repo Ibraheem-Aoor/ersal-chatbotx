@@ -1,5 +1,9 @@
 import type { AuthCreatedUser } from "@chatbotx.io/auth/server"
-import { userQuotaService } from "@chatbotx.io/business"
+import {
+  billingPlanService,
+  subscriptionService,
+  userQuotaService,
+} from "@chatbotx.io/business"
 import { QuotaJobAction, quotaQueue } from "@chatbotx.io/worker-config"
 import { isCloud } from "@/env"
 import { logger } from "@/lib/log"
@@ -21,7 +25,52 @@ import { logger } from "@/lib/log"
  * sign-up. The backfill job reconciles anything missed here.
  */
 export async function onUserCreated(user: AuthCreatedUser): Promise<void> {
-  if (!isCloud() || user.isAnonymous) {
+  if (user.isAnonymous) {
+    return
+  }
+
+  if (!isCloud()) {
+    try {
+      const defaultPlan = await billingPlanService.findDefault()
+      if (defaultPlan?.trialDays) {
+        const now = new Date()
+        const trialEnd = new Date(now)
+        trialEnd.setDate(trialEnd.getDate() + defaultPlan.trialDays)
+
+        await subscriptionService.createOrUpdate({
+          data: {
+            userId: user.id,
+            planId: defaultPlan.id,
+            status: "trial",
+            cycle: defaultPlan.billingCycle,
+            amount: defaultPlan.price,
+            currency: defaultPlan.currency,
+            currentPeriodStart: now,
+            currentPeriodEnd: trialEnd,
+          },
+        })
+
+        await userQuotaService.applyPlanEntitlements({
+          userId: user.id,
+          planName: defaultPlan.name,
+          contactsLimit: defaultPlan.limits.contacts,
+          macLimit: defaultPlan.limits.mac,
+          workspacesLimit: defaultPlan.limits.workspaces,
+          channelsLimit: defaultPlan.limits.channels,
+          teamMembersLimit: defaultPlan.limits.teamMembers,
+          flowsLimit: defaultPlan.limits.flows,
+          broadcastsLimit: defaultPlan.limits.broadcasts,
+          aiAgentsEnabled: defaultPlan.limits.aiAgents,
+          periodStart: now,
+          periodEnd: trialEnd,
+        })
+      }
+    } catch (err) {
+      logger.warn(
+        { err, userId: user.id },
+        "Failed to provision default trial plan on sign-up",
+      )
+    }
     return
   }
 

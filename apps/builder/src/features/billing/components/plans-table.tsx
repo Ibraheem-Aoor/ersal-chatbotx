@@ -29,6 +29,8 @@ type PlanRow = {
   limits: CreatePlanInput["limits"]
   features: string[]
   isActive: boolean
+  isDefault: boolean
+  trialDays: number | null
   sortOrder: number
 }
 
@@ -92,7 +94,19 @@ function PlanTableRow({ plan }: { plan: PlanRow }) {
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{plan.name}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {plan.name}
+          {plan.isDefault && (
+            <Badge variant="outline">{t("plans.defaultBadge")}</Badge>
+          )}
+        </div>
+        {plan.isDefault && plan.trialDays != null && plan.trialDays > 0 && (
+          <span className="text-muted-foreground text-xs">
+            {t("plans.trialDaysBadge", { days: plan.trialDays })}
+          </span>
+        )}
+      </TableCell>
       <TableCell>
         {plan.price} {t("plans.currency.sar")}
       </TableCell>

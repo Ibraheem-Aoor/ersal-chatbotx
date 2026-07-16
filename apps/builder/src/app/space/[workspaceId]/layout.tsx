@@ -2,6 +2,7 @@ import {
   isPlatformAdmin,
   isSuperAdmin,
   quotaEnforcementService,
+  subscriptionService,
   userQuotaService,
   workspaceMemberService,
 } from "@chatbotx.io/business"
@@ -64,6 +65,15 @@ export default async function WorkspaceLayout({
   // Derived from the quota already fetched above — no extra query.
   if (cloud && userQuotaService.getAccessStateFromQuota(quota).blocked) {
     redirect("/trial-expired")
+  }
+
+  if (!(cloud || platformAdmin)) {
+    const subscription = await subscriptionService.findByUserId({
+      userId: user.id,
+    })
+    if (subscription?.status === "expired") {
+      redirect("/pricing")
+    }
   }
 
   const allWorkspaces = allWorkspaceMembers.map((workspaceMember) => ({

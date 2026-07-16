@@ -358,7 +358,13 @@
       "noPlan": "No active subscription",
       "noPlanDescription": "You don't have an active subscription. Browse our plans to get started.",
       "viewPlans": "View Plans",
-      "manageSubscription": "Manage Subscription"
+      "manageSubscription": "Manage Subscription",
+      "updatePayment": "Update Payment Method",
+      "retryPayment": "Retry Payment",
+      "retrySuccess": "Payment processed successfully!",
+      "retryFailed": "Payment retry failed. Please try again.",
+      "resubscribe": "Resubscribe",
+      "subscribePlan": "Subscribe to a Plan"
     },
     "paymentHistory": {
       "columns": {
@@ -3537,6 +3543,8 @@
     "createPlan": "Create Plan",
     "editPlan": "Edit Plan",
     "noPlans": "No plans yet. Create your first plan.",
+    "defaultBadge": "Default",
+    "trialDaysBadge": "{days} day trial",
     "active": "Active",
     "inactive": "Inactive",
     "currentPlan": "Current Plan",
@@ -3553,7 +3561,9 @@
       "price": "Price (SAR)",
       "billingCycle": "Billing Cycle",
       "isActive": "Active",
-      "sortOrder": "Sort Order"
+      "sortOrder": "Sort Order",
+      "isDefault": "Default Plan",
+      "trialDays": "Trial Period (days)"
     },
     "billingCycleOptions": {
       "monthly": "Monthly",

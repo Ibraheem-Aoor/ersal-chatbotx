@@ -27,6 +27,30 @@ export class BillingPlanService {
     return row ?? null
   }
 
+  async findDefault(props?: { tx?: DatabaseClient }) {
+    const { tx = db } = props ?? {}
+    const [row] = await tx
+      .select()
+      .from(billingPlanModel)
+      .where(eq(billingPlanModel.isDefault, true))
+      .limit(1)
+    return row ?? null
+  }
+
+  async setDefault(props: { tx?: DatabaseClient; id: string }) {
+    const { tx = db, id } = props
+    await tx
+      .update(billingPlanModel)
+      .set({ isDefault: false })
+      .where(eq(billingPlanModel.isDefault, true))
+    const [row] = await tx
+      .update(billingPlanModel)
+      .set({ isDefault: true })
+      .where(eq(billingPlanModel.id, id))
+      .returning()
+    return row
+  }
+
   async create(props: {
     tx?: DatabaseClient
     data: {
@@ -38,6 +62,8 @@ export class BillingPlanService {
       limits: BillingPlanLimits
       features: string[]
       isActive?: boolean
+      isDefault?: boolean
+      trialDays?: number | null
       sortOrder?: number
     }
   }) {
@@ -53,6 +79,8 @@ export class BillingPlanService {
         limits: data.limits,
         features: data.features,
         isActive: data.isActive ?? true,
+        isDefault: data.isDefault ?? false,
+        trialDays: data.trialDays ?? null,
         sortOrder: data.sortOrder ?? 0,
       })
       .returning()
@@ -71,6 +99,8 @@ export class BillingPlanService {
       limits?: BillingPlanLimits
       features?: string[]
       isActive?: boolean
+      isDefault?: boolean
+      trialDays?: number | null
       sortOrder?: number
     }
   }) {

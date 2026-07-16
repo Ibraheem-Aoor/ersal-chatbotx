@@ -14,5 +14,12 @@ export const updatePlanAction = platformAdminActionClient
     if (!existing) {
       throw new ChatbotXException("Plan not found")
     }
-    return await billingPlanService.update({ id: planId, data: parsedInput })
+    const plan = await billingPlanService.update({
+      id: planId,
+      data: parsedInput,
+    })
+    if (parsedInput.isDefault) {
+      await billingPlanService.setDefault({ id: planId })
+    }
+    return plan
   })

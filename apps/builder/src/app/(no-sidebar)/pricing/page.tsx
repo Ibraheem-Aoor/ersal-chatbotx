@@ -16,10 +16,23 @@ export default async function PricingPage() {
   }
 
   const t = await getTranslations()
-  const [plans, activeSub] = await Promise.all([
+  const [plans, subscription] = await Promise.all([
     billingPlanService.list({ activeOnly: true }),
-    subscriptionService.findActiveByUserId({ userId: user.id }),
+    subscriptionService.findByUserId({ userId: user.id }),
   ])
+
+  const isActiveSub = subscription?.status === "active"
+  const isTrial = subscription?.status === "trial"
+  const trialDaysLeft =
+    isTrial && subscription.currentPeriodEnd
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(subscription.currentPeriodEnd).getTime() - Date.now()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        )
+      : null
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-6">
@@ -34,10 +47,15 @@ export default async function PricingPage() {
         <p className="mt-2 text-muted-foreground">
           {t("plans.pricingDescription")}
         </p>
+        {isTrial && trialDaysLeft !== null && (
+          <p className="mt-2 font-medium text-amber-600">
+            {t("billing.trial.daysLeft", { days: trialDaysLeft })}
+          </p>
+        )}
       </div>
 
       <PricingCards
-        currentPlanId={activeSub?.planId}
+        currentPlanId={isActiveSub ? subscription.planId : undefined}
         gatewayType={getPaymentGateway().name()}
         plans={plans}
       />

@@ -38,5 +38,7 @@ export const billingPlanModel = pgTable("BillingPlan", {
   limits: jsonb().$type<BillingPlanLimits>().notNull(),
   features: jsonb().$type<string[]>().notNull().default(sql`'[]'`),
   isActive: boolean().notNull().default(true),
+  isDefault: boolean().notNull().default(false),
+  trialDays: integer(),
   sortOrder: integer().notNull().default(0),
 })

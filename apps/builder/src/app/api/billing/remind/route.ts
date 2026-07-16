@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
           currency: sub.currency,
           cycle: sub.cycle,
           expiryDate: format(sub.currentPeriodEnd, "dd MMM yyyy"),
-          renewUrl: `${settings.appUrl}/pricing`,
+          renewUrl: settings.appUrl,
         })
         sent++
       } catch (err) {

@@ -25,6 +25,7 @@ import { ar } from "date-fns/locale"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
+import { RetryPaymentButton } from "@/features/billing/components/retry-payment-button"
 import { getCurrentUser } from "@/lib/auth/utils"
 
 const STATUS_VARIANT: Record<
@@ -156,10 +157,36 @@ export default async function BillingPage({
                 </p>
               </div>
             )}
-            <div className="pt-2">
-              <Button asChild variant="outline">
-                <Link href="/pricing">{t("billing.manage.changePlan")}</Link>
-              </Button>
+            <div className="flex flex-wrap gap-2 pt-2">
+              {subscription.status === "past_due" && (
+                <>
+                  {subscription.paymentToken && <RetryPaymentButton />}
+                  <Button asChild variant="outline">
+                    <Link
+                      href={`/billing/checkout?planId=${subscription.planId}&billingCycle=${subscription.cycle}`}
+                    >
+                      {t("billing.manage.updatePayment")}
+                    </Link>
+                  </Button>
+                </>
+              )}
+              {subscription.status === "expired" && (
+                <Button asChild variant="destructive">
+                  <Link href="/pricing">{t("billing.manage.resubscribe")}</Link>
+                </Button>
+              )}
+              {subscription.status === "active" && (
+                <Button asChild variant="outline">
+                  <Link href="/pricing">{t("billing.manage.changePlan")}</Link>
+                </Button>
+              )}
+              {subscription.status === "trial" && (
+                <Button asChild>
+                  <Link href="/pricing">
+                    {t("billing.manage.subscribePlan")}
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

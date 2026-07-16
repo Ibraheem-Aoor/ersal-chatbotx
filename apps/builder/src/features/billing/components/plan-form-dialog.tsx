@@ -33,6 +33,8 @@ type PlanRow = {
   limits: CreatePlanInput["limits"]
   features: string[]
   isActive: boolean
+  isDefault: boolean
+  trialDays: number | null
   sortOrder: number
 }
 
@@ -90,12 +92,15 @@ export function PlanFormDialog({
           },
           features: plan?.features ?? [],
           isActive: plan?.isActive ?? true,
+          isDefault: plan?.isDefault ?? false,
+          trialDays: plan?.trialDays ?? undefined,
           sortOrder: plan?.sortOrder ?? 0,
         },
       },
     })
 
   const features = form.watch("features")
+  const isDefaultValue = form.watch("isDefault")
 
   const [newFeature, setNewFeature] = useState("")
 
@@ -181,6 +186,21 @@ export function PlanFormDialog({
                 type="number"
               />
               <SwitchField label={t("plans.fields.isActive")} name="isActive" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <SwitchField
+                label={t("plans.fields.isDefault")}
+                name="isDefault"
+              />
+              {isDefaultValue && (
+                <InputField
+                  label={t("plans.fields.trialDays")}
+                  min={0}
+                  name="trialDays"
+                  type="number"
+                />
+              )}
             </div>
 
             <h4 className="mt-2 font-semibold text-sm">
