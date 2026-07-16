@@ -1,7 +1,11 @@
-import { billingPlanService, getPaymentGateway } from "@chatbotx.io/business"
+import {
+  billingInfoService,
+  billingPlanService,
+  getPaymentGateway,
+} from "@chatbotx.io/business"
 import { notFound, redirect } from "next/navigation"
 import { env } from "@/env"
-import { MoyasarCheckoutForm } from "@/features/billing/components/moyasar-checkout-form"
+import { CheckoutWithBillingInfo } from "@/features/billing/components/checkout-with-billing-info"
 import { getCurrentUser } from "@/lib/auth/utils"
 
 export default async function BillingCheckoutPage(props: {
@@ -33,11 +37,26 @@ export default async function BillingCheckoutPage(props: {
 
   const baseUrl = env.NEXT_PUBLIC_BUILDER_URL
   const publishableKey = process.env.MOYASAR_PUBLISHABLE_KEY ?? ""
+  const billingInfo = await billingInfoService.findByUserId({
+    userId: user.id,
+  })
 
   return (
-    <MoyasarCheckoutForm
+    <CheckoutWithBillingInfo
       amount={Math.round(Number(plan.price) * 100)}
       billingCycle={billingCycle}
+      billingInfo={
+        billingInfo
+          ? {
+              companyName: billingInfo.companyName,
+              vatNumber: billingInfo.vatNumber,
+              billingEmail: billingInfo.billingEmail,
+              country: billingInfo.country,
+              city: billingInfo.city,
+              address: billingInfo.address,
+            }
+          : null
+      }
       callbackUrl={`${baseUrl}/api/billing/callback`}
       currency={plan.currency}
       description={plan.name}
@@ -47,6 +66,8 @@ export default async function BillingCheckoutPage(props: {
         userName: user.name ?? "Customer",
         planId: plan.id,
         billingCycle,
+        companyName: billingInfo?.companyName ?? "",
+        billingEmail: billingInfo?.billingEmail ?? user.email,
       }}
       planName={plan.name}
       planPrice={plan.price}

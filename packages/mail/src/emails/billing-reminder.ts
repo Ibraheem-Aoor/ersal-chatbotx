@@ -174,3 +174,82 @@ export function buildSubscriptionExpiredMjml(
     .replace(/\{\{renewUrl\}\}/g, esc(props.renewUrl))
   return buildSystemEmail(props, body)
 }
+
+export type PaymentConfirmationProps = BaseEmailProps & {
+  userName: string
+  planName: string
+  amount: string
+  currency: string
+  cycle: string
+  periodStart: string
+  periodEnd: string
+  gatewayPaymentId: string
+  companyName?: string
+  vatNumber?: string
+  baseAmount: string
+  vatAmount: string
+  totalAmount: string
+  receiptUrl: string
+}
+
+export const PAYMENT_CONFIRMATION_BODY_MJML = `<mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-text padding="0 0 8px 0" align="right"><div dir="rtl" style="text-align: right;">مرحباً {{userName}}،</div></mj-text>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
+          شكراً لك! تم الدفع بنجاح لباقة <strong>{{planName}}</strong>.
+        </div></mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-text padding="0" align="right"><div dir="rtl" style="text-align: right;">
+          <strong>تفاصيل الدفع:</strong><br/>
+          الباقة: {{planName}} ({{cycle}})<br/>
+          فترة الاشتراك: {{periodStart}} → {{periodEnd}}<br/>
+          رقم المرجع: {{gatewayPaymentId}}<br/>
+          {{companyInfo}}
+        </div></mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 16px 0" background-color="#f8f9fa">
+      <mj-column>
+        <mj-text padding="8px 0" align="right"><div dir="rtl" style="text-align: right;">
+          المبلغ قبل الضريبة: {{baseAmount}} {{currency}}<br/>
+          ضريبة القيمة المضافة (15%): {{vatAmount}} {{currency}}<br/>
+          <strong>الإجمالي: {{totalAmount}} {{currency}}</strong>
+        </div></mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="0 0 16px 0">
+      <mj-column>
+        <mj-button href="{{receiptUrl}}" align="right">عرض الإيصال</mj-button>
+      </mj-column>
+    </mj-section>`
+
+export function buildPaymentConfirmationMjml(
+  props: PaymentConfirmationProps,
+): string {
+  let companyInfo = ""
+  if (props.companyName) {
+    companyInfo += `الشركة: ${esc(props.companyName)}<br/>`
+  }
+  if (props.vatNumber) {
+    companyInfo += `الرقم الضريبي: ${esc(props.vatNumber)}<br/>`
+  }
+  const body = PAYMENT_CONFIRMATION_BODY_MJML.replace(
+    /\{\{userName\}\}/g,
+    esc(props.userName),
+  )
+    .replace(/\{\{planName\}\}/g, esc(props.planName))
+    .replace(/\{\{cycle\}\}/g, esc(props.cycle))
+    .replace(/\{\{periodStart\}\}/g, esc(props.periodStart))
+    .replace(/\{\{periodEnd\}\}/g, esc(props.periodEnd))
+    .replace(/\{\{gatewayPaymentId\}\}/g, esc(props.gatewayPaymentId))
+    .replace(/\{\{companyInfo\}\}/g, companyInfo)
+    .replace(/\{\{baseAmount\}\}/g, esc(props.baseAmount))
+    .replace(/\{\{vatAmount\}\}/g, esc(props.vatAmount))
+    .replace(/\{\{totalAmount\}\}/g, esc(props.totalAmount))
+    .replace(/\{\{currency\}\}/g, esc(props.currency))
+    .replace(/\{\{receiptUrl\}\}/g, esc(props.receiptUrl))
+  return buildSystemEmail(props, body)
+}

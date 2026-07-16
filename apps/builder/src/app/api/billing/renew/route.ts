@@ -1,8 +1,10 @@
 import {
+  billingInfoService,
   renewalService,
   resolveTenantSettingsByDomain,
 } from "@chatbotx.io/business"
-import { sendPaymentFailed } from "@chatbotx.io/mail"
+import { sendPaymentConfirmation, sendPaymentFailed } from "@chatbotx.io/mail"
+import { format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
@@ -41,6 +43,43 @@ export async function GET(req: NextRequest) {
 
       if (result.success) {
         renewed++
+        try {
+          const [billingInfo] = await Promise.all([
+            billingInfoService.findByUserId({ userId: sub.userId }),
+          ])
+          const total = Number.parseFloat(sub.planPrice)
+          const base = Math.round((total / 1.15) * 100) / 100
+          const vat = Math.round((total - base) * 100) / 100
+          const recipientEmail = billingInfo?.billingEmail ?? sub.userEmail
+          const receiptUrl = `${settings.appUrl}/billing/receipt/${result.paymentHistoryId}`
+
+          await sendPaymentConfirmation(recipientEmail, {
+            subject: `تأكيد الدفع - ${sub.planName}`,
+            brandName: settings.name,
+            brandLogoUrl: settings.logoLightUrl,
+            brandUrl: settings.appUrl,
+            dir: "rtl",
+            userName: sub.userName ?? sub.userEmail.split("@")[0] ?? "العميل",
+            planName: sub.planName,
+            amount: sub.planPrice,
+            currency: sub.planCurrency,
+            cycle: sub.cycle,
+            periodStart: format(result.periodStart, "dd MMM yyyy"),
+            periodEnd: format(result.periodEnd, "dd MMM yyyy"),
+            gatewayPaymentId: result.gatewayPaymentId,
+            companyName: billingInfo?.companyName,
+            vatNumber: billingInfo?.vatNumber ?? undefined,
+            baseAmount: base.toFixed(2),
+            vatAmount: vat.toFixed(2),
+            totalAmount: total.toFixed(2),
+            receiptUrl,
+          })
+        } catch (err) {
+          console.error(
+            `[billing:renew] Failed to send confirmation email to ${sub.userEmail}:`,
+            err,
+          )
+        }
       } else {
         failed++
         try {

@@ -20,6 +20,7 @@ import { accountRelations } from "./auth-account"
 import { invitationRelations } from "./auth-invitation"
 import { sessionRelations } from "./auth-session"
 import { automatedResponseRelations } from "./automated-response"
+import { billingInfoRelations } from "./billing-info"
 import { billingPlanRelations } from "./billing-plan"
 import { botFieldRelations } from "./bot-field"
 import { broadcastRelations } from "./broadcast"
@@ -123,6 +124,7 @@ export const relations = {
   ...aiFileRelations,
   ...flowRelations,
   ...aiMCPServerRelations,
+  ...billingInfoRelations,
   ...billingPlanRelations,
   ...attachmentRelations,
   ...conversationRelations,

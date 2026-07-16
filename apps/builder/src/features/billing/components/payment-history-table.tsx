@@ -135,6 +135,7 @@ export function PaymentHistoryTable({ payments }: { payments: PaymentRow[] }) {
               <TableHead>
                 {t("billing.paymentHistory.columns.subscription")}
               </TableHead>
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,7 +143,7 @@ export function PaymentHistoryTable({ payments }: { payments: PaymentRow[] }) {
               <TableRow>
                 <TableCell
                   className="text-center text-muted-foreground"
-                  colSpan={9}
+                  colSpan={10}
                 >
                   {t("billing.manage.noPayments")}
                 </TableCell>
@@ -192,6 +193,16 @@ export function PaymentHistoryTable({ payments }: { payments: PaymentRow[] }) {
                     </Link>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {p.status === "paid" && (
+                    <Link
+                      className="text-primary text-xs hover:underline"
+                      href={`/billing/receipt/${p.id}`}
+                    >
+                      {t("billing.receipt.viewReceipt")}
+                    </Link>
                   )}
                 </TableCell>
               </TableRow>

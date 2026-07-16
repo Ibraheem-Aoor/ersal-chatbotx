@@ -1,3 +1,4 @@
+export * from "./billing-info-service"
 export * from "./payment-gateway"
 export * from "./payment-gateway-factory"
 export * from "./payment-history-service"

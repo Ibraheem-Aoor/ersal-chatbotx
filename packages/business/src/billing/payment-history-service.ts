@@ -35,6 +35,32 @@ export class PaymentHistoryService {
     return row
   }
 
+  async findById(props: { tx?: DatabaseClient; id: string }) {
+    const { tx = db, id } = props
+    return await tx
+      .select({
+        id: paymentHistoryModel.id,
+        createdAt: paymentHistoryModel.createdAt,
+        userId: paymentHistoryModel.userId,
+        subscriptionId: paymentHistoryModel.subscriptionId,
+        planId: paymentHistoryModel.planId,
+        planName: paymentHistoryModel.planName,
+        amount: paymentHistoryModel.amount,
+        currency: paymentHistoryModel.currency,
+        type: paymentHistoryModel.type,
+        status: paymentHistoryModel.status,
+        paymentGateway: paymentHistoryModel.paymentGateway,
+        gatewayPaymentId: paymentHistoryModel.gatewayPaymentId,
+        metadata: paymentHistoryModel.metadata,
+        userEmail: userModel.email,
+        userName: userModel.name,
+      })
+      .from(paymentHistoryModel)
+      .innerJoin(userModel, eq(paymentHistoryModel.userId, userModel.id))
+      .where(eq(paymentHistoryModel.id, id))
+      .then((rows) => rows[0] ?? null)
+  }
+
   listByUserId(props: { tx?: DatabaseClient; userId: string }) {
     const { tx = db, userId } = props
     return tx.query.paymentHistoryModel.findMany({

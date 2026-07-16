@@ -366,6 +366,38 @@
       "resubscribe": "Resubscribe",
       "subscribePlan": "Subscribe to a Plan"
     },
+    "billingInfo": {
+      "title": "Billing Information",
+      "companyName": "Company Name",
+      "vatNumber": "VAT Number",
+      "billingEmail": "Billing Email",
+      "country": "Country",
+      "city": "City",
+      "address": "Address",
+      "saved": "Billing information saved",
+      "edit": "Edit",
+      "continueToPayment": "Continue to Payment"
+    },
+    "receipt": {
+      "title": "Payment Receipt",
+      "receiptNumber": "Receipt Number",
+      "date": "Date",
+      "companyInfo": "Company Information",
+      "planDetails": "Plan Details",
+      "planName": "Plan",
+      "paymentType": "Payment Type",
+      "amountBreakdown": "Amount Breakdown",
+      "subtotal": "Subtotal (excl. VAT)",
+      "vat": "VAT (15%)",
+      "total": "Total",
+      "paymentInfo": "Payment Information",
+      "gateway": "Payment Gateway",
+      "referenceNumber": "Reference Number",
+      "paymentStatus": "Payment Status",
+      "print": "Print",
+      "back": "Back",
+      "viewReceipt": "Receipt"
+    },
     "paymentHistory": {
       "columns": {
         "date": "Date",

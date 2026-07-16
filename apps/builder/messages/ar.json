@@ -366,6 +366,38 @@
       "resubscribe": "أعد الاشتراك",
       "subscribePlan": "اشترك في باقة"
     },
+    "billingInfo": {
+      "title": "معلومات الفوترة",
+      "companyName": "اسم الشركة",
+      "vatNumber": "الرقم الضريبي",
+      "billingEmail": "بريد الفوترة",
+      "country": "الدولة",
+      "city": "المدينة",
+      "address": "العنوان",
+      "saved": "تم حفظ معلومات الفوترة",
+      "edit": "تعديل",
+      "continueToPayment": "متابعة للدفع"
+    },
+    "receipt": {
+      "title": "إيصال دفع",
+      "receiptNumber": "رقم الإيصال",
+      "date": "التاريخ",
+      "companyInfo": "معلومات الشركة",
+      "planDetails": "تفاصيل الباقة",
+      "planName": "الباقة",
+      "paymentType": "نوع الدفع",
+      "amountBreakdown": "تفاصيل المبلغ",
+      "subtotal": "المبلغ قبل الضريبة",
+      "vat": "ضريبة القيمة المضافة (15%)",
+      "total": "الإجمالي",
+      "paymentInfo": "معلومات الدفع",
+      "gateway": "بوابة الدفع",
+      "referenceNumber": "رقم المرجع",
+      "paymentStatus": "حالة الدفع",
+      "print": "طباعة",
+      "back": "رجوع",
+      "viewReceipt": "إيصال"
+    },
     "paymentHistory": {
       "columns": {
         "date": "التاريخ",

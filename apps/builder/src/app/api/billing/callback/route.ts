@@ -1,12 +1,15 @@
 import {
+  billingInfoService,
   billingPlanService,
   getPaymentGateway,
   paymentHistoryService,
+  resolveTenantSettingsByDomain,
   subscriptionService,
   userQuotaService,
 } from "@chatbotx.io/business"
 import type { PaymentHistoryType } from "@chatbotx.io/database/schema"
-import { addMonths, addYears } from "date-fns"
+import { sendPaymentConfirmation } from "@chatbotx.io/mail"
+import { addMonths, addYears, format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
 import { env } from "@/env"
 import { getCurrentUser } from "@/lib/auth/utils"
@@ -92,7 +95,7 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    await paymentHistoryService.create({
+    const paymentRecord = await paymentHistoryService.create({
       data: {
         userId: user.id,
         subscriptionId: subscription?.id ?? null,
@@ -122,6 +125,27 @@ export async function GET(req: NextRequest) {
       periodStart: now,
       periodEnd,
     })
+
+    try {
+      await sendConfirmationEmail({
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.name,
+        planName: plan.name,
+        amount: plan.price,
+        currency: plan.currency,
+        cycle: billingCycle,
+        periodStart: now,
+        periodEnd,
+        gatewayPaymentId: paymentId,
+        paymentHistoryId: paymentRecord.id,
+      })
+    } catch (err) {
+      console.error(
+        "[billing:callback] Failed to send confirmation email:",
+        err,
+      )
+    }
 
     const params = new URLSearchParams({
       planName: plan.name,
@@ -179,4 +203,59 @@ function extractMetadata(
   } catch {
     return null
   }
+}
+
+function vatBreakdown(totalStr: string) {
+  const total = Number.parseFloat(totalStr)
+  const base = Math.round((total / 1.15) * 100) / 100
+  const vat = Math.round((total - base) * 100) / 100
+  return {
+    base: base.toFixed(2),
+    vat: vat.toFixed(2),
+    total: total.toFixed(2),
+  }
+}
+
+async function sendConfirmationEmail(props: {
+  userId: string
+  userEmail: string
+  userName: string | null
+  planName: string
+  amount: string
+  currency: string
+  cycle: string
+  periodStart: Date
+  periodEnd: Date
+  gatewayPaymentId: string
+  paymentHistoryId: string
+}) {
+  const [settings, billingInfo] = await Promise.all([
+    resolveTenantSettingsByDomain(null),
+    billingInfoService.findByUserId({ userId: props.userId }),
+  ])
+  const { base, vat, total } = vatBreakdown(props.amount)
+  const recipientEmail = billingInfo?.billingEmail ?? props.userEmail
+  const receiptUrl = `${settings.appUrl}/billing/receipt/${props.paymentHistoryId}`
+
+  await sendPaymentConfirmation(recipientEmail, {
+    subject: `تأكيد الدفع - ${props.planName}`,
+    brandName: settings.name,
+    brandLogoUrl: settings.logoLightUrl,
+    brandUrl: settings.appUrl,
+    dir: "rtl",
+    userName: props.userName ?? props.userEmail.split("@")[0] ?? "العميل",
+    planName: props.planName,
+    amount: props.amount,
+    currency: props.currency,
+    cycle: props.cycle,
+    periodStart: format(props.periodStart, "dd MMM yyyy"),
+    periodEnd: format(props.periodEnd, "dd MMM yyyy"),
+    gatewayPaymentId: props.gatewayPaymentId,
+    companyName: billingInfo?.companyName,
+    vatNumber: billingInfo?.vatNumber ?? undefined,
+    baseAmount: base,
+    vatAmount: vat,
+    totalAmount: total,
+    receiptUrl,
+  })
 }

@@ -4,10 +4,12 @@ import {
   type ActiveNoTokenReminderProps,
   type BillingReminderProps,
   buildActiveNoTokenReminderMjml,
+  buildPaymentConfirmationMjml,
   buildPaymentFailedMjml,
   buildRenewalReminderMjml,
   buildSubscriptionExpiredMjml,
   buildTrialExpiryMjml,
+  type PaymentConfirmationProps,
   type PaymentFailedProps,
   type SubscriptionExpiredProps,
   type TrialExpiryProps,
@@ -258,5 +260,13 @@ export const sendActiveNoTokenReminder = async (
   props: ActiveNoTokenReminderProps,
 ) => {
   const html = await compileMjml(buildActiveNoTokenReminderMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendPaymentConfirmation = async (
+  email: string,
+  props: PaymentConfirmationProps,
+) => {
+  const html = await compileMjml(buildPaymentConfirmationMjml(props))
   await sendMail(email, props.subject, html)
 }

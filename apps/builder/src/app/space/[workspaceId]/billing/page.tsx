@@ -1,4 +1,5 @@
 import {
+  billingInfoService,
   paymentHistoryService,
   quotaEnforcementService,
   subscriptionService,
@@ -25,6 +26,7 @@ import { ar } from "date-fns/locale"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
+import { BillingInfoForm } from "@/features/billing/components/billing-info-form"
 import { RetryPaymentButton } from "@/features/billing/components/retry-payment-button"
 import { getCurrentUser } from "@/lib/auth/utils"
 
@@ -80,10 +82,11 @@ export default async function BillingPage({
   const fmtDate = (d: Date | string) =>
     format(new Date(d), "dd MMM yyyy", { locale: dateLocale })
 
-  const [subscription, usage, payments] = await Promise.all([
+  const [subscription, usage, payments, billingInfo] = await Promise.all([
     subscriptionService.findByUserId({ userId: user.id }),
     quotaEnforcementService.getUsageSummary(user.id),
     paymentHistoryService.listByUserId({ userId: user.id }),
+    billingInfoService.findByUserId({ userId: user.id }),
   ])
 
   const usageMetrics = [
@@ -204,6 +207,8 @@ export default async function BillingPage({
         </Card>
       )}
 
+      <BillingInfoForm billingInfo={billingInfo} />
+
       <Card>
         <CardHeader>
           <CardTitle>{t("billing.manage.usageSummary")}</CardTitle>
@@ -274,6 +279,7 @@ export default async function BillingPage({
                     <TableHead>
                       {t("billing.paymentHistory.columns.gateway")}
                     </TableHead>
+                    <TableHead className="w-20" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -306,6 +312,16 @@ export default async function BillingPage({
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {p.paymentGateway}
+                      </TableCell>
+                      <TableCell>
+                        {p.status === "paid" && (
+                          <Link
+                            className="text-primary text-xs hover:underline"
+                            href={`/billing/receipt/${p.id}`}
+                          >
+                            {t("billing.receipt.viewReceipt")}
+                          </Link>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -148,7 +148,16 @@ export class RenewalService {
       broadcasts: number
       aiAgents: boolean
     }
-  }): Promise<{ success: boolean; error?: string }> {
+  }): Promise<
+    | {
+        success: true
+        paymentHistoryId: string
+        gatewayPaymentId: string
+        periodStart: Date
+        periodEnd: Date
+      }
+    | { success: false; error: string }
+  > {
     if (!sub.paymentToken) {
       return { success: false, error: "No saved payment token" }
     }
@@ -186,7 +195,7 @@ export class RenewalService {
         })
         .where(eq(subscriptionModel.id, sub.id))
 
-      await paymentHistoryService.create({
+      const paymentRecord = await paymentHistoryService.create({
         data: {
           userId: sub.userId,
           subscriptionId: sub.id,
@@ -216,7 +225,13 @@ export class RenewalService {
         periodEnd,
       })
 
-      return { success: true }
+      return {
+        success: true,
+        paymentHistoryId: paymentRecord.id,
+        gatewayPaymentId: chargeResult.paymentId,
+        periodStart: now,
+        periodEnd,
+      }
     }
 
     await db
@@ -240,7 +255,10 @@ export class RenewalService {
       },
     })
 
-    return { success: false, error: chargeResult.errorMessage }
+    return {
+      success: false,
+      error: chargeResult.errorMessage ?? "Payment failed",
+    }
   }
 
   async processRenewals(): Promise<{ renewed: number; failed: number }> {
