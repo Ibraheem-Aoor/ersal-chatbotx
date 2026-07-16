@@ -4,7 +4,7 @@ import {
   resolveTenantSettingsByDomain,
 } from "@chatbotx.io/business"
 import { sendPaymentConfirmation, sendPaymentFailed } from "@chatbotx.io/mail"
-import { format } from "date-fns"
+import { addMonths, addYears, format } from "date-fns"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
@@ -44,9 +44,12 @@ export async function GET(req: NextRequest) {
       if (result.success) {
         renewed++
         try {
-          const [billingInfo] = await Promise.all([
-            billingInfoService.findByUserId({ userId: sub.userId }),
-          ])
+          const billingInfo = await billingInfoService.findByUserId({
+            userId: sub.userId,
+          })
+          const now = new Date()
+          const periodEnd =
+            sub.cycle === "yearly" ? addYears(now, 1) : addMonths(now, 1)
           const total = Number.parseFloat(sub.planPrice)
           const base = Math.round((total / 1.15) * 100) / 100
           const vat = Math.round((total - base) * 100) / 100
@@ -64,8 +67,8 @@ export async function GET(req: NextRequest) {
             amount: sub.planPrice,
             currency: sub.planCurrency,
             cycle: sub.cycle,
-            periodStart: format(result.periodStart, "dd MMM yyyy"),
-            periodEnd: format(result.periodEnd, "dd MMM yyyy"),
+            periodStart: format(now, "dd MMM yyyy"),
+            periodEnd: format(periodEnd, "dd MMM yyyy"),
             gatewayPaymentId: result.gatewayPaymentId,
             companyName: billingInfo?.companyName,
             vatNumber: billingInfo?.vatNumber ?? undefined,

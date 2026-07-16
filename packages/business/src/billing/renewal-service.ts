@@ -149,13 +149,7 @@ export class RenewalService {
       aiAgents: boolean
     }
   }): Promise<
-    | {
-        success: true
-        paymentHistoryId: string
-        gatewayPaymentId: string
-        periodStart: Date
-        periodEnd: Date
-      }
+    | { success: true; paymentHistoryId: string; gatewayPaymentId: string }
     | { success: false; error: string }
   > {
     if (!sub.paymentToken) {
@@ -229,8 +223,6 @@ export class RenewalService {
         success: true,
         paymentHistoryId: paymentRecord.id,
         gatewayPaymentId: chargeResult.paymentId,
-        periodStart: now,
-        periodEnd,
       }
     }
 
