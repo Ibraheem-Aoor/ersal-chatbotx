@@ -24,7 +24,23 @@ export interface RefundResult {
   success: boolean
 }
 
+export interface ChargeTokenResult {
+  amount: number
+  currency: string
+  errorMessage?: string
+  paymentId: string
+  success: boolean
+}
+
 export interface PaymentGateway {
+  chargeToken?(params: {
+    token: string
+    amount: number
+    currency: string
+    description: string
+    metadata?: Record<string, string>
+  }): Promise<ChargeTokenResult>
+
   initiate(params: {
     amount: number
     currency: string

@@ -101,6 +101,9 @@ export class SubscriptionService {
       currency: string
       paymentGateway?: string
       gatewayPaymentId?: string
+      paymentToken?: string | null
+      paymentTokenBrand?: string | null
+      paymentTokenLastFour?: string | null
       currentPeriodStart: Date
       currentPeriodEnd: Date
     }
@@ -121,6 +124,11 @@ export class SubscriptionService {
           currency: data.currency,
           paymentGateway: data.paymentGateway,
           gatewayPaymentId: data.gatewayPaymentId,
+          paymentToken: data.paymentToken ?? existing.paymentToken,
+          paymentTokenBrand:
+            data.paymentTokenBrand ?? existing.paymentTokenBrand,
+          paymentTokenLastFour:
+            data.paymentTokenLastFour ?? existing.paymentTokenLastFour,
           currentPeriodStart: data.currentPeriodStart,
           currentPeriodEnd: data.currentPeriodEnd,
         })

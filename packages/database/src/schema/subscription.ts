@@ -35,6 +35,9 @@ export const subscriptionModel = pgTable("Subscription", {
   currency: text().notNull().default("SAR"),
   paymentGateway: text(),
   gatewayPaymentId: text(),
+  paymentToken: text(),
+  paymentTokenBrand: text(),
+  paymentTokenLastFour: text(),
   currentPeriodStart: timestamp(timestampConfig).notNull(),
   currentPeriodEnd: timestamp(timestampConfig).notNull(),
 })

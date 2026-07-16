@@ -145,6 +145,17 @@ export default async function BillingPage({
                 </p>
               </div>
             </div>
+            {subscription.paymentToken && (
+              <div className="rounded-md border bg-muted/50 p-3 text-sm">
+                <span className="text-muted-foreground">
+                  {t("billing.manage.savedCard")}
+                </span>
+                <p className="font-medium">
+                  {(subscription.paymentTokenBrand ?? "Card").toUpperCase()}{" "}
+                  ****{subscription.paymentTokenLastFour ?? "----"}
+                </p>
+              </div>
+            )}
             <div className="pt-2">
               <Button asChild variant="outline">
                 <Link href="/pricing">{t("billing.manage.changePlan")}</Link>

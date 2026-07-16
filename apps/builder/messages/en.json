@@ -337,6 +337,7 @@
       "cancelSubscription": "Cancel Subscription",
       "comingSoon": "Coming soon",
       "paymentHistory": "Payment History",
+      "savedCard": "Saved Payment Method",
       "noPayments": "No payment records found",
       "noPlan": "No active subscription",
       "noPlanDescription": "You don't have an active subscription. Browse our plans to get started.",

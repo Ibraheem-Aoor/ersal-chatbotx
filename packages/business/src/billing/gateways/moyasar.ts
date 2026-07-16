@@ -1,4 +1,5 @@
 import type {
+  ChargeTokenResult,
   PaymentGateway,
   PaymentInitiation,
   PaymentResult,
@@ -94,6 +95,44 @@ export class MoyasarGateway implements PaymentGateway {
       method: data.source?.type,
       errorMessage: data.source?.message || undefined,
       rawResponse: data,
+    }
+  }
+
+  async chargeToken(params: {
+    token: string
+    amount: number
+    currency: string
+    description: string
+    metadata?: Record<string, string>
+  }): Promise<ChargeTokenResult> {
+    const response = await fetch(`${API_BASE}/payments`, {
+      method: "POST",
+      headers: {
+        Authorization: basicAuthHeader(this.secretKey),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: toHalalas(params.amount),
+        currency: params.currency,
+        description: params.description,
+        source: {
+          type: "token",
+          token: params.token,
+        },
+        metadata: params.metadata,
+      }),
+    })
+
+    const data = await response.json()
+    const status = data.status as string
+
+    return {
+      success: status === "paid",
+      paymentId: data.id?.toString() ?? "",
+      amount: params.amount,
+      currency: params.currency,
+      errorMessage:
+        status === "paid" ? undefined : (data.message ?? "Charge failed"),
     }
   }
 

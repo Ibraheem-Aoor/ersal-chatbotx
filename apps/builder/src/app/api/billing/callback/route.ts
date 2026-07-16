@@ -72,6 +72,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const tokenData = extractTokenData(result.rawResponse)
+
     const subscription = await subscriptionService.createOrUpdate({
       data: {
         userId: user.id,
@@ -82,6 +84,9 @@ export async function GET(req: NextRequest) {
         currency: plan.currency,
         paymentGateway: gateway.name(),
         gatewayPaymentId: paymentId,
+        paymentToken: tokenData?.token ?? null,
+        paymentTokenBrand: tokenData?.brand ?? null,
+        paymentTokenLastFour: tokenData?.lastFour ?? null,
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,
       },
@@ -134,6 +139,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       `${baseUrl}/billing/error?reason=callback_error`,
     )
+  }
+}
+
+function extractTokenData(
+  rawResponse: Record<string, unknown>,
+): { token: string; brand?: string; lastFour?: string } | null {
+  try {
+    const source = rawResponse.source as Record<string, unknown> | undefined
+    if (!source?.token || typeof source.token !== "string") {
+      return null
+    }
+    return {
+      token: source.token,
+      brand: typeof source.company === "string" ? source.company : undefined,
+      lastFour:
+        typeof source.number === "string" ? source.number : undefined,
+    }
+  } catch {
+    return null
   }
 }
 

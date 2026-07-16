@@ -68,6 +68,25 @@ export function MoyasarCheckoutForm({
           publishable_api_key: publishableKey,
           callback_url: callbackUrl,
           methods: ["creditcard", "stcpay", "applepay"],
+          credit_card: {
+            save_card: true,
+          },
+          on_completed: (payment: Record<string, unknown>) => {
+            const source = payment.source as Record<string, unknown> | undefined
+            if (source?.token) {
+              fetch("/api/billing/save-token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  token: source.token,
+                  brand: source.company ?? "",
+                  lastFour: typeof source.number === "string" ? source.number : "",
+                }),
+              }).catch(() => {
+                // fire-and-forget: token will also be extracted from verify response
+              })
+            }
+          },
           apple_pay: {
             country: "SA",
             label: description,
