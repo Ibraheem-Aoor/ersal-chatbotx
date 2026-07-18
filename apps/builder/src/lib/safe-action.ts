@@ -58,6 +58,13 @@ export const authActionClient = actionClient.use(async ({ next }) => {
     )
   }
 
+  if (
+    (user.status === "suspended" || user.status === "banned") &&
+    !isSuperAdmin(user)
+  ) {
+    throw new ChatbotXException("Account suspended", "accountSuspended", 403)
+  }
+
   return next({ ctx: { user } })
 })
 

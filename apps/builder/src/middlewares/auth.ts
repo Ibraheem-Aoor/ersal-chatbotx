@@ -1,4 +1,4 @@
-import { workspaceMemberService } from "@chatbotx.io/business"
+import { isSuperAdmin, workspaceMemberService } from "@chatbotx.io/business"
 import { ORPCError } from "@orpc/server"
 import { auth } from "@/lib/auth/auth"
 import { base } from "./context"
@@ -22,6 +22,15 @@ export const authMiddleware = base.middleware(async ({ context, next }) => {
     throw new ORPCError("FORBIDDEN", { message: "Password change required" })
   }
 
+  const userStatus =
+    ((sessionData.user as Record<string, unknown>).status as string) ?? "active"
+  if (
+    (userStatus === "suspended" || userStatus === "banned") &&
+    !isSuperAdmin(sessionData.user)
+  ) {
+    throw new ORPCError("FORBIDDEN", { message: "Account suspended" })
+  }
+
   // Adds session and user to the context
   return next({
     context: {
@@ -31,9 +40,7 @@ export const authMiddleware = base.middleware(async ({ context, next }) => {
         image: sessionData.user.image || null,
         isAnonymous: sessionData.user.isAnonymous ?? false,
         mustChangePassword: sessionData.user.mustChangePassword ?? false,
-        status:
-          ((sessionData.user as Record<string, unknown>).status as string) ??
-          "active",
+        status: userStatus,
       },
     },
   })

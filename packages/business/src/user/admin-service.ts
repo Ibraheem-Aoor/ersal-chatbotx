@@ -6,6 +6,8 @@ import {
   desc,
   eq,
   ilike,
+  max,
+  ne,
   or,
   type SQL,
 } from "@chatbotx.io/database/client"
@@ -15,6 +17,7 @@ import {
   userModel,
   workspaceMemberModel,
 } from "@chatbotx.io/database/schema"
+import { keys } from "../keys"
 import { userQuotaService } from "../user-quota"
 
 export type UserAccountStatus = "active" | "suspended" | "banned"
@@ -23,6 +26,11 @@ export class UserAdminService {
   listAll(props?: { tx?: DatabaseClient; search?: string }) {
     const { tx = db, search } = props ?? {}
     const conditions: SQL[] = []
+
+    const { PLATFORM_ADMIN_EMAIL } = keys()
+    if (PLATFORM_ADMIN_EMAIL) {
+      conditions.push(ne(userModel.email, PLATFORM_ADMIN_EMAIL))
+    }
 
     if (search) {
       const searchCondition = or(
@@ -33,6 +41,15 @@ export class UserAdminService {
         conditions.push(searchCondition)
       }
     }
+
+    const latestSub = tx
+      .select({
+        userId: subscriptionModel.userId,
+        maxId: max(subscriptionModel.id).as("max_id"),
+      })
+      .from(subscriptionModel)
+      .groupBy(subscriptionModel.userId)
+      .as("latest_sub")
 
     return tx
       .select({
@@ -48,7 +65,8 @@ export class UserAdminService {
         planName: billingPlanModel.name,
       })
       .from(userModel)
-      .leftJoin(subscriptionModel, eq(userModel.id, subscriptionModel.userId))
+      .leftJoin(latestSub, eq(userModel.id, latestSub.userId))
+      .leftJoin(subscriptionModel, eq(latestSub.maxId, subscriptionModel.id))
       .leftJoin(
         billingPlanModel,
         eq(subscriptionModel.planId, billingPlanModel.id),
