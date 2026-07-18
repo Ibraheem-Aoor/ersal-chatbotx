@@ -324,6 +324,12 @@ export function createAuth(config: AuthConfig) {
           input: false,
           returned: true,
         },
+        status: {
+          type: "string",
+          required: false,
+          input: false,
+          returned: true,
+        },
       },
     },
     account: {

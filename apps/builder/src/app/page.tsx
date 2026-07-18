@@ -25,6 +25,13 @@ export default async function MainPage() {
   // else. Enforced in every protected layout/page, not just here.
   enforcePasswordCurrent(user)
 
+  if (
+    (user.status === "suspended" || user.status === "banned") &&
+    !isSuperAdmin(user)
+  ) {
+    redirect("/suspended")
+  }
+
   const cloud = isCloud()
   const [usageSummary, atLimit, quota, platformAdmin] = await Promise.all([
     quotaEnforcementService.getUsageSummary(user.id),

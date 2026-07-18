@@ -36,6 +36,9 @@ export const getCurrentUser = async (): Promise<SessionUser | null> => {
         image: session.user.image || null,
         isAnonymous: session.user.isAnonymous ?? false,
         mustChangePassword: session.user.mustChangePassword ?? false,
+        status:
+          ((session.user as Record<string, unknown>).status as string) ??
+          "active",
       }
     : null
 }

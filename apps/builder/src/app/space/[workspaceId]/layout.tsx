@@ -42,6 +42,13 @@ export default async function WorkspaceLayout({
 
   enforcePasswordCurrent(user)
 
+  if (
+    (user.status === "suspended" || user.status === "banned") &&
+    !isSuperAdmin(user)
+  ) {
+    redirect("/suspended")
+  }
+
   const cloud = isCloud()
 
   // Check if user is a member of the workspace

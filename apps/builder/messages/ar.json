@@ -3311,6 +3311,70 @@
     },
     "queues": {
       "title": "قوائم الانتظار"
+    },
+    "users": {
+      "title": "المستخدمون",
+      "description": "إدارة جميع المستخدمين المسجلين على المنصة.",
+      "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني…",
+      "noUsers": "لا يوجد مستخدمون.",
+      "columns": {
+        "user": "المستخدم",
+        "verified": "موثّق",
+        "accountStatus": "حالة الحساب",
+        "plan": "الخطة",
+        "subscriptionStatus": "الاشتراك",
+        "joinedAt": "تاريخ الانضمام"
+      },
+      "actions": {
+        "viewDetails": "عرض التفاصيل",
+        "verify": "تعيين كموثّق",
+        "unverify": "إزالة التوثيق",
+        "delete": "حذف المستخدم",
+        "suspend": "تعليق الحساب",
+        "activate": "تفعيل الحساب",
+        "ban": "حظر الحساب",
+        "unban": "إلغاء الحظر",
+        "changePlan": "تغيير الباقة",
+        "selectPlan": "اختر باقة",
+        "applyPlan": "تطبيق"
+      },
+      "messages": {
+        "deleted": "تم حذف المستخدم بنجاح.",
+        "verificationUpdated": "تم تحديث حالة التوثيق.",
+        "statusUpdated": "تم تحديث حالة الحساب.",
+        "planChanged": "تم تغيير الباقة إلى {plan}."
+      },
+      "deleteDialog": {
+        "title": "حذف المستخدم؟",
+        "description": "سيتم حذف {email} نهائياً مع جميع بياناته بما في ذلك مساحات العمل والاشتراكات والمحادثات. لا يمكن التراجع عن هذا الإجراء."
+      },
+      "banDialog": {
+        "title": "حظر هذا المستخدم؟",
+        "description": "سيتم حظر المستخدم نهائياً من الوصول إلى المنصة. لن يتمكن من تسجيل الدخول أو استخدام أي ميزات حتى يتم إلغاء الحظر."
+      },
+      "accountStatus": {
+        "active": "نشط",
+        "suspended": "معلّق",
+        "banned": "محظور"
+      },
+      "detail": {
+        "title": "تفاصيل المستخدم",
+        "userInfo": "معلومات المستخدم",
+        "subscription": "الاشتراك",
+        "actions": "إجراءات الإدارة",
+        "verified": "موثّق",
+        "unverified": "غير موثّق",
+        "tenantId": "معرّف المستأجر",
+        "workspaces": "مساحات العمل",
+        "noSubscription": "لا يوجد اشتراك نشط."
+      },
+      "suspendedPage": {
+        "suspendedTitle": "تم تعليق حسابك",
+        "suspendedDescription": "تم تعليق حسابك مؤقتاً بواسطة مدير المنصة. يرجى التواصل مع الدعم لمزيد من المعلومات.",
+        "bannedTitle": "تم حظر حسابك",
+        "bannedDescription": "تم حظر حسابك نهائياً من هذه المنصة. يرجى التواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.",
+        "contactSupport": "إذا كنت بحاجة إلى مساعدة، يرجى التواصل مع مدير المنصة."
+      }
     }
   },
   "platformCredentials": {

@@ -31,7 +31,9 @@ export const authMiddleware = base.middleware(async ({ context, next }) => {
         image: sessionData.user.image || null,
         isAnonymous: sessionData.user.isAnonymous ?? false,
         mustChangePassword: sessionData.user.mustChangePassword ?? false,
-        // stripeCustomerId: sessionData.user.stripeCustomerId || null,
+        status:
+          ((sessionData.user as Record<string, unknown>).status as string) ??
+          "active",
       },
     },
   })

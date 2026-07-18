@@ -41,5 +41,6 @@ export const isSuperAdmin = (user: Pick<UserModel, "email">): boolean => {
   return Boolean(PLATFORM_ADMIN_EMAIL && user.email === PLATFORM_ADMIN_EMAIL)
 }
 
+export * from "./admin-service"
 export * from "./entitlements"
 export * from "./resolve-admin-tenant"

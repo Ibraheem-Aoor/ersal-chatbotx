@@ -3352,6 +3352,70 @@
     },
     "queues": {
       "title": "Queues"
+    },
+    "users": {
+      "title": "Users",
+      "description": "Manage all registered users on the platform.",
+      "searchPlaceholder": "Search by name or email…",
+      "noUsers": "No users found.",
+      "columns": {
+        "user": "User",
+        "verified": "Verified",
+        "accountStatus": "Account Status",
+        "plan": "Plan",
+        "subscriptionStatus": "Subscription",
+        "joinedAt": "Joined"
+      },
+      "actions": {
+        "viewDetails": "View details",
+        "verify": "Mark as verified",
+        "unverify": "Remove verification",
+        "delete": "Delete user",
+        "suspend": "Suspend account",
+        "activate": "Activate account",
+        "ban": "Ban account",
+        "unban": "Unban account",
+        "changePlan": "Change plan",
+        "selectPlan": "Select a plan",
+        "applyPlan": "Apply"
+      },
+      "messages": {
+        "deleted": "User deleted successfully.",
+        "verificationUpdated": "Verification status updated.",
+        "statusUpdated": "Account status updated.",
+        "planChanged": "Plan changed to {plan}."
+      },
+      "deleteDialog": {
+        "title": "Delete user?",
+        "description": "This will permanently delete {email} and all their data including workspaces, subscriptions, and conversations. This action cannot be undone."
+      },
+      "banDialog": {
+        "title": "Ban this user?",
+        "description": "This will permanently ban the user from accessing the platform. They will not be able to sign in or use any features until unbanned."
+      },
+      "accountStatus": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "banned": "Banned"
+      },
+      "detail": {
+        "title": "User Details",
+        "userInfo": "User Information",
+        "subscription": "Subscription",
+        "actions": "Admin Actions",
+        "verified": "Verified",
+        "unverified": "Not verified",
+        "tenantId": "Tenant ID",
+        "workspaces": "Workspaces",
+        "noSubscription": "No active subscription."
+      },
+      "suspendedPage": {
+        "suspendedTitle": "Your account has been suspended",
+        "suspendedDescription": "Your account has been temporarily suspended by the platform administrator. Please contact support for more information.",
+        "bannedTitle": "Your account has been banned",
+        "bannedDescription": "Your account has been permanently banned from this platform. Please contact support if you believe this is a mistake.",
+        "contactSupport": "If you need help, please contact the platform administrator."
+      }
     }
   },
   "platformCredentials": {

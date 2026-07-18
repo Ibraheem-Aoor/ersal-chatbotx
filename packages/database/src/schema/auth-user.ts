@@ -23,6 +23,7 @@ export const userModel = pgTable(
     image: text(),
     isAnonymous: boolean().default(false).notNull(),
     mustChangePassword: boolean().default(false).notNull(),
+    status: text().notNull().default("active"),
     // Tenant key for white-label isolation. Defaults to the root tenant (the
     // platform / main site). When it points at a reseller's `Tenant`, this row
     // is an end-customer (sub-account) isolated inside that tenant. Email is
