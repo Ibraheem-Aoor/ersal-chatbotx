@@ -58,15 +58,15 @@ export function AdminSidebar({
             icon: PaletteIcon,
           },
         ]),
-    ...(showEnterpriseItems && !isCloud()
-      ? [
+    ...(isCloud()
+      ? []
+      : [
           {
             title: t("platformEmailTemplates.title"),
             url: "/admin/email-templates",
             icon: MailIcon,
           },
-        ]
-      : []),
+        ]),
     ...(showEnterpriseItems
       ? [
           {
