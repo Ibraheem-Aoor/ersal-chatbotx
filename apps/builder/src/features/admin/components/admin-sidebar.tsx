@@ -28,11 +28,7 @@ import { authClient } from "@/lib/auth/auth-client"
  * Super-admin sidebar for the `/admin` console.
  * Gated by `isSuperAdmin` in the parent layout; no auth check needed here.
  */
-export function AdminSidebar({
-  showEnterpriseItems,
-}: {
-  showEnterpriseItems: boolean
-}) {
+export function AdminSidebar() {
   const t = useTranslations()
   const tManage = useTranslations("manageSidebar")
   const { data: session } = authClient.useSession()
@@ -67,15 +63,11 @@ export function AdminSidebar({
             icon: MailIcon,
           },
         ]),
-    ...(showEnterpriseItems
-      ? [
-          {
-            title: t("platformAdmin.helpItems.title"),
-            url: "/admin/help-items",
-            icon: CircleHelpIcon,
-          },
-        ]
-      : []),
+    {
+      title: t("platformAdmin.helpItems.title"),
+      url: "/admin/help-items",
+      icon: CircleHelpIcon,
+    },
   ]
 
   const financeItems = [
