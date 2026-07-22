@@ -8,7 +8,10 @@ import fetch from "cross-fetch"
 import imageSize from "image-size"
 import { DEFAULT_API_VERSION } from "../constants"
 import { rescue } from "../exception"
-import { instagramBusinessClient } from "../lib/http-client"
+import {
+  facebookGraphClient,
+  instagramBusinessClient,
+} from "../lib/http-client"
 import { logger } from "../lib/logger"
 import type {
   InstagramAttachment,
@@ -27,19 +30,25 @@ export const INSTAGRAM_SUBSCRIBE_FIELDS = [
   "comments",
 ]
 
-export const refreshLongLivedToken = (accessToken: string): Promise<string> => {
-  const endpoint = "refresh_access_token"
+export const refreshLongLivedToken = (params: {
+  accessToken: string
+  clientId: string
+  clientSecret: string
+  version?: string
+}): Promise<string> => {
+  const { version = DEFAULT_API_VERSION } = params
+  const endpoint = `${version}/oauth/access_token`
 
   return rescue(endpoint, async () => {
-    const res: { access_token: string } = await instagramBusinessClient.get(
-      endpoint,
-      {
+    const res: { access_token: string; expires_in: number } =
+      await facebookGraphClient.get(endpoint, {
         searchParams: {
-          grant_type: "ig_refresh_token",
-          access_token: accessToken,
+          grant_type: "fb_exchange_token",
+          client_id: params.clientId,
+          client_secret: params.clientSecret,
+          fb_exchange_token: params.accessToken,
         },
-      },
-    )
+      })
 
     return res.access_token
   })

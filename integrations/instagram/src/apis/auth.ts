@@ -1,6 +1,7 @@
-import { INSTAGRAM_BUSINESS_SCOPES } from "../constants"
+import { DEFAULT_API_VERSION, INSTAGRAM_BUSINESS_SCOPES } from "../constants"
 import { InstagramException, rescue } from "../exception"
 import {
+  facebookGraphClient,
   instagramBusinessClient,
   instagramOAuthClient,
 } from "../lib/http-client"
@@ -77,15 +78,17 @@ export const exchangeLongLivedToken = (
   },
   accessToken: string,
 ): Promise<string> => {
-  const endpoint = "access_token"
+  const { version = DEFAULT_API_VERSION } = settings
+  const endpoint = `${version}/oauth/access_token`
 
   return rescue(endpoint, async () => {
     const res: { access_token: string; expires_in: number } =
-      await instagramBusinessClient.get(endpoint, {
+      await facebookGraphClient.get(endpoint, {
         searchParams: {
-          grant_type: "ig_exchange_token",
+          grant_type: "fb_exchange_token",
+          client_id: settings.clientId,
           client_secret: settings.clientSecret,
-          access_token: accessToken,
+          fb_exchange_token: accessToken,
         },
       })
 
