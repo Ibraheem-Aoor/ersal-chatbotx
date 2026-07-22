@@ -52,7 +52,7 @@ export async function addSystemUser({
   }
 }
 
-export function shareCreditLine({
+export async function shareCreditLine({
   auth,
   whatsappSettings,
 }: {
@@ -60,49 +60,61 @@ export function shareCreditLine({
   whatsappSettings: WhatsappSettings
 }) {
   const { version = DEFAULT_API_VERSION } = auth
+  const skipCreditSharing = process.env.SKIP_WABA_CREDIT_SHARING === "true"
 
-  return rescue(async () => {
-    const creditLineId = await retrieveCreditLineId(whatsappSettings)
+  try {
+    await rescue(async () => {
+      const creditLineId = await retrieveCreditLineId(whatsappSettings)
 
-    try {
-      await api.post(
-        `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
-        {
-          searchParams: {
-            waba_id: auth.metadata.wabaId,
-            waba_currency: "USD",
+      try {
+        await api.post(
+          `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
+          {
+            searchParams: {
+              waba_id: auth.metadata.wabaId,
+              waba_currency: "USD",
+            },
+            headers: {
+              Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
+            },
           },
-          headers: {
-            Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
-          },
-        },
-      )
-    } catch (error) {
-      if (error instanceof HTTPError) {
-        const response = error.data
-        if (
-          response.error?.code === -1 &&
-          response.error?.error_subcode === 1_752_244
-        ) {
-          logger.info(
-            "Credit line sharing skipped: same business owns both WABA and credit line",
-          )
-          return
-        }
+        )
+      } catch (error) {
+        if (error instanceof HTTPError) {
+          const response = error.data
+          if (
+            response.error?.code === -1 &&
+            response.error?.error_subcode === 1_752_244
+          ) {
+            logger.info(
+              "Credit line sharing skipped: same business owns both WABA and credit line",
+            )
+            return
+          }
 
-        if (
-          response.error?.code === -1 &&
-          response.error?.error_subcode === 1_752_294
-        ) {
-          logger.warn(
-            "Credit line sharing not allowed: violates Facebook invoicing policy",
-          )
-          return
+          if (
+            response.error?.code === -1 &&
+            response.error?.error_subcode === 1_752_294
+          ) {
+            logger.warn(
+              "Credit line sharing not allowed: violates Facebook invoicing policy",
+            )
+            return
+          }
         }
+        throw error
       }
-      throw error
+    })
+  } catch (err) {
+    if (skipCreditSharing) {
+      logger.warn(
+        { err, wabaId: auth.metadata.wabaId },
+        "WABA credit line sharing failed — skipped (SKIP_WABA_CREDIT_SHARING=true)",
+      )
+      return
     }
-  })
+    throw err
+  }
 }
 
 function retrieveCreditLineId(
@@ -135,29 +147,45 @@ function retrieveCreditLineId(
   })
 }
 
-export function registerPhoneNumber({ auth }: { auth: WhatsappAuthValue }) {
+export async function registerPhoneNumber({
+  auth,
+}: {
+  auth: WhatsappAuthValue
+}) {
   const { version = DEFAULT_API_VERSION } = auth
+  const skipRegistration = process.env.SKIP_WABA_PHONE_REGISTRATION === "true"
 
-  return rescue(async () => {
-    const phoneNumbers = await getPhoneNumbers(auth)
+  try {
+    await rescue(async () => {
+      const phoneNumbers = await getPhoneNumbers(auth)
 
-    for (const phoneNumber of phoneNumbers) {
-      if (phoneNumber.code_verification_status !== "VERIFIED") {
-        continue
+      for (const phoneNumber of phoneNumbers) {
+        if (phoneNumber.code_verification_status !== "VERIFIED") {
+          continue
+        }
+
+        const pin = generatePin(phoneNumber.id, auth.metadata.wabaId)
+        await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
+          json: {
+            messaging_product: "whatsapp",
+            pin,
+          },
+          headers: {
+            Authorization: `Bearer ${auth.tokens.accessToken}`,
+          },
+        })
       }
-
-      const pin = generatePin(phoneNumber.id, auth.metadata.wabaId)
-      await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
-        json: {
-          messaging_product: "whatsapp",
-          pin,
-        },
-        headers: {
-          Authorization: `Bearer ${auth.tokens.accessToken}`,
-        },
-      })
+    })
+  } catch (err) {
+    if (skipRegistration) {
+      logger.warn(
+        { err, wabaId: auth.metadata.wabaId },
+        "WABA phone registration failed — skipped (SKIP_WABA_PHONE_REGISTRATION=true)",
+      )
+      return
     }
-  })
+    throw err
+  }
 }
 
 function getPhoneNumbers(auth: WhatsappAuthValue) {

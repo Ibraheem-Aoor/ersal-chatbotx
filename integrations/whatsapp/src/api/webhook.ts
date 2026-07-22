@@ -11,7 +11,7 @@ export const WHATSAPP_SUBSCRIBED_FIELDS = [
   "smb_message_echoes",
 ] as const
 
-export function subscribeWebhook({
+export async function subscribeWebhook({
   auth,
   overrideCallbackUrl = false,
 }: {
@@ -20,50 +20,62 @@ export function subscribeWebhook({
 }) {
   const { version = DEFAULT_API_VERSION } = auth
   const url = `${API_URL}/${version}/${auth.metadata.wabaId}/subscribed_apps`
+  const skipSubscribe = process.env.SKIP_WABA_WEBHOOK_SUBSCRIBE === "true"
 
-  return rescue(async () => {
-    const json: Record<string, unknown> = {
-      subscribed_fields: WHATSAPP_SUBSCRIBED_FIELDS,
-    }
+  try {
+    await rescue(async () => {
+      const json: Record<string, unknown> = {
+        subscribed_fields: WHATSAPP_SUBSCRIBED_FIELDS,
+      }
 
-    // Explicit per-integration callback (metadata.webhookUrl) wins; the env
-    // var is only a global fallback when no explicit override is requested.
-    if (overrideCallbackUrl && auth.metadata.webhookUrl && auth.verifyToken) {
-      json.override_callback_uri = auth.metadata.webhookUrl
-      json.verify_token = auth.verifyToken
-    } else {
-      const envOverrideUri = process.env.WHATSAPP_OVERRIDE_CALLBACK_URI
-      if (envOverrideUri && auth.verifyToken) {
-        json.override_callback_uri = envOverrideUri
+      // Explicit per-integration callback (metadata.webhookUrl) wins; the env
+      // var is only a global fallback when no explicit override is requested.
+      if (overrideCallbackUrl && auth.metadata.webhookUrl && auth.verifyToken) {
+        json.override_callback_uri = auth.metadata.webhookUrl
         json.verify_token = auth.verifyToken
-      }
-    }
-
-    try {
-      const result = await ky
-        .post<{
-          success: boolean
-        }>(url, {
-          headers: {
-            Authorization: `Bearer ${auth.tokens.accessToken}`,
-          },
-          json,
-        })
-        .json()
-
-      if (!result.success) {
-        throw new WhatsappException("Failed to subscribe webhook")
-      }
-    } catch (error) {
-      if (error instanceof HTTPError) {
-        const result = error.data
-        if (result.error === "invalid_request") {
-          logger.error(error, "Subscribe webhook: invalid_request")
+      } else {
+        const envOverrideUri = process.env.WHATSAPP_OVERRIDE_CALLBACK_URI
+        if (envOverrideUri && auth.verifyToken) {
+          json.override_callback_uri = envOverrideUri
+          json.verify_token = auth.verifyToken
         }
       }
-      throw error
+
+      try {
+        const result = await ky
+          .post<{
+            success: boolean
+          }>(url, {
+            headers: {
+              Authorization: `Bearer ${auth.tokens.accessToken}`,
+            },
+            json,
+          })
+          .json()
+
+        if (!result.success) {
+          throw new WhatsappException("Failed to subscribe webhook")
+        }
+      } catch (error) {
+        if (error instanceof HTTPError) {
+          const result = error.data
+          if (result.error === "invalid_request") {
+            logger.error(error, "Subscribe webhook: invalid_request")
+          }
+        }
+        throw error
+      }
+    })
+  } catch (err) {
+    if (skipSubscribe) {
+      logger.warn(
+        { err, wabaId: auth.metadata.wabaId },
+        "WABA webhook subscription failed — skipped (SKIP_WABA_WEBHOOK_SUBSCRIBE=true)",
+      )
+      return
     }
-  })
+    throw err
+  }
 }
 
 export function unsubscribeWebhook({ auth }: { auth: WhatsappAuthValue }) {
