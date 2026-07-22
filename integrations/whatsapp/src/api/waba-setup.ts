@@ -15,7 +15,7 @@ interface WhatsappSettings {
   systemUserToken: string
 }
 
-export function addSystemUser({
+export async function addSystemUser({
   auth,
   whatsappSettings,
 }: {
@@ -23,21 +23,33 @@ export function addSystemUser({
   whatsappSettings: WhatsappSettings
 }) {
   const { version = DEFAULT_API_VERSION } = auth
+  const skipAssignment = process.env.SKIP_WABA_USER_ASSIGNMENT === "true"
 
-  return rescue(async () => {
-    await api.post(
-      `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
-      {
-        searchParams: {
-          user: whatsappSettings.systemUserId,
-          tasks: "MANAGE",
+  try {
+    await rescue(async () => {
+      await api.post(
+        `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
+        {
+          searchParams: {
+            user: whatsappSettings.systemUserId,
+            tasks: "MANAGE",
+          },
+          headers: {
+            Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
+          },
         },
-        headers: {
-          Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
-        },
-      },
-    )
-  })
+      )
+    })
+  } catch (err) {
+    if (skipAssignment) {
+      logger.warn(
+        { err, wabaId: auth.metadata.wabaId },
+        "WABA system user assignment failed — skipped (SKIP_WABA_USER_ASSIGNMENT=true)",
+      )
+      return
+    }
+    throw err
+  }
 }
 
 export function shareCreditLine({
