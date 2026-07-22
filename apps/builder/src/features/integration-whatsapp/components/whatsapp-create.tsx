@@ -116,6 +116,7 @@ export default function WhatsappCreate({
     workspaceId: string
     redirectUrl: string
   } | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   // Form setup
   const { form, handleSubmitWithAction } = useHookFormAction(
@@ -225,11 +226,16 @@ export default function WhatsappCreate({
           <WhatsappOnboardingResult result={manualResult} />
         ) : (
           <Form {...form}>
-            <form className="space-y-4" onSubmit={handleSubmitWithAction}>
+            <form
+              className="space-y-4"
+              onSubmit={handleSubmitWithAction}
+              ref={formRef}
+            >
               {watchManualConnect ? (
                 <ManualConnectSection watchManualConnect={watchManualConnect} />
               ) : (
                 <SdkConnectSection
+                  formRef={formRef}
                   settings={settings}
                   visibility={visibility}
                   watchManualConnect={watchManualConnect}
@@ -244,6 +250,7 @@ export default function WhatsappCreate({
 }
 
 type SdkConnectSectionProps = {
+  formRef: React.RefObject<HTMLFormElement | null>
   visibility: FormVisibility
   watchManualConnect: boolean
   settings: WhatsappCredentialPublic
@@ -256,14 +263,14 @@ const SWITCH_FIELD_CLASS =
   "flex items-center gap-2 flex-row-reverse justify-end"
 
 function SdkConnectSection({
+  formRef,
   visibility,
   watchManualConnect,
   settings,
 }: SdkConnectSectionProps) {
   const t = useTranslations()
-  const { setValue, formState, trigger } = useFormContext()
+  const { setValue, formState } = useFormContext()
 
-  const finalSubmitRef = useRef<HTMLButtonElement>(null)
   const watchCode = useWatch({ name: FORM_FIELDS.CODE })
   const watchConnectExisting = useWatch({ name: FORM_FIELDS.CONNECT_EXISTING })
   const watchTransferPhoneNumber = useWatch({
@@ -274,18 +281,11 @@ function SdkConnectSection({
   // in the OAuth redirect — they are derived server-side from the token in
   // connectWhatsappAction.
   const submitWithCode = useCallback(
-    async (code: string) => {
+    (code: string) => {
       setValue(FORM_FIELDS.CODE, code)
-      try {
-        const valid = await trigger()
-        if (valid) {
-          finalSubmitRef.current?.click()
-        }
-      } catch {
-        toast.error(t("messages.connectFailed", { feature: "Whatsapp" }))
-      }
+      formRef.current?.requestSubmit()
     },
-    [setValue, trigger, t],
+    [setValue, formRef.current?.requestSubmit],
   )
 
   // The Facebook OAuth dialog redirects the code to the broker callback, which
@@ -367,20 +367,15 @@ function SdkConnectSection({
         )}
 
         {watchCode && (
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              disabled={formState.isSubmitting}
-              ref={finalSubmitRef}
-              size="sm"
-              type="submit"
-              variant="secondary"
-            >
-              {formState.isSubmitting && (
-                <Loader2Icon className="animate-spin" />
-              )}
-              {t("actions.continue")}
-            </Button>
-          </div>
+          <Button
+            disabled={formState.isSubmitting}
+            size="sm"
+            type="submit"
+            variant="secondary"
+          >
+            {formState.isSubmitting && <Loader2Icon className="animate-spin" />}
+            {t("actions.continue")}
+          </Button>
         )}
       </div>
     </>
