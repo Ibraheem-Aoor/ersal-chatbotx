@@ -1,0 +1,46 @@
+services:
+  builder:
+    image: ersal/chatbotx-builder:staging
+    restart: unless-stopped
+    environment:
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXT_PUBLIC_ASSET_URL=${NEXT_PUBLIC_ASSET_URL}
+      - NEXT_PUBLIC_BUILDER_URL=${NEXT_PUBLIC_BUILDER_URL}
+      - NEXT_PUBLIC_EDITION=${NEXT_PUBLIC_EDITION:-community}
+      - NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT:-production}
+      - NEXT_PUBLIC_PARTYSOCKET_URL=${NEXT_PUBLIC_PARTYSOCKET_URL}
+      - NEXT_PUBLIC_SMTP_FROM=${NEXT_PUBLIC_SMTP_FROM}
+      - REDIS_URL=${REDIS_URL}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ENPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION:-us-west-2}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SMTP_FROM=${SMTP_FROM}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - REALTIME_AUTH_URL=${REALTIME_AUTH_URL}
+      - REALTIME_API_KEY=${REALTIME_API_KEY}
+      - REALTIME_BROADCAST_SECRET=${REALTIME_BROADCAST_SECRET}
+      - PLATFORM_ADMIN_EMAIL=${PLATFORM_ADMIN_EMAIL}
+      - SCHEDULER_BUCKET_RANGE=${SCHEDULER_BUCKET_RANGE:-0-255}
+      - NODE_OPTIONS=--max_old_space_size=4096
+      - PAYMENT_GATEWAY=${PAYMENT_GATEWAY}
+      - MYFATOORAH_API_KEY=${MYFATOORAH_API_KEY}
+      - MYFATOORAH_API_URL=${MYFATOORAH_API_URL}
+      - MOYASAR_PUBLISHABLE_KEY=${MOYASAR_PUBLISHABLE_KEY}
+      - MOYASAR_SECRET_KEY=${MOYASAR_SECRET_KEY}
+
+    ports:
+      - "3124:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - chatbotx-main
+
+networks:
+  chatbotx-main:
+    name: chatbotx_main
+    external: true

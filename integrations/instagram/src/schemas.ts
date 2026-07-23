@@ -239,7 +239,7 @@ export type InstagramGraphAPIError = z.infer<
 export const instagramUserProfileSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
-  profile_pic: z.url().optional(),
+  profile_picture_url: z.url().optional(),
   username: z.string().optional(),
 })
 export type InstagramUserProfile = z.infer<typeof instagramUserProfileSchema>

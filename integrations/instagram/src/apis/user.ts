@@ -16,7 +16,7 @@ export const getUserProfile = ({
 
   return rescue(endpoint, async () => {
     const queries = new URLSearchParams({
-      fields: "id,name,username,profile_pic",
+      fields: "id,name,username,profile_picture_url",
       access_token: ctx.auth.tokens.accessToken,
     })
     const response = await instagramBusinessClient.get<InstagramUserProfile>(
@@ -28,11 +28,11 @@ export const getUserProfile = ({
       firstName: response.name,
     }
 
-    if (response.profile_pic) {
+    if (response.profile_picture_url) {
       try {
         result.avatar = await getUserProfilePicture({
           ctx,
-          pictureUrl: response.profile_pic,
+          pictureUrl: response.profile_picture_url,
         })
       } catch (error) {
         logger.error(error, "getUserProfilePicture error")
