@@ -1,10 +1,6 @@
 import { UNKNOWN_ERROR } from "@chatbotx.io/sdk"
 import ky, { isHTTPError, type KyInstance } from "ky"
-import {
-  FACEBOOK_GRAPH_API_URL,
-  INSTAGRAM_API_URL,
-  INSTAGRAM_OAUTH_URL,
-} from "../constants"
+import { INSTAGRAM_API_URL, INSTAGRAM_OAUTH_URL } from "../constants"
 import { InstagramAPIException, parseOriginError } from "../exception"
 import { logger } from "./logger"
 
@@ -111,12 +107,5 @@ export const instagramOAuthClient = new InstagramHttpClient({
   baseUrl: INSTAGRAM_OAUTH_URL,
   timeout: 30_000,
   retries: 2,
-  retryDelay: 1000,
-})
-
-export const facebookGraphClient = new InstagramHttpClient({
-  baseUrl: FACEBOOK_GRAPH_API_URL,
-  timeout: 30_000,
-  retries: 3,
   retryDelay: 1000,
 })
