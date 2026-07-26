@@ -1,5 +1,7 @@
 import {
+  appendCodeToMagicLink,
   type ButtonStepProps,
+  buttonTypes,
   encodeButtonPayload,
   extractMetadata,
   type MetadataPayload,
@@ -10,6 +12,7 @@ import {
 } from "@chatbotx.io/sdk"
 import {
   ActionButtons,
+  ActionCTA,
   ActionList,
   Body,
   Button,
@@ -18,6 +21,7 @@ import {
   ListSection,
   Row,
 } from "whatsapp-api-js/messages"
+import type { ClientMessage } from "whatsapp-api-js/types"
 import { logger } from "../../../lib/logger"
 
 export const MAX_BUTTONS = 3
@@ -68,8 +72,79 @@ export function buildWhatsappButtonMessages(props: {
   metadata?: MetadataPayload
   bodyText: string
   header?: Header
-}) {
-  const buttons = [
+}): ClientMessage[] {
+  const quickReplies = props.quickReplies ?? []
+  const totalButtons = props.buttons.length + quickReplies.length
+
+  if (totalButtons === 0) {
+    return []
+  }
+
+  const hasUrlButtons = props.buttons.some(
+    (b) => b.buttonType === buttonTypes.enum.openWebsite && b.beforeStep.url,
+  )
+
+  if (!hasUrlButtons) {
+    return buildReplyOnlyMessages(props, quickReplies)
+  }
+
+  const soleButton = totalButtons === 1 ? props.buttons[0] : undefined
+  if (
+    soleButton &&
+    soleButton.buttonType === buttonTypes.enum.openWebsite &&
+    soleButton.beforeStep.url
+  ) {
+    const payload = encodeButtonPayload({
+      flowId: props.flowId,
+      flowVersionId: props.flowVersionId,
+      buttonId: soleButton.id,
+      broadcastId: extractMetadata("broadcastId", props.metadata),
+      sequenceStepId: extractMetadata("sequenceStepId", props.metadata),
+    })
+    const url = appendCodeToMagicLink(soleButton.beforeStep.url, payload)
+    return [
+      new Interactive(
+        new ActionCTA(soleButton.label, url),
+        new Body(props.bodyText || soleButton.label),
+      ),
+    ]
+  }
+
+  let enrichedBody = props.bodyText
+  for (const button of props.buttons) {
+    if (
+      button.buttonType === buttonTypes.enum.openWebsite &&
+      button.beforeStep.url
+    ) {
+      const payload = encodeButtonPayload({
+        flowId: props.flowId,
+        flowVersionId: props.flowVersionId,
+        buttonId: button.id,
+        broadcastId: extractMetadata("broadcastId", props.metadata),
+        sequenceStepId: extractMetadata("sequenceStepId", props.metadata),
+      })
+      enrichedBody += `\n\n${button.label}: ${appendCodeToMagicLink(button.beforeStep.url, payload)}`
+    }
+  }
+
+  return buildReplyOnlyMessages(
+    { ...props, bodyText: enrichedBody },
+    quickReplies,
+  )
+}
+
+function buildReplyOnlyMessages(
+  props: {
+    flowId: string
+    flowVersionId?: string
+    buttons: ButtonStepProps[]
+    metadata?: MetadataPayload
+    bodyText: string
+    header?: Header
+  },
+  quickReplies: MessageButtonTemplate[],
+): ClientMessage[] {
+  const buttons: WhatsappReplyButton[] = [
     ...props.buttons.map((button) =>
       normalizeRawButton({
         flowId: props.flowId,
@@ -78,12 +153,8 @@ export function buildWhatsappButtonMessages(props: {
         metadata: props.metadata,
       }),
     ),
-    ...(props.quickReplies ?? []).map(normalizeCanonicalQuickReply),
+    ...quickReplies.map(normalizeCanonicalQuickReply),
   ]
-
-  if (buttons.length === 0) {
-    return []
-  }
 
   if (buttons.length <= MAX_BUTTONS) {
     const actionButtons = buttons.map(

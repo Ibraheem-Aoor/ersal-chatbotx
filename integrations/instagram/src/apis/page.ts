@@ -27,9 +27,7 @@ export const INSTAGRAM_SUBSCRIBE_FIELDS = [
   "comments",
 ]
 
-export const refreshLongLivedToken = (
-  accessToken: string,
-): Promise<string> => {
+export const refreshLongLivedToken = (accessToken: string): Promise<string> => {
   const endpoint = "refresh_access_token"
 
   return rescue(endpoint, async () => {
