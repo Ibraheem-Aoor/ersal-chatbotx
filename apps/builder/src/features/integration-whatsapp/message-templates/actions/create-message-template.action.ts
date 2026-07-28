@@ -1,11 +1,16 @@
 "use server"
 
-import { uploader } from "@chatbotx.io/filesystem"
+import { buildContext } from "@chatbotx.io/business"
+import { db, findOrFail } from "@chatbotx.io/database/client"
+import {
+  integrationWhatsappModel,
+  whatsappMessageTemplateModel,
+} from "@chatbotx.io/database/schema"
 import type {
   CreateMessageTemplateProps,
   WhatsappAuthValue,
 } from "@chatbotx.io/integration-whatsapp"
-import slugify from "@sindresorhus/slugify"
+import { createId } from "@chatbotx.io/utils"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -15,7 +20,7 @@ import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type CreateMessageTemplateRequest,
   createMessageTemplateRequest,
-} from "../schemas/create-message-templates-schema"
+} from "../schema/mutation"
 import { parseComponents } from "./utils"
 
 export const createMessageTemplateAction = workspaceActionClient
@@ -29,16 +34,26 @@ export const createMessageTemplateAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: CreateMessageTemplateRequest
     }) => {
-      const integrationWhatsapp =
-        await findOrFail(integrationWhatsappModel, {
-          workspaceId,
-        })
-      const ctx = {
-        auth: integrationWhatsapp.auth as WhatsappAuthValue,
-        uploader,
-      }
+      const integrationWhatsapp = await findOrFail({
+        table: integrationWhatsappModel,
+        where: { workspaceId },
+        message: "Whatsapp integration not found",
+      })
+
+      const ctx = await buildContext({
+        workspaceId,
+        integrationType: "whatsapp",
+        integration: {
+          ...integrationWhatsapp,
+          auth: integrationWhatsapp.auth as WhatsappAuthValue,
+        },
+      })
+
       const body: CreateMessageTemplateProps = {
-        name: slugify(parsedInput.name),
+        name: parsedInput.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "_")
+          .replace(/^_|_$/g, ""),
         category: parsedInput.category,
         language: parsedInput.language,
         components: await parseComponents(
@@ -56,7 +71,7 @@ export const createMessageTemplateAction = workspaceActionClient
         },
       )
 
-      await db.insert(whatsappMessageTemplate).values({
+      await db.insert(whatsappMessageTemplateModel).values({
         id: createId(),
         name: parsedInput.name,
         integrationWhatsappId: integrationWhatsapp.id,

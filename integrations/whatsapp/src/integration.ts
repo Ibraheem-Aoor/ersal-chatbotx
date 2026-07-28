@@ -9,7 +9,11 @@ import {
   findConversationalAutomation,
   updateConversationalAutomation,
 } from "./api/phone-number"
-import { listFlows, listMessageTemplates } from "./api/waba"
+import {
+  createMessageTemplate,
+  listFlows,
+  listMessageTemplates,
+} from "./api/waba"
 import { unsubscribeWebhook } from "./api/webhook"
 import { uploadMedia, verifyAccessToken } from "./client"
 import { botHandlers } from "./handlers/bot"
@@ -40,6 +44,8 @@ const config: IntegrationDefinition<
     uploadMedia: async ({ ctx, file }) => await uploadMedia(ctx.auth, file),
     listMessageTemplates: async ({ ctx }) =>
       await listMessageTemplates(ctx.auth),
+    createMessageTemplate: async ({ ctx, data }) =>
+      await createMessageTemplate(ctx.auth, data),
     listFlows: async ({ ctx }) => await listFlows(ctx),
     getFlowAssets: async ({ ctx, params }) =>
       await getFlowAssets({
