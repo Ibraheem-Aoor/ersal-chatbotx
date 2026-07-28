@@ -17,7 +17,7 @@ import {
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react"
 import { htmlToText } from "html-to-text"
 import { CodeXml, Smile } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useCustomFieldSelectOptions } from "@/features/custom-fields/provider/custom-field-hook"
 
 type TiptapEditorProps = {
@@ -33,6 +33,7 @@ export const TiptapEditor = ({
   placeholder = "Type a message...",
   showEmojiPicker = true,
 }: TiptapEditorProps) => {
+  const isSettingContent = useRef(false)
   const [isOpenEmoji, setIsOpenEmoji] = useState(false)
   const [isEditorFocused, setIsEditorFocused] = useState(false)
   const [isOpenCustomField, setIsOpenCustomField] = useState(false)
@@ -72,6 +73,9 @@ export const TiptapEditor = ({
     // Don't render immediately on the server to avoid SSR issues
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
+      if (isSettingContent.current) {
+        return
+      }
       const text = editor.getText({ blockSeparator: "\n" })
       onChange?.(text)
     },
@@ -102,7 +106,9 @@ export const TiptapEditor = ({
         .split("\n")
         .map((line) => `<p>${line ? escHtml(line) : "<br>"}</p>`)
         .join("")
+      isSettingContent.current = true
       tiptapEditor.commands.setContent(html)
+      isSettingContent.current = false
     }
   }, [tiptapEditor, initValue])
 
