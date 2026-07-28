@@ -209,17 +209,22 @@ function CreateMessageTemplateDialogContent({
                 <Card>
                   <CardContent className="flex flex-col gap-4 py-4">
                     <InputField
+                      description={t("whatsapp.messageTemplate.nameHint")}
                       label={t("fields.name.label")}
                       name="name"
+                      pattern="[a-z0-9_]+"
                       placeholder="order_shipping_update"
+                      required
                     />
                     <WhatsappMessageTemplateLanguageSelect
                       label={t("fields.language.label")}
                       name="language"
+                      required
                     />
                     <WhatsappMessageTemplateCategorySelect
                       label={t("fields.category.label")}
                       name="category"
+                      required
                     />
                     {PartialComponent && (
                       <PartialComponent parentName="content" />
@@ -282,7 +287,7 @@ export const CreateMessageTemplateDialog = memo(
         </SheetTrigger>
         <SheetContent className="flex w-full flex-col sm:max-w-2xl lg:max-w-4xl">
           <SheetHeader>
-            <SheetTitle>{t("whatsapp.messageTemplate.label")}</SheetTitle>
+            <SheetTitle>{t("whatsapp.messageTemplate.createTitle")}</SheetTitle>
           </SheetHeader>
           {open && (
             <CreateMessageTemplateDialogContent

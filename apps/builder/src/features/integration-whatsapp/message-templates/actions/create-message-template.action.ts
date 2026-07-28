@@ -63,6 +63,11 @@ export const createMessageTemplateAction = workspaceActionClient
         ),
       }
 
+      console.log(
+        "[createMessageTemplate] Sending to Meta API:",
+        JSON.stringify(body, null, 2),
+      )
+
       const res = await integrations.whatsapp.runAction(
         "createMessageTemplate",
         {
