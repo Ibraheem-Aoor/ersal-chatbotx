@@ -2734,11 +2734,11 @@
   "whatsapp": {
     "category": {
       "marketing": {
-        "description": "Marketing category description",
+        "description": "Send promotions, offers, and updates to increase awareness and engagement.",
         "label": "Marketing"
       },
       "utility": {
-        "description": "Utility category description",
+        "description": "Send account updates, order notifications, and other transactional messages.",
         "label": "Utility"
       }
     },
@@ -2767,6 +2767,9 @@
     },
     "marketingMessageLite": "Marketing Message Lite",
     "messageTemplate": {
+      "createTitle": "Create Message Template",
+      "label": "Message Template",
+      "nameHint": "Lowercase letters, numbers and underscores only (e.g. order_update)",
       "carouselImage": {
         "label": "Carousel Image"
       },

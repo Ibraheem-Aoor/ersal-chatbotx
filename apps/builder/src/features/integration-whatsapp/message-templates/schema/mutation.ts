@@ -15,7 +15,14 @@ import { templateVideoSchema } from "../templates/video/schema"
 
 export const createMessageTemplateRequest = z
   .object({
-    name: z.string().min(1).max(512),
+    name: z
+      .string()
+      .min(1)
+      .max(512)
+      .regex(
+        /^[a-z0-9_]+$/,
+        "Only lowercase letters, numbers and underscores allowed",
+      ),
     language: z.enum(
       languageOptions.map((option) => option.value) as [string, ...string[]],
     ),

@@ -1,10 +1,10 @@
 "use client"
 
-import { CheckboxGroupField } from "@chatbotx.io/ui/components/form/checkbox-field"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
-import { memo, useCallback } from "react"
+import { memo } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 
 const VariableInput = memo(
@@ -38,38 +38,19 @@ const TemplateProductPartialComponent = (props: { parentName?: string }) => {
   const { parentName = "content", ...rest } = props
 
   const t = useTranslations()
-  const { control, setValue } = useFormContext()
+  const { control } = useFormContext()
 
-  const [_showFooter, headerVariables, bodyVariables] = useWatch({
+  const [headerVariables, bodyVariables] = useWatch({
     control,
-    name: [
-      `${parentName}.showFooter`,
-      `${parentName}.header.variables`,
-      `${parentName}.body.variables`,
-    ],
+    name: [`${parentName}.header.variables`, `${parentName}.body.variables`],
   })
-
-  const _handleFooterChange = useCallback(
-    (value: boolean) => {
-      setValue(`${parentName}.showFooter`, value, {
-        shouldValidate: true,
-      })
-    },
-    [parentName, setValue],
-  )
 
   return (
     <div className="w-full flex-1" {...rest}>
       <div className="flex gap-4">
-        <CheckboxGroupField
-          label={t("whatsapp.templateFooter.label")}
+        <SwitchField
+          label={t("whatsapp.showFooter.label")}
           name={`${parentName}.showFooter`}
-          options={[
-            {
-              label: t("whatsapp.showFooter.label"),
-              value: "showFooter",
-            },
-          ]}
         />
       </div>
       {headerVariables.length > 0 && (

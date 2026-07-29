@@ -15,6 +15,7 @@ import { ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import React from "react"
+import { CreateMessageTemplateDialog } from "./create-message-template-dialog"
 import { WhatsappMessageTemplatesTableToolbarActions } from "./message-templates-table-toolbar-actions"
 import type { WhatsappMessageTemplateResource } from "./schema/resource"
 
@@ -34,7 +35,10 @@ export function WhatsappMessageTemplatesTable({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <CreateMessageTemplateDialog
+          workspaceId={integrationWhatsapp.workspaceId}
+        />
         <Button size="sm" variant="secondary">
           <Link
             href={`https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=${auth.metadata.businessId}&asset_id=${auth.metadata.wabaId}`}

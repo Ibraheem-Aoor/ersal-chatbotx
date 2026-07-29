@@ -2693,11 +2693,11 @@
   "whatsapp": {
     "category": {
       "marketing": {
-        "description": "وصف فئة التسويق",
+        "description": "إرسال العروض الترويجية والتحديثات لزيادة الوعي والتفاعل.",
         "label": "تسويق"
       },
       "utility": {
-        "description": "وصف فئة الأدوات",
+        "description": "إرسال تحديثات الحساب وإشعارات الطلبات والرسائل المعاملاتية الأخرى.",
         "label": "أدوات"
       }
     },
@@ -2726,6 +2726,9 @@
     },
     "marketingMessageLite": "رسالة تسويقية خفيفة",
     "messageTemplate": {
+      "createTitle": "إنشاء قالب رسالة",
+      "label": "قالب رسالة",
+      "nameHint": "أحرف إنجليزية صغيرة وأرقام وشرطات سفلية فقط (مثال: order_update)",
       "carouselImage": {
         "label": "صورة العرض الدوار"
       },
