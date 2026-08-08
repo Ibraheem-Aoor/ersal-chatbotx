@@ -6,9 +6,37 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@chatbotx.io/ui/components/ui/accordion"
-import { BotIcon, CodeIcon, MailIcon, TableIcon } from "lucide-react"
+import {
+  SiAnthropic,
+  SiAnthropicHex,
+  SiGooglegemini,
+  SiGooglegeminiHex,
+  SiGooglesheets,
+  SiGooglesheetsHex,
+  SiMailchimp,
+  SiMailchimpHex,
+  SiOpenrouter,
+  SiOpenrouterHex,
+} from "@icons-pack/react-simple-icons"
+import { BotIcon, CodeIcon } from "lucide-react"
+import Image from "next/image"
 import { useTranslations } from "next-intl"
 import type { ReactNode } from "react"
+
+const COMPOSIO_LOGO_BASE = "https://logos.composio.dev/api"
+
+function ComposioLogo({ provider }: { provider: string }) {
+  return (
+    <Image
+      alt=""
+      className="size-6 shrink-0 rounded"
+      height={24}
+      src={`${COMPOSIO_LOGO_BASE}/${provider}`}
+      unoptimized
+      width={24}
+    />
+  )
+}
 
 type SettingIntegrationLayoutProps = {
   workspaceToken?: ReactNode
@@ -49,85 +77,107 @@ export default function SettingIntegrationLayout({
 }: SettingIntegrationLayoutProps) {
   const t = useTranslations()
 
-  const integrationItems = [
+  const integrationItems: {
+    keyName: string
+    icon: ReactNode
+    content: ReactNode
+  }[] = [
     {
       keyName: t("workspaceToken.title"),
-      icon: CodeIcon,
+      icon: <CodeIcon className="size-6 shrink-0" />,
       content: workspaceToken,
     },
     {
       keyName: t("openai.title"),
-      icon: BotIcon,
+      icon: <ComposioLogo provider="openai" />,
       content: openAI,
     },
     {
       keyName: t("gemini.title"),
-      icon: BotIcon,
+      icon: (
+        <SiGooglegemini className="size-6 shrink-0" fill={SiGooglegeminiHex} />
+      ),
       content: gemini,
     },
     {
       keyName: t("claude.title"),
-      icon: BotIcon,
+      icon: (
+        <SiAnthropic
+          className="size-6 shrink-0 dark:fill-zinc-100"
+          fill={SiAnthropicHex}
+        />
+      ),
       content: claude,
     },
     {
       keyName: t("deepseek.title"),
-      icon: BotIcon,
+      icon: <ComposioLogo provider="deepseek" />,
       content: deepSeek,
     },
     {
       keyName: t("openrouter.title"),
-      icon: BotIcon,
+      icon: <SiOpenrouter className="size-6 shrink-0" fill={SiOpenrouterHex} />,
       content: openRouter,
     },
     {
       keyName: t("openaiCompatible.title"),
-      icon: BotIcon,
+      icon: <BotIcon className="size-6 shrink-0" />,
       content: openaiCompatible,
     },
     {
       keyName: t("googleSheets.title"),
-      icon: TableIcon,
+      icon: (
+        <SiGooglesheets className="size-6 shrink-0" fill={SiGooglesheetsHex} />
+      ),
       content: googleSheets,
     },
     {
       keyName: t("activeCampaign.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="active_campaign" />,
       content: activeCampaign,
     },
     {
       keyName: t("getResponse.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="getresponse" />,
       content: getResponse,
     },
     {
       keyName: t("mailchimp.title"),
-      icon: MailIcon,
+      icon: <SiMailchimp className="size-6 shrink-0" fill={SiMailchimpHex} />,
       content: mailchimp,
     },
     {
       keyName: t("mailerLite.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="mailerlite" />,
       content: mailerLite,
     },
     {
       keyName: t("moosend.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="moosend" />,
       content: moosend,
     },
     {
       keyName: t("drip.title"),
-      icon: MailIcon,
+      icon: (
+        <Image
+          alt=""
+          className="size-6 shrink-0 rounded"
+          height={24}
+          src="https://www.drip.com/hubfs/logo-magenta-circle-inverse.png"
+          unoptimized
+          width={24}
+        />
+      ),
       content: drip,
     },
     {
       keyName: t("sendGrid.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="sendgrid" />,
       content: sendGrid,
     },
     {
       keyName: t("klaviyo.title"),
-      icon: MailIcon,
+      icon: <ComposioLogo provider="Klaviyo" />,
       content: klaviyo,
     },
   ]
@@ -142,7 +192,7 @@ export default function SettingIntegrationLayout({
         >
           <AccordionTrigger className="rounded-none px-4 transition-all hover:bg-muted hover:no-underline data-[state=open]:bg-muted">
             <div className="flex items-center gap-2">
-              <integration.icon size={24} />
+              {integration.icon}
               {integration.keyName}
             </div>
           </AccordionTrigger>
