@@ -38,9 +38,10 @@ export const BrandIcon = ({
           className,
           "brand-expanded h-8 w-auto group-data-[collapsible=icon]:hidden",
         )}
-        height={5}
+        height={64}
         src={logoUrl}
-        width={10}
+        unoptimized
+        width={200}
       />
       {/* Icon - shown when collapsed */}
       <Image
@@ -49,10 +50,11 @@ export const BrandIcon = ({
           className,
           "brand-collapsed hidden h-8 w-(--sidebar-width-icon) group-data-[collapsible=icon]:block dark:invert",
         )}
-        height={5}
+        height={64}
         loading="eager"
         src={faviconUrl}
-        width={10}
+        unoptimized
+        width={64}
       />
     </>
   )
