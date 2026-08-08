@@ -1,14 +1,16 @@
-import type { Metadata } from "next"
-import type { ReactNode } from "react"
-import "./globals.css"
-import "./themes.css"
 import { UiProvider } from "@chatbotx.io/ui"
+import { DirectionProvider } from "@chatbotx.io/ui/components/ui/direction"
+import type { Metadata } from "next"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
+import type { ReactNode } from "react"
 import { PublicEnvScript } from "@/components/public-env-script"
 import { env } from "@/env"
 import { TenantProvider } from "@/features/tenant"
 import { getTenantSettings } from "@/features/tenant/utils"
+import { getDirection } from "@/i18n/direction"
+import "./globals.css"
+import "./themes.css"
 
 export async function generateMetadata(): Promise<Metadata> {
   const { name, faviconUrl } = await getTenantSettings()
@@ -38,10 +40,11 @@ type Props = {
 
 export default async function RootLayout({ children }: Props) {
   const locale = await getLocale()
+  const dir = getDirection(locale)
   const tenantSettings = await getTenantSettings()
   const pancakeChatPageId = env.NEXT_PUBLIC_PANCAKE_CHAT_PAGE_ID
   return (
-    <html dir="ltr" lang={locale} suppressHydrationWarning>
+    <html dir={dir} lang={locale} suppressHydrationWarning>
       <head>
         <PublicEnvScript />
         {env.NEXT_PUBLIC_ENABLE_PANCAKE_CHAT && pancakeChatPageId && (
@@ -59,9 +62,11 @@ export default async function RootLayout({ children }: Props) {
         suppressHydrationWarning
       >
         <TenantProvider settings={tenantSettings}>
-          <UiProvider>
-            <NextIntlClientProvider>{children}</NextIntlClientProvider>
-          </UiProvider>
+          <DirectionProvider direction={dir}>
+            <UiProvider>
+              <NextIntlClientProvider>{children}</NextIntlClientProvider>
+            </UiProvider>
+          </DirectionProvider>
         </TenantProvider>
       </body>
     </html>
