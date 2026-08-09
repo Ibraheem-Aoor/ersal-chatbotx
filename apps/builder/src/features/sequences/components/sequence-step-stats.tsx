@@ -138,7 +138,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
         >
           {formatValue(delivered)}
           {getPercentage(delivered, sent) && (
-            <span className="ml-0.5 text-muted-foreground">
+            <span className="ms-0.5 text-muted-foreground">
               ({getPercentage(delivered, sent)}%)
             </span>
           )}
@@ -155,7 +155,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
         >
           {formatValue(seen)}
           {getPercentage(seen, delivered) && (
-            <span className="ml-0.5 text-muted-foreground">
+            <span className="ms-0.5 text-muted-foreground">
               ({getPercentage(seen, delivered)}%)
             </span>
           )}
@@ -172,7 +172,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
         >
           {formatValue(clicked)}
           {getPercentage(clicked, delivered) && (
-            <span className="ml-0.5 text-muted-foreground">
+            <span className="ms-0.5 text-muted-foreground">
               ({getPercentage(clicked, delivered)}%)
             </span>
           )}
@@ -189,7 +189,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
         >
           {formatValue(failed)}
           {getPercentage(failed, sent) && (
-            <span className="ml-0.5 text-muted-foreground">
+            <span className="ms-0.5 text-muted-foreground">
               ({getPercentage(failed, sent)}%)
             </span>
           )}

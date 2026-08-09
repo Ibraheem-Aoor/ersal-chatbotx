@@ -84,7 +84,7 @@ export function DeleteContactNoteDialog({
             variant="destructive"
           >
             {isPending ? (
-              <Loader aria-hidden="true" className="mr-2 size-4 animate-spin" />
+              <Loader aria-hidden="true" className="me-2 size-4 animate-spin" />
             ) : null}
             {t("actions.delete")}
           </Button>

@@ -218,7 +218,7 @@ export function FlowEditToolbar({
             <RotateCcwIcon />
             {pastCount > 0 && (
               <Badge
-                className="absolute -top-1 -right-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
+                className="absolute -top-1 -end-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
                 variant="secondary"
               >
                 {pastCount}
@@ -246,7 +246,7 @@ export function FlowEditToolbar({
             <RotateCwIcon />
             {futureCount > 0 && (
               <Badge
-                className="absolute -top-1 -right-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
+                className="absolute -top-1 -end-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
                 variant="secondary"
               >
                 {futureCount}
@@ -262,7 +262,7 @@ export function FlowEditToolbar({
         </TooltipContent>
       </Tooltip>
       <Button
-        className="ml-5"
+        className="ms-5"
         disabled={isValidating || isPendingPublish}
         onClick={onClickPublish}
         size="sm"

@@ -88,7 +88,7 @@ export function ConversationFilter() {
         <Button className="relative px-2" size="sm" variant="outline">
           <FilterIcon className={hasFilter ? "text-primary" : ""} />
           {hasFilter && (
-            <Badge className="absolute -top-1.5 -right-1.5 size-4 justify-center rounded-full p-0 text-[10px]">
+            <Badge className="absolute -top-1.5 -end-1.5 size-4 justify-center rounded-full p-0 text-[10px]">
               {filterCount}
             </Badge>
           )}

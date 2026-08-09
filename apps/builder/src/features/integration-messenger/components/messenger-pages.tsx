@@ -81,7 +81,7 @@ export function FacebookPages({
           <InputField name="pageName" type="hidden" />
         </div>
 
-        <div className="max-h-75 overflow-y-auto pr-1">
+        <div className="max-h-75 overflow-y-auto pe-1">
           <RadioGroupField
             label={t("messenger.selectFacebookPage")}
             name="pageId"

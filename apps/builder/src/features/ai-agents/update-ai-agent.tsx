@@ -303,18 +303,18 @@ export function UpdateAIAgentDialog({
                   className="relative rounded-md border border-input"
                   key={item.id}
                 >
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 start-3">
                     <SelectField
                       name={`messages.${index}.role`}
                       options={messageRoleOptions}
                     />
                   </div>
-                  <div className="pt-14 pr-12 pb-3 pl-3">
+                  <div className="pt-14 pe-12 pb-3 ps-3">
                     <PlainTextEditorField name={`messages.${index}.content`} />
                   </div>
                   <Button
                     aria-label={t("actions.delete")}
-                    className="absolute top-1 right-1"
+                    className="absolute top-1 end-1"
                     onClick={() => removeMessage(index)}
                     size="icon"
                     type="button"

@@ -38,7 +38,7 @@ export default async function ImportContactsHistoriesPage(props: {
       <div className="flex items-center gap-3">
         <Button asChild size="icon" variant="outline">
           <Link href={`/space/${workspaceId}/contacts`}>
-            <ArrowLeftIcon className="size-4" />
+            <ArrowLeftIcon className="size-4 rtl:rotate-180" />
             <span className="sr-only">{t("actions.back")}</span>
           </Link>
         </Button>

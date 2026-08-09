@@ -124,10 +124,10 @@ export default function ConversationItem({
       >
         <div className="relative">
           {contactAvatar}
-          <div className="absolute bottom-0 left-0 transform">
+          <div className="absolute bottom-0 start-0 transform">
             {assignedIcon(conversation)}
           </div>
-          <div className="absolute right-0 bottom-0 transform">
+          <div className="absolute end-0 bottom-0 transform">
             {conversation.contactInboxes?.map((contactInbox) => (
               <Tooltip key={contactInbox.id}>
                 <TooltipTrigger asChild>
@@ -146,19 +146,19 @@ export default function ConversationItem({
             ))}
           </div>
           {conversation.followed && (
-            <div className="absolute top-0 right-0 transform">
+            <div className="absolute top-0 end-0 transform">
               <StarIcon className="fill-yellow-400 text-zinc-500" />
             </div>
           )}
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <div className="truncate text-left font-medium dark:text-gray-200">
+          <div className="truncate text-start font-medium dark:text-gray-200">
             {conversation.contact?.fullName}
           </div>
           <div
             className={cn(
-              "w-full truncate text-left text-sm",
+              "w-full truncate text-start text-sm",
               !(
                 conversation.agentLastReadAt && conversation.contactLastReadAt
               ) ||
@@ -174,7 +174,7 @@ export default function ConversationItem({
           >
             {conversation.messages?.[0]?.text ?? " "}
           </div>
-          <p className="text-right text-neutral-400 text-xs">
+          <p className="text-end text-neutral-400 text-xs">
             <span>
               {conversation.lastActivityAt
                 ? formatDistanceToNowStrict(conversation.lastActivityAt)

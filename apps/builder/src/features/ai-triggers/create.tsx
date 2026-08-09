@@ -133,7 +133,7 @@ export function CreateAITriggerDialog({
                       <InputField name={`questions.${i}.name`} />
                     </div>
                     <div className="flex basis-1/12 justify-center">
-                      <ArrowRightIcon className="mt-2" />
+                      <ArrowRightIcon className="mt-2 rtl:rotate-180" />
                     </div>
 
                     <div className="basis-5/12">

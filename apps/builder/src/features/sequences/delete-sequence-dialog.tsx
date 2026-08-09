@@ -76,7 +76,7 @@ export function DeleteSequenceDialog({
             </Button>
           </DialogClose>
           <Button
-            className="ml-auto"
+            className="ms-auto"
             disabled={isPending}
             onClick={() => execute()}
             size="sm"

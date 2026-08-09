@@ -60,7 +60,7 @@ export function DeleteErrorLogsDialog({
       {showTrigger ? (
         <DialogTrigger asChild>
           <Button size="sm" variant="outline">
-            <Trash aria-hidden="true" className="mr-2 size-4" />
+            <Trash aria-hidden="true" className="me-2 size-4" />
             {t("actions.delete")} ({errorLogs.length})
           </Button>
         </DialogTrigger>
@@ -97,7 +97,7 @@ export function DeleteErrorLogsDialog({
             variant="destructive"
           >
             {isPending && (
-              <Loader aria-hidden="true" className="mr-2 size-4 animate-spin" />
+              <Loader aria-hidden="true" className="me-2 size-4 animate-spin" />
             )}
             {t("actions.delete")}
           </Button>

@@ -273,7 +273,7 @@ const MailchimpDialog = ({ parentName }: { parentName: string }) => {
                         name={`mergeFields.${index}.customFieldId`}
                       />
                     </div>
-                    <ArrowRightIcon className="size-4 text-muted-foreground" />
+                    <ArrowRightIcon className="size-4 text-muted-foreground rtl:rotate-180" />
                     <InputField
                       disabled
                       label=""

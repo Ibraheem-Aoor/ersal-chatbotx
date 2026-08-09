@@ -22,7 +22,7 @@ export const SpreadsheetViewer = ({ data }: SpreadsheetViewerProps) => {
           <FileSpreadsheetIcon className="text-gray-500" size={20} />
           <p className="font-bold">{t("fields.googleSheets.label")}</p>
         </div>
-        <div className="mt-2 ml-4 text-center text-gray-500 text-xs">
+        <div className="mt-2 ms-4 text-center text-gray-500 text-xs">
           {t(`flows.actions.${data.stepType}`)}
         </div>
       </div>
@@ -33,7 +33,7 @@ export const SpreadsheetViewer = ({ data }: SpreadsheetViewerProps) => {
             {t("messages.success")}
             <div className="h-4 w-4 rounded-full border-2 border-green-500">
               <Handle
-                className="right-[8px]! h-4! w-4! opacity-0!"
+                className="end-[8px]! h-4! w-4! opacity-0!"
                 id={successState.id}
                 position={Position.Right}
                 type="source"
@@ -46,7 +46,7 @@ export const SpreadsheetViewer = ({ data }: SpreadsheetViewerProps) => {
             {t("messages.failed")}
             <div className="h-4 w-4 rounded-full border-2 border-red-500">
               <Handle
-                className="right-[8px]! h-4! w-4! opacity-0!"
+                className="end-[8px]! h-4! w-4! opacity-0!"
                 id={errorState.id}
                 position={Position.Right}
                 type="source"

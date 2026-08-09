@@ -136,7 +136,7 @@ export default function AssignConversationDialog({
                       variant="destructive"
                     >
                       {isSubmitting && (
-                        <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2Icon className="me-2 h-4 w-4 animate-spin" />
                       )}
                       {t("actions.removeAssignee")}
                     </Button>
@@ -154,7 +154,7 @@ export default function AssignConversationDialog({
                   type="submit"
                 >
                   {isSubmitting && (
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2Icon className="me-2 h-4 w-4 animate-spin" />
                   )}
                   {t("actions.confirm")}
                 </Button>

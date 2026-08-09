@@ -93,7 +93,7 @@ export function DeleteAIFileDialog({
             {isPending && (
               <Loader
                 aria-hidden="true"
-                className="mr-2 h-4 w-4 animate-spin"
+                className="me-2 h-4 w-4 animate-spin"
               />
             )}
             {t("actions.delete")}

@@ -79,7 +79,7 @@ export function ChangeDefault(props: ChangeDefaultProps) {
             onClick={() => execute({ isDefault: !aiAgent?.isDefault })}
             size="sm"
           >
-            {isPending && <Loader className="mr-2 size-4 animate-spin" />}
+            {isPending && <Loader className="me-2 size-4 animate-spin" />}
             {t("actions.confirm")}
           </Button>
         </DialogFooter>

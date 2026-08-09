@@ -116,7 +116,7 @@ export function getAIAgentsColumns({
             <DropdownMenuItem
               onSelect={() => setRowAction({ row, variant: "toggleDefault" })}
             >
-              <BrainIcon className="mr-2" />
+              <BrainIcon className="me-2" />
               {row.original.isDefault
                 ? t("actions.unsetDefaultAgent")
                 : t("actions.setAsDefaultAgent")}
@@ -124,14 +124,14 @@ export function getAIAgentsColumns({
             <DropdownMenuItem
               onSelect={() => setRowAction({ row, variant: "update" })}
             >
-              <PencilIcon className="mr-2" />
+              <PencilIcon className="me-2" />
               {t("actions.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onSelect={() => setRowAction({ row, variant: "delete" })}
             >
-              <Trash2Icon className="mr-2" />
+              <Trash2Icon className="me-2" />
               {t("actions.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>

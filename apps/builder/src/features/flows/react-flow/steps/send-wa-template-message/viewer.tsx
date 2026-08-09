@@ -49,7 +49,7 @@ export const SendWaTemplateMessageStepViewer = (
             >
               <BaseHandle
                 className={cn(
-                  "right-[6px]! h-3! w-3! opacity-0!",
+                  "end-[6px]! h-3! w-3! opacity-0!",
                   "border-green-500",
                 )}
                 id={data.buttons[0].id}
@@ -72,7 +72,7 @@ export const SendWaTemplateMessageStepViewer = (
             >
               <BaseHandle
                 className={cn(
-                  "right-[6px]! h-3! w-3! opacity-0!",
+                  "end-[6px]! h-3! w-3! opacity-0!",
                   "border-red-500",
                 )}
                 id={data.buttons[1].id}

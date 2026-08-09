@@ -135,7 +135,7 @@ export const MessageItem = (props: MessageItemProps) => {
                 />
               )}
               {isLiked && (
-                <span className="absolute -right-2 -bottom-2 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                <span className="absolute -end-2 -bottom-2 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
                   <ThumbsUp className="size-3" />
                 </span>
               )}
@@ -364,9 +364,9 @@ const RenderContentAttributes = (props: MessageItemProps) => {
                 align: "start",
               }}
             >
-              <CarouselContent className="ml-0">
+              <CarouselContent className="ms-0">
                 {contentAttributes.payload.cards.map((card, _) => (
-                  <CarouselItem className="w-32 pl-0" key={card.id}>
+                  <CarouselItem className="w-32 ps-0" key={card.id}>
                     <div className="p-1">
                       <Card className="py-0">
                         <CardContent className="flex flex-col items-center justify-center overflow-hidden p-0">
@@ -407,8 +407,8 @@ const RenderContentAttributes = (props: MessageItemProps) => {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="-left-2" />
-              <CarouselNext className="-right-2" />
+              <CarouselPrevious className="-start-2" />
+              <CarouselNext className="-end-2" />
             </Carousel>
           )}
         </div>

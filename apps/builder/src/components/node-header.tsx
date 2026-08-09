@@ -105,7 +105,7 @@ export const NodeHeaderActions = ({
     ref={ref}
     {...props}
     className={cn(
-      "ml-auto flex items-center gap-1 justify-self-end",
+      "ms-auto flex items-center gap-1 justify-self-end",
       className,
     )}
   />

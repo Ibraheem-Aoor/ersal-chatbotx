@@ -65,13 +65,13 @@ export function WorkspaceSwitcher({
                   {activeWorkspace?.name?.slice(0, 2) || "  "}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-semibold">
                   {activeWorkspace?.name}
                 </span>
                 {/* <span className="truncate text-xs">{activeWorkspace?.plan}</span> */}
               </div>
-              <ChevronsUpDown className="ml-auto" />
+              <ChevronsUpDown className="ms-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -114,7 +114,7 @@ export function WorkspaceSwitcher({
                 className="gap-4 font-medium text-muted-foreground"
                 href="/channels/create"
               >
-                <PlusCircle className="ml-2 size-4" />
+                <PlusCircle className="ms-2 size-4" />
                 {t("actions.addFeature", {
                   feature: t("fields.workspace.label"),
                 })}

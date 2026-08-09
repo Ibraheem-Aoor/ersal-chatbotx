@@ -61,7 +61,7 @@ export const NavHelp = () => {
                       })}
                     >
                       <DynamicIcon
-                        className="mr-2 size-4"
+                        className="me-2 size-4"
                         name={(item.icon ?? "circle-help") as IconName}
                       />
                       {item.name}

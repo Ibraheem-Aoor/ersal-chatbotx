@@ -71,7 +71,7 @@ export function WorkspaceStatusSwitch({
   const switchElement = (
     <Switch
       checked={isActive}
-      className="absolute top-3 left-3 z-10"
+      className="absolute top-3 start-3 z-10"
       disabled={!canManageStatus}
       onCheckedChange={canManageStatus ? handleCheckedChange : undefined}
       onClick={(e) => e.stopPropagation()}
@@ -85,7 +85,7 @@ export function WorkspaceStatusSwitch({
       ) : (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="absolute top-3 left-3 z-10 inline-flex">
+            <span className="absolute top-3 start-3 z-10 inline-flex">
               {switchElement}
             </span>
           </TooltipTrigger>

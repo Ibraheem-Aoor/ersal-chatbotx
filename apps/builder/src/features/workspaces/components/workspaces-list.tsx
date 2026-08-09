@@ -132,7 +132,7 @@ const WorkspaceCard = ({
     <Card className={cn(CARD_STYLES, "relative")}>
       <CardContent className="px-0">
         {ownerLabel ? (
-          <span className="absolute top-3 right-3 z-10 rounded-full bg-secondary px-2 py-0.5 font-medium text-[10px] text-secondary-foreground uppercase tracking-wide">
+          <span className="absolute top-3 end-3 z-10 rounded-full bg-secondary px-2 py-0.5 font-medium text-[10px] text-secondary-foreground uppercase tracking-wide">
             {ownerLabel}
           </span>
         ) : null}
@@ -220,7 +220,7 @@ const WorkspacesList = async ({
           </span>
         )}
         {isAtLimit && isCloud() && (
-          <UpgradePlanButton className="ml-auto" size="sm" variant="outline">
+          <UpgradePlanButton className="ms-auto" size="sm" variant="outline">
             <CrownIcon aria-hidden className="size-3.5" />
             {t("actions.upgradePlan")}
           </UpgradePlanButton>

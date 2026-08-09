@@ -99,7 +99,7 @@ export function UserPersistentMenuList({
                 menus.map((menu) => (
                   <TableRow key={menu.id}>
                     <TableCell>{menu.name}</TableCell>
-                    <TableCell className="w-1 text-right">
+                    <TableCell className="w-1 text-end">
                       <Button asChild size="icon" variant="ghost">
                         <Link
                           href={`/space/${workspaceId}/settings/user-persistent-menus/${menu.id}`}

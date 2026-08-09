@@ -170,7 +170,7 @@ const KlaviyoDialog = ({ parentName }: { parentName: string }) => {
                     name={`mergeFields.${index}.contactFieldId`}
                     placeholder={t("klaviyo.fields.emptyField")}
                   />
-                  <ArrowRightIcon className="size-4 text-muted-foreground" />
+                  <ArrowRightIcon className="size-4 text-muted-foreground rtl:rotate-180" />
                   <Input
                     placeholder={t("klaviyo.fields.propertyKey")}
                     {...form.register(`mergeFields.${index}.klaviyoProperty`)}

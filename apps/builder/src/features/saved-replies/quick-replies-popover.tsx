@@ -167,7 +167,7 @@ export const QuickRepliesPopover = ({
             ? null
             : filteredSavedReplies.map((reply, index) => (
                 <Button
-                  className={`flex h-auto w-full flex-col items-start justify-between gap-3 rounded-none border-b px-4 py-3 text-left hover:bg-accent ${
+                  className={`flex h-auto w-full flex-col items-start justify-between gap-3 rounded-none border-b px-4 py-3 text-start hover:bg-accent ${
                     index === activeIndex ? "bg-accent" : "hover:bg-accent"
                   }`}
                   key={reply.id}

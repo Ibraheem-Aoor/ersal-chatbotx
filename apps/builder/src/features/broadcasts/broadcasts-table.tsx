@@ -279,13 +279,13 @@ export function BroadcastsTable({ promises }: BroadcastsTableProps) {
               <DropdownMenuItem
                 onClick={() => setRowAction({ row, variant: "rename" })}
               >
-                <PencilIcon className="mr-2" />
+                <PencilIcon className="me-2" />
                 {t("actions.rename")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setRowAction({ row, variant: "resend" })}
               >
-                <RotateCwIcon className="mr-2" />
+                <RotateCwIcon className="me-2" />
                 {t("actions.resend")}
               </DropdownMenuItem>
             </DropdownMenuContent>

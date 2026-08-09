@@ -97,7 +97,7 @@ export function SelectFacebookAccounts({
         <div className="space-y-2">
           {accounts.map((account, index) => (
             <button
-              className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 text-start transition-colors ${
                 selectedIndex === index
                   ? "border-primary bg-primary/5"
                   : "hover:bg-muted/50"

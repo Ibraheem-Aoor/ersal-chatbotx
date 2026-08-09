@@ -117,7 +117,7 @@ function ListInboxTeamsDetail({
                           {openTeams[row.team.id] ? (
                             <ChevronDownIcon size={16} />
                           ) : (
-                            <ChevronRightIcon size={16} />
+                            <ChevronRightIcon className="rtl:rotate-180" size={16} />
                           )}
                         </Button>
                       </TableCell>
@@ -181,7 +181,7 @@ function ListInboxTeamsDetail({
                   <TableRow key={`${row.team.id}-members`}>
                     <TableCell />
                     <TableCell colSpan={4}>
-                      <ul className="pl-2">
+                      <ul className="ps-2">
                         {(row.team.inboxTeamMembers || []).map((member) => (
                           <li
                             className="flex items-center justify-between border-b py-2 last:border-b-0"

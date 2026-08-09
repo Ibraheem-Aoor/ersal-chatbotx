@@ -126,7 +126,7 @@ export default async function WorkspaceLayout({
           <BillingBannerServer userId={user.id} />
           {children}
         </main>
-        <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
+        <SidebarTrigger className="absolute top-3 -start-2 z-10 border" />
       </SidebarInset>
     </SidebarProvider>
   )

@@ -120,7 +120,7 @@ export const TiptapEditor = ({
       />
 
       <div
-        className={`${isEditorFocused ? "opacity-100" : "opacity-0"} absolute right-0 bottom-0 z-10 flex translate-y-full cursor-pointer items-center rounded-b-sm bg-gray-500 hover:bg-gray-600`}
+        className={`${isEditorFocused ? "opacity-100" : "opacity-0"} absolute end-0 bottom-0 z-10 flex translate-y-full cursor-pointer items-center rounded-b-sm bg-gray-500 hover:bg-gray-600`}
       >
         {showEmojiPicker && (
           <Popover onOpenChange={setIsOpenEmoji} open={isOpenEmoji}>

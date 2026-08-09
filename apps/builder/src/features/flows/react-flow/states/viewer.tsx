@@ -35,7 +35,7 @@ export const BaseStateViewer = (props: {
         `text-${variants[data.stateType]}-500!`,
       )}
     >
-      <div className="mr-4">{label || labelVariants[data.stateType]}</div>
+      <div className="me-4">{label || labelVariants[data.stateType]}</div>
       <BaseHandle
         className={cn(
           "transform-none! top-0.5!",

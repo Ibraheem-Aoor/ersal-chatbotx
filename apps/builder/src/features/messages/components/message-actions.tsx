@@ -166,7 +166,7 @@ export const MessageActionsEditor = ({
                 />
               </button>
               <Button
-                className="absolute -top-1.5 -right-1.5 size-4 rounded-full p-0"
+                className="absolute -top-1.5 -end-1.5 size-4 rounded-full p-0"
                 onClick={() => setRemovedAttachment(true)}
                 size="icon"
                 type="button"

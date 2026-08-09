@@ -83,7 +83,7 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
           options={emailTopicOptions}
         />
         <Link
-          className="absolute top-[-2px] right-0 text-primary text-sm hover:underline"
+          className="absolute top-[-2px] end-0 text-primary text-sm hover:underline"
           href={`/space/${params.workspaceId}/email-topics`}
         >
           {t("actions.addNew")}

@@ -255,7 +255,7 @@ const DripDialog = ({ parentName }: { parentName: string }) => {
                         name={`mergeFields.${index}.contactFieldId`}
                         placeholder={t("drip.fields.nothingSelected")}
                       />
-                      <ArrowRightIcon className="size-4 text-muted-foreground" />
+                      <ArrowRightIcon className="size-4 text-muted-foreground rtl:rotate-180" />
                       <ComboboxField
                         emptyText={t("actions.noRecordFound")}
                         label=""

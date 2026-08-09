@@ -111,8 +111,8 @@ export const NodeAnalyticsViewer = memo((props: NodeAnalyticsViewerProps) => {
                 />
               ))}
 
-            <div className="relative w-full text-right">
-              <span className="mr-4">{t("actions.continue")}</span>
+            <div className="relative w-full text-end">
+              <span className="me-4">{t("actions.continue")}</span>
               <BaseHandle id={id} position={Position.Right} type="source" />
             </div>
           </CardContent>

@@ -40,7 +40,7 @@ export function StateHandle({
         )}
       >
         <Handle
-          className="right-[8px]! h-4! w-4! opacity-0!"
+          className="end-[8px]! h-4! w-4! opacity-0!"
           id={stateId}
           position={Position.Right}
           type="source"

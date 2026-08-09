@@ -99,7 +99,7 @@ export function SequenceStepCard({
 
   return (
     <div className="grid">
-      <div className="mt-2 mb-2 space-y-4 pl-4">
+      <div className="mt-2 mb-2 space-y-4 ps-4">
         <Card className="py-2 shadow-none">
           <CardContent>
             {/* Main row */}

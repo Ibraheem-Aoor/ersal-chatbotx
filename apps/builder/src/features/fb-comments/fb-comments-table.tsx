@@ -204,26 +204,26 @@ export function FbCommentsTable({
                     )
                   }
                 >
-                  <PencilIcon className="mr-2" />
+                  <PencilIcon className="me-2" />
                   {t("actions.edit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setRowAction({ row, variant: "update" })}
                 >
-                  <TextIcon className="mr-2" />
+                  <TextIcon className="me-2" />
                   {t("actions.rename")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => setRowAction({ row, variant: "move" })}
                 >
-                  <FolderUpIcon className="mr-2" />
+                  <FolderUpIcon className="me-2" />
                   {t("actions.move")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="hover:bg-muted hover:text-destructive"
                   onClick={() => setRowAction({ row, variant: "delete" })}
                 >
-                  <Trash2Icon className="mr-2" />
+                  <Trash2Icon className="me-2" />
                   {t("actions.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -66,7 +66,7 @@ export const DeleteMagicLinksDialog = ({
       {showTrigger ? (
         <DialogTrigger asChild>
           <Button size="sm" type="button" variant="outline">
-            <Trash aria-hidden className="mr-2 size-4" />
+            <Trash aria-hidden className="me-2 size-4" />
             {t("actions.delete")} ({magicLinks.length})
           </Button>
         </DialogTrigger>
@@ -105,7 +105,7 @@ export const DeleteMagicLinksDialog = ({
             variant="destructive"
           >
             {isPending && (
-              <Loader aria-hidden className="mr-2 size-4 animate-spin" />
+              <Loader aria-hidden className="me-2 size-4 animate-spin" />
             )}
             {t("actions.delete")}
           </Button>

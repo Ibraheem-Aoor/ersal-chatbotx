@@ -179,7 +179,7 @@ const MailerLiteDialog = ({ parentName }: { parentName: string }) => {
                       name={`mergeFields.${index}.contactFieldId`}
                       placeholder={t("mailerLite.fields.emptyField")}
                     />
-                    <ArrowRightIcon className="size-4 text-muted-foreground" />
+                    <ArrowRightIcon className="size-4 text-muted-foreground rtl:rotate-180" />
                     <SelectField
                       disableValues={mappedFields.flatMap(
                         (mapping, mappingIndex) =>

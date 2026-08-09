@@ -268,7 +268,7 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
                       />
                     </div>
                     <div className="flex h-[36px] items-center justify-center">
-                      <ArrowRight size={24} />
+                      <ArrowRight className="rtl:rotate-180" size={24} />
                     </div>
                     <div className="w-[40%]">
                       <CustomFieldSelect

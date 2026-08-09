@@ -485,7 +485,7 @@ export const MessageInput = () => {
               <FileUploadPreview ref={fileUploadRef} />
             </div>
           )}
-          <div className="flex w-full items-center pl-2.5">
+          <div className="flex w-full items-center ps-2.5">
             <div className="min-w-0 flex-1">
               <InboxIcon
                 channel={

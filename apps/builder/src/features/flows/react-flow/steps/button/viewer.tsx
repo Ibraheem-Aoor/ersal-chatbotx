@@ -21,7 +21,7 @@ export const ButtonStepViewer = (props: ButtonStepViewerProps) => {
     <div className="relative flex items-center gap-2">
       <div className="relative min-w-0 flex-1">
         {isAnalytics && (
-          <span className="absolute top-1/2 left-2 -translate-y-1/2 font-medium text-muted-foreground text-xs dark:text-white">
+          <span className="absolute top-1/2 start-2 -translate-y-1/2 font-medium text-muted-foreground text-xs dark:text-white">
             {clickPercent}%
           </span>
         )}
@@ -38,7 +38,7 @@ export const ButtonStepViewer = (props: ButtonStepViewerProps) => {
           data.buttonType === buttonTypes.enum.startAnotherNode ||
           data.buttonType === null) && (
           <BaseHandle
-            className={cn("right-3!", !!data.buttonType && "bg-red-300")}
+            className={cn("end-3!", !!data.buttonType && "bg-red-300")}
             id={data.id}
             position={Position.Right}
             type="source"
@@ -71,7 +71,7 @@ export const OnSuccessStepViewer = (props: ButtonStepViewerProps) => {
 
   return (
     <div className="relative flex items-center justify-end gap-2 text-green-500 text-xs">
-      <div className="mr-4">{t("actions.onSuccess")}</div>
+      <div className="me-4">{t("actions.onSuccess")}</div>
       <BaseHandle
         className="transform-none! top-0.5! border-green-500!"
         id={data.id}
@@ -89,7 +89,7 @@ export const OnSkipStepViewer = (props: ButtonStepViewerProps) => {
 
   return (
     <div className="relative flex items-center justify-end gap-2 text-xs text-yellow-500">
-      <div className="mr-4">{t("actions.onSkip")}</div>
+      <div className="me-4">{t("actions.onSkip")}</div>
       <BaseHandle
         className="transform-none! top-0.5! border-yellow-500!"
         id={data.id}
@@ -107,7 +107,7 @@ export const OnFailureStepViewer = (props: ButtonStepViewerProps) => {
 
   return (
     <div className="relative flex items-center justify-end gap-2 text-red-500 text-xs">
-      <div className="mr-4">{t("actions.onFailure")}</div>
+      <div className="me-4">{t("actions.onFailure")}</div>
       <BaseHandle
         className="transform-none! top-0.5! border-red-500!"
         id={data.id}

@@ -246,7 +246,7 @@ function HeaderConnectField({
           options={csvHeaders.map((col) => ({ label: col, value: col }))}
         />
       </div>
-      <ArrowRightIcon size={20} />
+      <ArrowRightIcon className="rtl:rotate-180" size={20} />
       <div className="flex-1">
         <Input disabled value={label} />
       </div>
@@ -299,7 +299,7 @@ function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
                       }))}
                     />
                   </div>
-                  <ArrowRightIcon size={20} />
+                  <ArrowRightIcon className="rtl:rotate-180" size={20} />
                   <div className="flex-1">
                     <CustomFieldSelect
                       label=""

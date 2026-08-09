@@ -87,7 +87,7 @@ function NameCell({
             </AvatarFallback>
           </Avatar>
           {channel && (
-            <div className="absolute right-0 bottom-0 translate-x-1">
+            <div className="absolute end-0 bottom-0 translate-x-1">
               <InboxIcon
                 channel={channel}
                 iconClassName="size-3"

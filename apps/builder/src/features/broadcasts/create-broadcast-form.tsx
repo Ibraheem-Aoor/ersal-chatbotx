@@ -347,7 +347,7 @@ function CreateBroadcastChooseSubaction({ channel }: { channel: ChannelType }) {
               )}
             </div>
             <Button
-              className="ml-auto"
+              className="ms-auto"
               onClick={() => handleChooseSubaction(subaction.value)}
               type="button"
               variant="secondary"

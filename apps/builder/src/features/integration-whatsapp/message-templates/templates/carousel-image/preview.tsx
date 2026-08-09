@@ -115,7 +115,7 @@ const TemplateCarouselImagePreviewComponent = (
                           type="button"
                           variant="ghost"
                         >
-                          <ArrowLeft size={25} />
+                          <ArrowLeft className="rtl:rotate-180" size={25} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -133,7 +133,7 @@ const TemplateCarouselImagePreviewComponent = (
                           type="button"
                           variant="ghost"
                         >
-                          <ArrowRight size={25} />
+                          <ArrowRight className="rtl:rotate-180" size={25} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -165,13 +165,13 @@ const TemplateCarouselImagePreviewComponent = (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="absolute top-1/2 right-0 size-8 shrink-0 -translate-y-1/2"
+                    className="absolute top-1/2 end-0 size-8 shrink-0 -translate-y-1/2"
                     disabled={current === fields.length - 1}
                     onClick={onNext}
                     type="button"
                     variant="ghost"
                   >
-                    <ChevronRight size={25} />
+                    <ChevronRight className="rtl:rotate-180" size={25} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -184,13 +184,13 @@ const TemplateCarouselImagePreviewComponent = (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="absolute top-1/2 -left-0 size-8 shrink-0 -translate-y-1/2"
+                    className="absolute top-1/2 -start-0 size-8 shrink-0 -translate-y-1/2"
                     disabled={current === 0}
                     onClick={onPrev}
                     type="button"
                     variant="ghost"
                   >
-                    <ChevronLeft size={25} />
+                    <ChevronLeft className="rtl:rotate-180" size={25} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

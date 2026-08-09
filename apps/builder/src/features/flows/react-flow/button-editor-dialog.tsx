@@ -112,7 +112,7 @@ function ActiveButton({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-1.5 rounded border border-dashed pl-4 text-sm">
+      <div className="flex items-center gap-1.5 rounded border border-dashed ps-4 text-sm">
         <activeButton.icon className="size-4" />
         <span className="flex-1">{activeButton.label}</span>
         <Button

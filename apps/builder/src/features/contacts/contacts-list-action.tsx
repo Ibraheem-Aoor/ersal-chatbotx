@@ -168,7 +168,7 @@ export function ContactListAction({
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <ListIcon className="mr-2" size={16} />
+            <ListIcon className="me-2" size={16} />
             {t("actions.more")}
           </DropdownMenuSubTrigger>
 

@@ -102,7 +102,7 @@ export const AIExtractDataDialog = ({
 
         <Form {...form}>
           <form className="flex flex-col space-y-6" onSubmit={handleSubmit}>
-            <div className="flex max-h-[calc(100vh-200px)] flex-col space-y-6 overflow-y-auto pr-2">
+            <div className="flex max-h-[calc(100vh-200px)] flex-col space-y-6 overflow-y-auto pe-2">
               <SelectField
                 label={t("fields.inputType.label")}
                 name="inputType"
@@ -163,7 +163,7 @@ export const AIExtractDataDialog = ({
                         placeholder={t("fields.extractFields.key.placeholder")}
                         required
                       />
-                      <ArrowRightIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                      <ArrowRightIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground rtl:rotate-180" />
                       <CustomFieldSelect
                         allowCreate={true}
                         includeReserved={false}

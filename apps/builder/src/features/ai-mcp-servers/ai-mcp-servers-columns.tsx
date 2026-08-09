@@ -111,7 +111,7 @@ export const getAIMcpServerColumns = ({
               setRowAction({ row, variant: "update" })
             }}
           >
-            <PencilIcon className="mr-2 h-4 w-4" />
+            <PencilIcon className="me-2 h-4 w-4" />
             {t("actions.edit")}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -120,7 +120,7 @@ export const getAIMcpServerColumns = ({
               setRowAction({ row, variant: "delete" })
             }}
           >
-            <Trash2Icon className="mr-2 h-4 w-4" />
+            <Trash2Icon className="me-2 h-4 w-4" />
             {t("actions.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>

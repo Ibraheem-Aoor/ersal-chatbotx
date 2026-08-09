@@ -42,13 +42,13 @@ export const JsonSourcePanel = ({
     <Collapsible onOpenChange={setOpen} open={open}>
       <CollapsibleTrigger asChild>
         <button
-          className="flex w-full items-center gap-1.5 text-left font-medium text-sm"
+          className="flex w-full items-center gap-1.5 text-start font-medium text-sm"
           type="button"
         >
           {open ? (
             <ChevronDownIcon size={16} />
           ) : (
-            <ChevronRightIcon size={16} />
+            <ChevronRightIcon className="rtl:rotate-180" size={16} />
           )}
           {t("fields.jsonSource.title")}
         </button>

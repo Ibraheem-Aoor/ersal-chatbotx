@@ -336,7 +336,7 @@ const ActiveCampaignDialog = ({ parentName }: { parentName: string }) => {
                         name={`fieldValues.${index}.contactFieldId`}
                         placeholder={t("activeCampaign.fields.nothingSelected")}
                       />
-                      <ArrowRightIcon className="size-4 text-muted-foreground" />
+                      <ArrowRightIcon className="size-4 text-muted-foreground rtl:rotate-180" />
                       <ComboboxField
                         emptyText={t("actions.noRecordFound")}
                         label=""
