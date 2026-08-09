@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 
 import { useIsMobile } from "@chatbotx.io/ui/hooks/use-mobile"
+import { useDirection } from "./direction"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Input } from "@chatbotx.io/ui/components/ui/input"
@@ -157,7 +158,7 @@ function SidebarProvider({
 }
 
 function Sidebar({
-  side = "left",
+  side,
   variant = "sidebar",
   collapsible = "offcanvas",
   className,
@@ -169,6 +170,8 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const direction = useDirection()
+  const resolvedSide = side ?? (direction === "rtl" ? "right" : "left")
 
   if (collapsible === "none") {
     return (
@@ -198,7 +201,7 @@ function Sidebar({
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
-          side={side}
+          side={resolvedSide}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -216,7 +219,7 @@ function Sidebar({
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
-      data-side={side}
+      data-side={resolvedSide}
       data-slot="sidebar"
     >
       {/* This is what handles the sidebar gap on desktop */}
@@ -235,7 +238,7 @@ function Sidebar({
         data-slot="sidebar-container"
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[width,transform] duration-200 ease-in-out md:flex",
-          side === "left"
+          resolvedSide === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:-translate-x-full"
             : "right-0 group-data-[collapsible=offcanvas]:translate-x-full",
           // Adjust the padding for floating and inset variants.
