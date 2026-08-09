@@ -259,7 +259,6 @@ async function sendMessage(
     text,
     {
       contactInbox,
-      conversation,
     },
   )
 
