@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { notificationStore } from "@/features/notifications/notification-store"
 import { ContactInboxPanel } from "../contacts/contact-inbox-panel"
 import { disableBotAction } from "../conversations/actions/disable-bot.action"
 import ConversationList from "../conversations/conversation-list"
@@ -50,6 +51,12 @@ export const ChatLayout = (props: ChatLayoutProps) => {
 
   const [activeConversation, setActiveConversation] =
     useState<ConversationResource | null>(null)
+
+  // Clear all unread notifications when the inbox page mounts — the user
+  // is now looking at the conversation list so everything is "seen".
+  useEffect(() => {
+    notificationStore.getState().clearAll()
+  }, [])
 
   const { execute: disableBot, isExecuting: isDisablingBot } = useAction(
     disableBotAction.bind(null, workspaceId),

@@ -10,6 +10,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -23,6 +24,7 @@ export type NavItem = {
   icon?: LucideIcon
   isActive?: boolean
   items?: NavItem[]
+  badge?: number
 }
 
 export type NavMainProps = {
@@ -48,7 +50,7 @@ export function NavMain({ title, items }: NavMainProps) {
                   <SidebarMenuButton tooltip={item.title}>
                     {item.icon ? <item.icon /> : null}
                     <span>{item.title}</span>
-                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -74,6 +76,11 @@ export function NavMain({ title, items }: NavMainProps) {
                   <span>{item.title}</span>
                 </a>
               </SidebarMenuSubButton>
+              {item.badge != null && item.badge > 0 && (
+                <SidebarMenuBadge className="min-w-5 rounded-full bg-destructive px-1.5 font-medium text-destructive-foreground text-xs">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           ),
         )}

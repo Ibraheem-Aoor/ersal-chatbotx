@@ -18,6 +18,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import type { QuotaSummary } from "@/components/nav-usage"
 import { isCloud } from "@/env"
 import { BillingBannerServer } from "@/features/billing/components/billing-banner-server"
+import { WorkspaceNotifications } from "@/features/notifications/workspace-notifications"
 import { getTenantSettings } from "@/features/tenant/utils"
 import { enforcePasswordCurrent } from "@/lib/auth/require-password-current"
 import { getCurrentUser } from "@/lib/auth/utils"
@@ -121,6 +122,7 @@ export default async function WorkspaceLayout({
         quota={quotaSummary}
         workspaceId={workspaceId}
       />
+      <WorkspaceNotifications workspaceId={workspaceId} />
       <SidebarInset>
         <main className="flex min-w-0 flex-1 flex-col gap-4 p-6">
           <BillingBannerServer userId={user.id} />

@@ -4,6 +4,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@chatbotx.io/ui/components/ui/sidebar"
@@ -18,6 +19,7 @@ type NavItem = {
   isActive?: boolean
   items?: { title: string; url: string }[]
   crossZone?: boolean
+  badge?: number
 }
 
 export function NavMain({
@@ -63,6 +65,11 @@ export function NavMain({
                   </Link>
                 )}
               </SidebarMenuButton>
+              {item.badge != null && item.badge > 0 && (
+                <SidebarMenuBadge className="min-w-5 rounded-full bg-destructive px-1.5 font-medium text-destructive-foreground text-xs">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           )
         })}

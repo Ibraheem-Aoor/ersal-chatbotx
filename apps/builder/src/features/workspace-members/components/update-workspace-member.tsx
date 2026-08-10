@@ -138,8 +138,17 @@ export function UpdateWorkspaceMemberForm({
     if (workspaceMember) {
       reset({
         permissions: workspaceMember.permissions,
-        // notificationTypes: workspaceMember.notificationTypes,
-        // notificationChannels: workspaceMember.notificationChannels,
+        notificationTypes: workspaceMember.notificationTypes ?? {
+          notifyAdmin: false,
+          newMessageToHuman: false,
+          newOrder: false,
+        },
+        notificationChannels: workspaceMember.notificationChannels ?? {
+          messenger: false,
+          email: false,
+          browser: false,
+          telegram: false,
+        },
       })
     }
   }, [workspaceMember, reset])

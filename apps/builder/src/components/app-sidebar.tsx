@@ -33,6 +33,7 @@ import { NavUsage, type QuotaSummary } from "@/components/nav-usage"
 import { NavUser } from "@/components/nav-user"
 import { WorkspaceSwitcher } from "@/components/workspace-switcher"
 import { canAccessContactsSection } from "@/features/contacts/permissions"
+import { useUnreadCount } from "@/features/notifications/notification-store"
 import type { WorkspaceResource } from "@/features/workspaces/schema/resource"
 import { authClient } from "@/lib/auth/auth-client"
 import {
@@ -46,6 +47,7 @@ type SidebarNavItem = {
   url: string
   icon: LucideIcon
   permission?: WorkspacePermissionKey
+  badge?: number
 }
 
 export function AppSidebar({
@@ -68,6 +70,7 @@ export function AppSidebar({
 }) {
   const t = useTranslations()
   const { data: session } = authClient.useSession()
+  const unreadCount = useUnreadCount()
 
   const data = {
     user: {
@@ -86,6 +89,7 @@ export function AppSidebar({
         title: t("fields.inbox.label"),
         url: `/space/${workspaceId}/inbox`,
         icon: MessageCircleMoreIcon,
+        badge: unreadCount,
       },
       {
         title: t("fields.flows.label"),

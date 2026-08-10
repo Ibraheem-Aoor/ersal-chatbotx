@@ -18,6 +18,7 @@ import type {
   MessageResource,
   MessageResourceWithRelations,
 } from "@/features/messages/schema/resource"
+import { notificationStore } from "@/features/notifications/notification-store"
 import { client } from "@/lib/orpc/orpc"
 
 export type ConversationFilters = {
@@ -181,17 +182,22 @@ export const createChatStore = () => {
       try {
         const queryConversationId = urlParams.get("conversationId") ?? ""
         if (!activeConversationId && newConversations.length > 0) {
+          let selectedId: string | null = null
           if (queryConversationId) {
             const found = newConversations.find(
               (c) => c.id === queryConversationId,
             )
             if (found) {
-              set({ activeConversationId: queryConversationId })
+              selectedId = queryConversationId
             }
           } else {
-            set({
-              activeConversationId: newConversations[0].id,
-            })
+            selectedId = newConversations[0].id
+          }
+          if (selectedId) {
+            set({ activeConversationId: selectedId })
+            // Sync the auto-selected conversation with the notification
+            // store so its badge clears and new-message sound suppresses.
+            notificationStore.getState().setActiveConversation(selectedId)
           }
         }
       } catch {
@@ -211,6 +217,11 @@ export const createChatStore = () => {
 
     setActiveConversationId: (activeConversationId: string | null) => {
       const { activeConversationId: oldActiveConversationId } = get()
+      // Always sync with the notification store so clicking the same
+      // conversation still clears its badge, even when the chat store
+      // guard short-circuits the state reset.
+      notificationStore.getState().setActiveConversation(activeConversationId)
+
       if (oldActiveConversationId !== activeConversationId) {
         set({
           activeConversationId,
@@ -270,6 +281,10 @@ export const createChatStore = () => {
         isLoadMoreMessage: false,
         hasNextMessagePage: true,
       })
+      // Clear the active conversation in the global notification store so the
+      // sound/badge logic doesn't suppress notifications when the user leaves
+      // the inbox.
+      notificationStore.getState().setActiveConversation(null)
     },
 
     setFilters: (filters: ConversationFilters) => {
