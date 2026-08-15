@@ -1,6 +1,10 @@
 "use client"
 
-import type { CustomFieldType } from "@chatbotx.io/database/partials"
+import type {
+  ChannelType,
+  CustomFieldType,
+  SystemFieldType,
+} from "@chatbotx.io/database/partials"
 import { FieldOperationType } from "@chatbotx.io/flow-config"
 import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
 import {
@@ -23,10 +27,21 @@ type CustomFieldSelectProps = {
   allowCreate?: boolean
   customFieldTypes?: CustomFieldType[]
   includeReserved?: boolean
+  channels?: ChannelType[]
+  reservedFieldIds?: SystemFieldType[]
   placeholder?: string
   onValueChange?: (value: string) => void
   portal?: boolean
+  createDefaultType?: CustomFieldType
+  /**
+   * Adds a leading "none" option (value "") so the selection can be unset. Use
+   * when the field is optional and picking nothing is a valid choice.
+   */
+  clearable?: boolean
 }
+
+// Language-neutral marker for the "no selection" option.
+const CLEAR_OPTION_LABEL = "—"
 
 export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
   const t = useTranslations()
@@ -37,16 +52,33 @@ export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
     allowCreate,
     customFieldTypes,
     includeReserved = false,
+    channels,
+    reservedFieldIds,
     placeholder,
     onValueChange,
     portal,
+    createDefaultType,
+    clearable,
   } = props
 
   const workspaceId = useWorkspaceId()
   const customFieldSelectOptions = useCustomFieldSelectOptions({
     customFieldTypes,
     includeReserved,
+    channels,
+    reservedFieldIds,
   })
+
+  const options = useMemo(
+    () =>
+      clearable
+        ? [
+            { label: CLEAR_OPTION_LABEL, value: "" },
+            ...customFieldSelectOptions,
+          ]
+        : customFieldSelectOptions,
+    [clearable, customFieldSelectOptions],
+  )
 
   const getAllCustomFields = useCustomFieldStore(
     (state) => state.getAllCustomFields,
@@ -73,6 +105,7 @@ export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
 
           {allowCreate && (
             <CreateCustomFieldDialog
+              defaultType={createDefaultType}
               folderId={null}
               onSuccess={handleSuccess}
               triggerButton={
@@ -91,7 +124,7 @@ export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
       <ComboboxField
         emptyText={t("actions.noRecordFound")}
         name={name}
-        options={customFieldSelectOptions}
+        options={options}
         placeholder={placeholder || t("actions.pleaseSelect")}
         portal={portal}
         triggerValueChange={onValueChange}

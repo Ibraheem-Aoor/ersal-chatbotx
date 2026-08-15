@@ -241,7 +241,7 @@ export function DirectUploadOrInsertLink({
       )}
 
       {publicUrl && (
-        <div className="absolute top-0 end-0 z-1 size-6 rounded-full bg-white p-0 dark:bg-neutral-500!">
+        <div className="absolute inset-e-2 top-0 z-1 size-6 rounded-full bg-white p-0 dark:bg-neutral-500!">
           <Button
             className="size-6 p-0!"
             onClick={clearInputFile}

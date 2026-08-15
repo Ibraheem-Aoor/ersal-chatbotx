@@ -4,10 +4,11 @@ import {
   type BroadcastFlowType,
   type BroadcastScheduleType,
   type BroadcastSubaction,
+  broadcastChannelCapabilities,
   broadcastFlowTypes,
   broadcastSubactions,
   type ChannelType,
-  channelTypes,
+  findBroadcastChannelCapability,
 } from "@chatbotx.io/database/partials"
 import {
   extractMessengerFlowButtons,
@@ -37,14 +38,16 @@ import { add } from "date-fns"
 import { Loader2Icon, XIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createBroadcastAction } from "@/features/broadcasts/actions/create-broadcast.action"
+import { BroadcastAudiencePreviewDialog } from "@/features/broadcasts/components/broadcast-audience-preview-dialog"
 import { BroadcastConfirmDialog } from "@/features/broadcasts/components/broadcast-confirm-dialog"
 import { createBroadcastRequest } from "@/features/broadcasts/schemas/action"
 import { useWorkspaceId } from "@/hooks/routing"
 import { ContactFilter } from "../contact-filter"
+import type { ContactFilterCriteria } from "../contact-filter/schemas"
 import { useContactStore } from "../contacts/provider/contact-store-context"
 import { useFlowStore } from "../flows/provider/flow-store-context"
 import { useFlowTemplate } from "../flows/react-flow/stores/flow-template-store-provider"
@@ -57,6 +60,7 @@ import type { MessageTemplateWithComponents } from "../integration-whatsapp/mess
 import { useIntegrationStore } from "../integration-whatsapp/provider/integration-store-context"
 import { MessengerBroadcastFlowButtons } from "./components/messenger-broadcast-flow-buttons"
 import { getBroadcastExcludedFilterFields } from "./lib/broadcast-filter-fields"
+import { buildCreateBroadcastDefaultValues } from "./lib/create-broadcast-defaults"
 
 type BroadcastConfig = {
   value: ChannelType
@@ -69,69 +73,42 @@ type BroadcastConfig = {
 }
 
 const getConfigs = (t: ReturnType<typeof useTranslations>) =>
-  [
-    {
-      value: channelTypes.enum.omnichannel,
-      description:
-        "Send a flow to all contacts. You can send messages or executes actions.",
-      subactions: [
-        {
-          value: broadcastSubactions.enum.allContacts,
-          name: t("broadcasts.allContacts.title"),
-          description: t("broadcasts.allContacts.description"),
-        },
-      ],
-    },
-    {
-      value: "messenger",
+  broadcastChannelCapabilities.map((capability) => {
+    const subactions = capability.subactions.map((subaction) => ({
+      value: subaction,
+      name: t(`broadcasts.${subaction}.title`),
+      description: t(`broadcasts.${subaction}.description`),
+    }))
+
+    return {
+      value: capability.channel,
+      // Channel-level copy is not rendered (the channel step shows only the icon);
+      // per-subaction title/description drive every visible label.
       description: "",
-      subactions: [
-        {
-          value: broadcastSubactions.enum.messengerTemplateMessage,
-          name: t("broadcasts.messengerTemplateMessage.title"),
-          description: t("broadcasts.messengerTemplateMessage.description"),
-        },
-        {
-          value: broadcastSubactions.enum.messengerActiveContacts,
-          name: t("broadcasts.messengerActiveContacts.title"),
-          description: t("broadcasts.messengerActiveContacts.description"),
-        },
-      ],
-    },
-    {
-      value: "whatsapp",
-      description: "",
-      subactions: [
-        {
-          value: broadcastSubactions.enum.whatsappTemplateMessage,
-          name: t("broadcasts.whatsappTemplateMessage.title"),
-          description: t("broadcasts.whatsappTemplateMessage.description"),
-        },
-        {
-          value: broadcastSubactions.enum.whatsappWithin24Hours,
-          name: t("broadcasts.whatsappWithin24Hours.title"),
-          description: t("broadcasts.whatsappWithin24Hours.description"),
-        },
-      ],
-    },
-    {
-      value: "zalo",
-      description: "",
-      subactions: [
-        {
-          value: broadcastSubactions.enum.allContacts,
-          name: t("broadcasts.allContacts.title"),
-          description: t("broadcasts.allContacts.description"),
-        },
-      ],
-    },
-  ] as BroadcastConfig[]
+      subactions,
+    }
+  }) satisfies BroadcastConfig[]
 
 type CreateBroadcastFormProps = {
+  canViewEmailAndPhone?: boolean
   workspaceId: string
+  /**
+   * Deep-link prefill (e.g. Ads Analytics' per-ad "Retarget → Send WhatsApp
+   * broadcast → {segment}"). When `initialChannel` is set, the channel-picker
+   * step is skipped since `watchedChannel` is already non-empty.
+   */
+  initialChannel?: ChannelType
+  initialIntegrationWhatsappId?: string
+  initialContactFilter?: ContactFilterCriteria
 }
 
-export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
+export function CreateBroadcastForm({
+  canViewEmailAndPhone = true,
+  workspaceId,
+  initialChannel,
+  initialIntegrationWhatsappId,
+  initialContactFilter,
+}: CreateBroadcastFormProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -160,17 +137,11 @@ export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
       },
       formProps: {
         mode: "onChange",
-        defaultValues: {
-          channel: undefined,
-          flowId: undefined,
-          subaction: broadcastSubactions.enum.allContacts,
-          schedulesType: "now",
-          schedulesAt: null,
-          contactFilter: {
-            operator: "and",
-            conditions: [],
-          },
-        },
+        defaultValues: buildCreateBroadcastDefaultValues({
+          initialChannel,
+          initialIntegrationWhatsappId,
+          initialContactFilter,
+        }),
       },
       errorMapProps: {},
     },
@@ -232,6 +203,7 @@ export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
 
           {watchedChannel && watchedSubAction && (
             <CreateBroadcastChooseFlow
+              canViewEmailAndPhone={canViewEmailAndPhone}
               channel={watchedChannel}
               subaction={watchedSubAction}
             />
@@ -255,14 +227,12 @@ function CreateBroadcastChooseChannel() {
   const handleChooseChannel = useCallback(
     (channel: ChannelType) => {
       setValue("channel", channel)
-      if (
-        channel === channelTypes.enum.messenger ||
-        channel === channelTypes.enum.whatsapp
-      ) {
-        setValue("subaction", null)
-      } else {
-        setValue("subaction", broadcastSubactions.enum.allContacts)
-      }
+      const capability = findBroadcastChannelCapability(channel)
+      const mustPickSubaction = (capability?.subactions.length ?? 0) > 1
+      setValue(
+        "subaction",
+        mustPickSubaction ? null : (capability?.defaultSubaction ?? null),
+      )
     },
     [setValue],
   )
@@ -460,6 +430,7 @@ function BroadcastFlowTypeSelector({
 }
 
 type CreateBroadcastChooseFlowProps = {
+  canViewEmailAndPhone: boolean
   channel: ChannelType
   subaction: BroadcastSubaction
 }
@@ -467,9 +438,15 @@ type CreateBroadcastChooseFlowProps = {
 function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { contactInboxesCount: count, getContactInboxesCount } =
-    useContactStore((state) => state)
-  const fetchReceiversCount = useDebouncedCallback(getContactInboxesCount, 300)
+  const {
+    contactInboxesCount: count,
+    getContactInboxesCount,
+    loadingInboxesCount,
+  } = useContactStore((state) => state)
+  const [audiencePreviewOpen, setAudiencePreviewOpen] = useState(false)
+  const latestReceiversCountQueryKeyRef = useRef<string | null>(null)
+  const [completedReceiversCountQueryKey, setCompletedReceiversCountQueryKey] =
+    useState<string | null>(null)
 
   const workspaceId = useWorkspaceId()
 
@@ -494,9 +471,8 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     description: string
   }>({
     value: broadcastSubactions.enum.allContacts,
-    name: "Omnichannel",
-    description:
-      "Send a flow to all contacts. You can send messages or executes actions.",
+    name: "",
+    description: "",
   })
 
   const { control, setValue, formState } = useFormContext()
@@ -518,6 +494,46 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const watchedMessengerTemplateData = watchedTemplateData as
     | MessengerTemplateParams
     | undefined
+
+  const receiversCountParams = useMemo(
+    () => ({
+      contactFilter: watchedContactFilter,
+      channel: props.channel,
+      integrationWhatsappId: watchedIntegrationWhatsappId,
+      integrationMessengerId: watchedIntegrationMessengerId,
+      subaction: props.subaction,
+    }),
+    [
+      watchedContactFilter,
+      props.channel,
+      props.subaction,
+      watchedIntegrationWhatsappId,
+      watchedIntegrationMessengerId,
+    ],
+  )
+
+  const receiversCountQueryKey = useMemo(
+    () => JSON.stringify(receiversCountParams),
+    [receiversCountParams],
+  )
+
+  const fetchReceiversCount = useDebouncedCallback(
+    async (
+      params: typeof receiversCountParams,
+      queryKey: string,
+    ): Promise<void> => {
+      await getContactInboxesCount(params)
+
+      if (latestReceiversCountQueryKeyRef.current === queryKey) {
+        setCompletedReceiversCountQueryKey(queryKey)
+      }
+    },
+    300,
+  )
+
+  const isReceiversCountLoading =
+    loadingInboxesCount ||
+    completedReceiversCountQueryKey !== receiversCountQueryKey
 
   const [selectedTemplate, setSelectedTemplate] =
     useState<MessageTemplateWithComponents | null>(null)
@@ -563,10 +579,11 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const excludeFields = useMemo(
     () =>
       getBroadcastExcludedFilterFields({
+        canViewEmailAndPhone: props.canViewEmailAndPhone,
         channel: props.channel,
         subaction: props.subaction,
       }),
-    [props.channel, props.subaction],
+    [props.canViewEmailAndPhone, props.channel, props.subaction],
   )
 
   const handleCancel = useCallback(() => {
@@ -619,21 +636,10 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   }, [watchedIntegrationWhatsappId, setIntegrationWhatsappId, setValue])
 
   useEffect(() => {
-    fetchReceiversCount({
-      contactFilter: watchedContactFilter,
-      channel: props.channel,
-      integrationWhatsappId: watchedIntegrationWhatsappId,
-      integrationMessengerId: watchedIntegrationMessengerId,
-      subaction: props.subaction,
-    })
-  }, [
-    watchedContactFilter,
-    props.channel,
-    props.subaction,
-    watchedIntegrationWhatsappId,
-    watchedIntegrationMessengerId,
-    fetchReceiversCount,
-  ])
+    latestReceiversCountQueryKeyRef.current = receiversCountQueryKey
+    setCompletedReceiversCountQueryKey(null)
+    fetchReceiversCount(receiversCountParams, receiversCountQueryKey)
+  }, [fetchReceiversCount, receiversCountParams, receiversCountQueryKey])
 
   useEffect(() => {
     if (watchedTemplateId && whatsappTemplates.length > 0) {
@@ -898,11 +904,24 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
       </Card>
 
       <div className="flex items-center justify-between">
-        <div className="flex-1 text-gray-500 text-sm">
-          {t("broadcasts.receiversCount", {
-            count: count || 0,
-          })}
-        </div>
+        <Button
+          className="h-auto px-0 text-gray-500 text-sm"
+          disabled={isReceiversCountLoading || !count}
+          onClick={() => setAudiencePreviewOpen(true)}
+          type="button"
+          variant="link"
+        >
+          {isReceiversCountLoading ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Loader2Icon className="size-3 animate-spin" />
+              {t("broadcasts.receiversLoading")}
+            </span>
+          ) : (
+            t("broadcasts.receiversCount", {
+              count: count || 0,
+            })
+          )}
+        </Button>
         <div className="flex justify-end gap-2">
           <Button onClick={handleCancel} type="button" variant="outline">
             {t("actions.cancel")}
@@ -919,9 +938,22 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
 
           <BroadcastConfirmDialog
             count={count || 0}
+            isReceiversCountLoading={isReceiversCountLoading}
             isSubmitting={formState.isSubmitting}
             onOpenChange={setConfirmOpen}
+            onPreviewReceivers={() => setAudiencePreviewOpen(true)}
             open={confirmOpen}
+          />
+          <BroadcastAudiencePreviewDialog
+            channel={props.channel}
+            contactFilter={watchedContactFilter}
+            integrationMessengerId={watchedIntegrationMessengerId}
+            integrationWhatsappId={watchedIntegrationWhatsappId}
+            onOpenChange={setAudiencePreviewOpen}
+            open={audiencePreviewOpen}
+            subaction={props.subaction}
+            total={count || 0}
+            workspaceId={workspaceId}
           />
         </div>
       </div>

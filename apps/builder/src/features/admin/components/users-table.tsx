@@ -245,11 +245,13 @@ function UserTableRow({ user }: { user: UserRow }) {
       <TableCell>
         <AlertDialog>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button size="icon" variant="ghost">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => router.push(`/admin/users/${user.id}`)}
@@ -277,12 +279,14 @@ function UserTableRow({ user }: { user: UserRow }) {
                   : t("platformAdmin.users.actions.verify")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem className="text-destructive">
-                  <TrashIcon className="mr-2 h-4 w-4" />
-                  {t("platformAdmin.users.actions.delete")}
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
+              <AlertDialogTrigger
+                render={
+                  <DropdownMenuItem className="text-destructive">
+                    <TrashIcon className="mr-2 h-4 w-4" />
+                    {t("platformAdmin.users.actions.delete")}
+                  </DropdownMenuItem>
+                }
+              />
             </DropdownMenuContent>
           </DropdownMenu>
           <AlertDialogContent>

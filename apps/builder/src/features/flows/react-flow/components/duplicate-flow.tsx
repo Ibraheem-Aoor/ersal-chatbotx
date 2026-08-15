@@ -68,11 +68,13 @@ export function DuplicateFlowDialog({
         </DialogHeader>
 
         <DialogFooter className="justify-end">
-          <DialogClose asChild>
-            <Button size="sm" type="button" variant="ghost">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button size="sm" type="button" variant="ghost">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button disabled={isPending} onClick={() => execute()} size="sm">
             {isPending && <Loader2Icon className="animate-spin" />}
             {t("actions.confirm")}

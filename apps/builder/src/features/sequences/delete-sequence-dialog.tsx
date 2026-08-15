@@ -70,11 +70,13 @@ export function DeleteSequenceDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="justify-end">
-          <DialogClose asChild>
-            <Button size="sm" type="button" variant="ghost">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button size="sm" type="button" variant="ghost">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button
             className="ms-auto"
             disabled={isPending}

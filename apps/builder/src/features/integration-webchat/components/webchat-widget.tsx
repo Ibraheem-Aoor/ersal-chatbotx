@@ -16,9 +16,7 @@ import { WebchatRealtime } from "../webchat-realtime"
 
 type WebchatWidgetProps = {
   config: IntegrationWebchatModel
-  workspaceId: string
-  webchatId: string
-  baseUrl: string
+  serverGuestConversationId: string
 }
 
 const WebchatWidgetContent = () => {
@@ -29,7 +27,7 @@ const WebchatWidgetContent = () => {
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    initGuestSession()
+    initGuestSession("")
   }, [initGuestSession])
 
   const handleSendMessage = () => {
@@ -123,8 +121,14 @@ const WebchatWidgetContent = () => {
   )
 }
 
-export const WebchatWidget = ({ config }: WebchatWidgetProps) => (
-  <GuestSessionStoreProvider config={config}>
+export const WebchatWidget = ({
+  config,
+  serverGuestConversationId,
+}: WebchatWidgetProps) => (
+  <GuestSessionStoreProvider
+    config={config}
+    serverGuestConversationId={serverGuestConversationId}
+  >
     <WebchatWidgetContent />
   </GuestSessionStoreProvider>
 )

@@ -12,7 +12,7 @@ type StepStateHandlesProps = {
 
 type StateHandleProps = {
   stateId: string
-  label: string
+  label?: string
   borderClass: string
   fillClass: string
 }
@@ -39,8 +39,9 @@ export function StateHandle({
           isConnected && fillClass,
         )}
       >
+        {/* React Flow routes from physical Position.Right, so this offset must stay physical. */}
         <Handle
-          className="end-[8px]! h-4! w-4! opacity-0!"
+          className="right-[8px]! h-4! w-4! opacity-0!"
           id={stateId}
           position={Position.Right}
           type="source"

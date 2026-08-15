@@ -2,6 +2,7 @@
 
 import {
   connectChannelIntegration,
+  userQuotaService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
@@ -12,11 +13,11 @@ import type { UserModel } from "@chatbotx.io/database/types"
 import type { TelegramAuthValue } from "@chatbotx.io/integration-telegram"
 import { createId } from "@chatbotx.io/utils"
 import { redirect } from "next/navigation"
+import { isCloud } from "@/env"
 import { integrations } from "@/integration"
 import { logger } from "@/lib/log"
 import { buildBrokerCallbackUrl } from "@/lib/oauth-broker"
 import { authActionClient } from "@/lib/safe-action"
-import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   type ConnectTelegramRequest,
   connectTelegramRequest,
@@ -26,16 +27,18 @@ export const connectTelegramAction = authActionClient
   .inputSchema(connectTelegramRequest)
   .action(
     async ({
-      parsedInput: { botToken, workspaceId },
+      parsedInput,
       ctx,
     }: {
       parsedInput: ConnectTelegramRequest
       ctx: { user: UserModel }
     }) => {
       try {
+        let workspaceId = parsedInput.workspaceId
+
         // Validate bot token and fetch bot info from Telegram
         const botData = await integrations.telegram.runAction("connect", {
-          botToken,
+          botToken: parsedInput.botToken,
         })
 
         // Resolve ownerId before the transaction to avoid an extra read inside it
@@ -47,10 +50,25 @@ export const connectTelegramAction = authActionClient
           ownerId = workspace.ownerId
         }
 
+        if (!workspaceId && isCloud()) {
+          const { blocked, reason } = await userQuotaService.getAccessState(
+            ctx.user.id,
+          )
+          if (blocked) {
+            throw reason === "mac"
+              ? new ChatbotXException(
+                  "Monthly active contact limit reached",
+                  "macLimitReached",
+                  403,
+                )
+              : new ChatbotXException("Trial expired", "trialExpired", 403)
+          }
+        }
+
         return await db.transaction(async (tx) => {
           const auth: TelegramAuthValue = {
             authType: "secretText",
-            secretText: botToken,
+            secretText: parsedInput.botToken,
           }
 
           if (!workspaceId) {
@@ -93,7 +111,7 @@ export const connectTelegramAction = authActionClient
             `/integrations/telegram/webhook?botId=${botData.id}`,
           )
           await integrations.telegram.runAction("registerWebhook", {
-            botToken,
+            botToken: parsedInput.botToken,
             webhookUrl,
           })
 
@@ -101,12 +119,12 @@ export const connectTelegramAction = authActionClient
         })
       } catch (error) {
         if (error instanceof ChatbotXException) {
-          if (error.code === "channelDuplicated" && workspaceId) {
+          if (error.code === "channelDuplicated" && parsedInput.workspaceId) {
             redirect(
-              `/space/${workspaceId}/settings/channels?channel=telegram&error=duplicated`,
+              `/space/${parsedInput.workspaceId}/settings/channels?channel=telegram&error=duplicated`,
             )
           }
-          throw await translateQuotaError(error)
+          throw error
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Bot already connected")

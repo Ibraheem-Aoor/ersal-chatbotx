@@ -90,7 +90,10 @@ export function PaymentHistoryTable({ payments }: { payments: PaymentRow[] }) {
           placeholder={t("subscriptions.filters.searchPlaceholder")}
           value={search}
         />
-        <Select onValueChange={setTypeFilter} value={typeFilter}>
+        <Select
+          onValueChange={(value) => setTypeFilter(String(value))}
+          value={typeFilter}
+        >
           <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>

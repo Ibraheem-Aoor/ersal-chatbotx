@@ -159,6 +159,7 @@ export const MessageInput = () => {
                 type: "message",
                 parentId: null,
                 attributes: null,
+                sendError: null,
               })
             }
 
@@ -390,11 +391,13 @@ export const MessageInput = () => {
             {t("messages.messagingWindowClosed")}
           </p>
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                {t("messages.sendHumanAgentTag")}
-              </Button>
-            </AlertDialogTrigger>
+            <AlertDialogTrigger
+              render={
+                <Button size="sm" variant="outline">
+                  {t("messages.sendHumanAgentTag")}
+                </Button>
+              }
+            />
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>{t("messages.warning")}</AlertDialogTitle>

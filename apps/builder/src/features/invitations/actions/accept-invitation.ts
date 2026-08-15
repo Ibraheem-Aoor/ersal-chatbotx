@@ -1,19 +1,20 @@
 "use server"
 
 import {
+  isWorkspaceScheduledForDeletion,
   quotaEnforcementService,
+  workspaceMemberService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, findOrFail } from "@chatbotx.io/database/client"
-import {
-  invitationModel,
-  workspaceMemberModel,
-} from "@chatbotx.io/database/schema"
+import { invitationModel } from "@chatbotx.io/database/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import { getTranslations } from "next-intl/server"
 import { z } from "zod"
+import { isCommunity } from "@/env"
+import { getSuperAdminPermissions } from "@/features/workspace-members/helpers"
 import { authActionClient } from "@/lib/safe-action"
 
 export const acceptInvitationAction = authActionClient
@@ -24,7 +25,6 @@ export const acceptInvitationAction = authActionClient
   )
   .action(async ({ ctx, parsedInput }) => {
     const { code } = parsedInput
-    const t = await getTranslations("billing.errors")
 
     const invitation = await findOrFail({
       table: invitationModel,
@@ -35,11 +35,11 @@ export const acceptInvitationAction = authActionClient
     })
 
     if (invitation.expiresAt < new Date()) {
-      throw new ChatbotXException(t("invitationExpired"))
+      throw new ChatbotXException("Invitation expired")
     }
 
     if (!invitation.workspaceId) {
-      throw new ChatbotXException(t("invalidInvitation"))
+      throw new ChatbotXException("Invalid invitation: no workspace associated")
     }
 
     const existingMember = await db.query.workspaceMemberModel.findFirst({
@@ -49,38 +49,57 @@ export const acceptInvitationAction = authActionClient
       },
     })
     if (existingMember) {
-      throw new ChatbotXException(t("alreadyMember"))
+      throw new ChatbotXException("You are already a member of this workspace")
     }
 
     const workspace = await workspaceService.find({
       where: { id: invitation.workspaceId },
     })
+    if (workspace && isWorkspaceScheduledForDeletion(workspace)) {
+      const t = await getTranslations("invitation")
+      throw new ChatbotXException(
+        t("workspaceUnavailable"),
+        "workspaceScheduledDeletion",
+        403,
+      )
+    }
     if (workspace) {
-      const consumed = await quotaEnforcementService.tryConsume({
+      const atLimit = await quotaEnforcementService.hasReachedLimit({
         userId: workspace.ownerId,
         metric: "teamMembers",
       })
-      if (!consumed.ok) {
-        throw new ChatbotXException(t("teamMemberLimitReached"))
+      if (atLimit) {
+        throw new ChatbotXException(
+          "Team member limit reached for this workspace plan",
+        )
       }
     }
 
-    await db.insert(workspaceMemberModel).values({
-      id: createId(),
-      workspaceId: invitation.workspaceId,
-      userId: ctx.user.id,
-      role: "agent",
-      permissions: invitation.permissions,
-      notificationTypes: {
-        notifyAdmin: true,
-        newMessageToHuman: true,
-        newOrder: true,
-      },
-      notificationChannels: {
-        messenger: true,
-        email: true,
-        telegram: true,
-        browser: true,
+    // Defense in depth: even though invite-time normalization is the source of
+    // truth, re-force full super-admin permissions for community here so a row
+    // written by any other path can't grant a restricted community member.
+    const permissions = isCommunity()
+      ? getSuperAdminPermissions()
+      : invitation.permissions
+
+    await workspaceMemberService.create({
+      data: {
+        id: createId(),
+        workspaceId: invitation.workspaceId,
+        userId: ctx.user.id,
+        role: "agent",
+        permissions,
+        notificationTypes: {
+          notifyAdmin: true,
+          newMessageToHuman: true,
+          newOrder: true,
+        },
+        notificationChannels: {
+          messenger: true,
+          email: true,
+          telegram: true,
+          browser: true,
+        },
       },
     })
 

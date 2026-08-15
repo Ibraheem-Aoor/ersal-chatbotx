@@ -1,5 +1,6 @@
 "use client"
 
+import { isWorkspaceScheduledForDeletion } from "@chatbotx.io/business/workspace-lifecycle/predicates"
 import type {
   InvitationModel,
   UserModel,
@@ -30,6 +31,9 @@ export function InvitationCard({
 }) {
   const router = useRouter()
   const t = useTranslations()
+  const canJoin = workspace
+    ? !isWorkspaceScheduledForDeletion(workspace)
+    : false
 
   const { execute, isPending } = useAction(acceptInvitationAction, {
     onSuccess: () => {
@@ -45,11 +49,13 @@ export function InvitationCard({
   return (
     <Card className="max-w-lg">
       <CardContent className="flex flex-col gap-4">
-        {workspace ? (
+        {canJoin && workspace ? (
           <WorkspaceInvitationCard user={user} workspace={workspace} />
         ) : (
           <p className="text-muted-foreground">
-            {t("invitation.invalidInvitation")}
+            {workspace && isWorkspaceScheduledForDeletion(workspace)
+              ? t("invitation.workspaceUnavailable")
+              : t("invitation.invalidInvitation")}
           </p>
         )}
         <div className="mt-4 flex justify-center gap-2">
@@ -62,7 +68,7 @@ export function InvitationCard({
             {t("actions.cancel")}
           </Button>
           <Button
-            disabled={isPending || !workspace}
+            disabled={isPending || !canJoin}
             onClick={() => execute({ code: invitation.code })}
             type="button"
             variant="default"

@@ -2,7 +2,9 @@ import { stepTypes } from "@chatbotx.io/flow-config"
 import {
   SiClaude,
   SiGooglegemini,
+  SiMake,
   SiMessenger,
+  SiN8n,
 } from "@icons-pack/react-simple-icons"
 import {
   ArchiveIcon,
@@ -10,8 +12,11 @@ import {
   BellRingIcon,
   BotIcon,
   CalculatorIcon,
+  CalendarClockIcon,
   CircleCheckIcon,
   CircleEllipsisIcon,
+  ClipboardListIcon,
+  CloudDownloadIcon,
   CodeIcon,
   CogIcon,
   GlobeIcon,
@@ -21,6 +26,7 @@ import {
   Layers2,
   LayersPlus,
   MailIcon,
+  MegaphoneIcon,
   MessageCircleMoreIcon,
   MessageCirclePlusIcon,
   MessageCircleXIcon,
@@ -34,8 +40,10 @@ import {
   StarIcon,
   StarOffIcon,
   TagIcon,
+  TicketPercentIcon,
   UserIcon,
   UserRoundXIcon,
+  WebhookIcon,
   ZapIcon,
 } from "lucide-react"
 import { OpenAIIcon } from "@/icons/openai"
@@ -522,10 +530,25 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
     ],
   },
   {
+    label: t("flows.actions.appointmentScheduling"),
+    icon: CalendarClockIcon,
+    stepType: stepTypes.enum.appointmentScheduling,
+  },
+  {
+    label: t("flows.actions.questionnaires"),
+    icon: ClipboardListIcon,
+    stepType: stepTypes.enum.questionnaires,
+  },
+  {
     label: t("flows.actions.tools"),
     icon: CogIcon,
     stepType: null,
     children: [
+      {
+        label: t("coupons.tabs.topicCoupon"),
+        icon: TicketPercentIcon,
+        stepType: stepTypes.enum.setUpCoupon,
+      },
       {
         label: t("flows.actions.getDataFromJson"),
         icon: CodeIcon,
@@ -551,6 +574,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         icon: GlobeIcon,
         stepType: stepTypes.enum.callApi,
       },
+      {
+        label: t("flows.actions.executeJavascript"),
+        icon: CodeIcon,
+        stepType: stepTypes.enum.executeJavascript,
+      },
     ],
   },
   {
@@ -558,6 +586,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
     icon: SiMessenger,
     stepType: null,
     children: [
+      {
+        label: t("flows.actions.facebookCustomAudience"),
+        icon: MegaphoneIcon,
+        stepType: stepTypes.enum.facebookCustomAudience,
+      },
       {
         label: t("flows.actions.setMessengerUserPersistentMenu"),
         icon: SiMessenger,
@@ -577,6 +610,40 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         label: t("flows.actions.setMessengerPersona"),
         icon: UserIcon,
         stepType: stepTypes.enum.setMessengerPersona,
+      },
+      {
+        label: t("flows.actions.updateMessengerContactData"),
+        icon: CloudDownloadIcon,
+        stepType: stepTypes.enum.updateMessengerContactData,
+      },
+    ],
+  },
+  {
+    label: t("flows.actions.metaConversions"),
+    icon: MegaphoneIcon,
+    stepType: null,
+    children: [
+      {
+        label: t("flows.actions.sendMetaCapiEvent"),
+        icon: MegaphoneIcon,
+        stepType: stepTypes.enum.sendMetaCapiEvent,
+      },
+    ],
+  },
+  {
+    label: t("flows.actions.triggers"),
+    icon: WebhookIcon,
+    stepType: null,
+    children: [
+      {
+        label: t("flows.actions.make"),
+        icon: SiMake,
+        stepType: stepTypes.enum.make,
+      },
+      {
+        label: t("flows.actions.triggerN8n"),
+        icon: SiN8n,
+        stepType: stepTypes.enum.triggerN8n,
       },
     ],
   },

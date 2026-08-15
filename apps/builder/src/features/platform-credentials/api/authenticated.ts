@@ -14,7 +14,7 @@ export const platformCredentialsAuthenticatedAPI = {
     .output(z.object({ apiKey: z.string().nullable() }))
     .handler(async ({ context }) => {
       const credential = await platformCredentialService.findDecrypted({
-        userId: isCloud() ? context.user.id : undefined,
+        userId: isCloud() ? context.user?.id : undefined,
         type: "giphy",
       })
 

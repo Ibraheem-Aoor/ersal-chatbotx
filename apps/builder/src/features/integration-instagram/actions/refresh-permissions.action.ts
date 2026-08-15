@@ -32,11 +32,11 @@ const refreshInstagramPermissions = async (ctx: {
   const auth = integrationInstagram.auth as InstagramAuthValue
 
   try {
-    const newAccessToken = await refreshLongLivedToken(auth.tokens.accessToken)
+    const response = await refreshLongLivedToken(auth.tokens.accessToken)
 
     const updatedAuth: InstagramAuthValue = {
       ...auth,
-      tokens: { ...auth.tokens, accessToken: newAccessToken },
+      tokens: { ...auth.tokens, accessToken: response.access_token },
     }
 
     await db

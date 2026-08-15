@@ -20,6 +20,9 @@ const publicRoutes = [
   "/checkout",
   "/unsubscribe",
   "/email-topic",
+  "/extensions",
+  "/booking",
+  "/portal/redeem",
 ]
 const signinPath = "/auth/sign-in"
 
@@ -50,6 +53,7 @@ export async function proxy(request: NextRequest) {
   // await logRequest(request)
 
   const { pathname, search } = request.nextUrl
+
   if (isPublicRoute(pathname)) {
     return attachProxyUrl(request)
   }

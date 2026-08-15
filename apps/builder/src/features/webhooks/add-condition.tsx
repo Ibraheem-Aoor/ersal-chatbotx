@@ -8,6 +8,7 @@ import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -16,6 +17,7 @@ import {
 import { PlusIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useMemo } from "react"
+import { defaultFn as addContactInfoUpdatedCondition } from "../conditions/schemas/contact-info-updated"
 import { defaultFn as addCustomFieldValueChangedCondition } from "../conditions/schemas/custom-field-value-changed"
 import { defaultFn as addDateTimeBaseTriggerCondition } from "../conditions/schemas/date-time-based-trigger"
 import {
@@ -85,6 +87,11 @@ export function AddCondition({
             label: t("trigger.conditions.newContact"),
             value: triggerEventTypes.enum.newContact,
             defaultFn: createDefaultFn(triggerEventTypes.enum.newContact),
+          },
+          {
+            label: t("trigger.conditions.contactInfoUpdated"),
+            value: triggerEventTypes.enum.contactInfoUpdated,
+            defaultFn: addContactInfoUpdatedCondition,
           },
           {
             label: t("trigger.conditions.contactUnsubscribedFormBroadcast"),
@@ -323,19 +330,23 @@ export function AddCondition({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <PlusIcon />
-          {t("actions.addCondition")}
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="outline">
+            <PlusIcon />
+            {t("actions.addCondition")}
+          </Button>
+        }
+      />
       <DropdownMenuContent>
         {options.map((option, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: wip
           <div key={index}>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {option.label}
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-muted-foreground text-xs">
+                {option.label}
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             {option.children.map((child) => (
               <DropdownMenuItem
                 key={child.value}

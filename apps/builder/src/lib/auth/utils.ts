@@ -37,8 +37,10 @@ export const getCurrentUser = async (): Promise<SessionUser | null> => {
         isAnonymous: session.user.isAnonymous ?? false,
         mustChangePassword: session.user.mustChangePassword ?? false,
         status:
-          ((session.user as Record<string, unknown>).status as string) ??
-          "active",
+          ((session.user as Record<string, unknown>).status as
+            | "active"
+            | "suspended"
+            | "banned") ?? "active",
       }
     : null
 }

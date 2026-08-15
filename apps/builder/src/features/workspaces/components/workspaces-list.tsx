@@ -1,3 +1,4 @@
+import { isWorkspaceScheduledForDeletion } from "@chatbotx.io/business"
 import {
   Avatar,
   AvatarFallback,
@@ -14,7 +15,7 @@ import { CrownIcon, PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { UpgradePlanButton } from "@/enterprise/features/billing/upgrade-plan-dialog"
-import { isCloud } from "@/env"
+import { isCloud, isCommunity } from "@/env"
 import { formatScheduleTime } from "../helpers"
 import type { WorkspaceResource } from "../schema/resource"
 import { WorkspaceStatusSwitch } from "./workspace-status-switch"
@@ -26,9 +27,10 @@ type WorkspacesListProps = {
     image: string | null
   }
   workspaces: WorkspaceResource[]
-  workspacesLimit?: number | null
-  ownedCount?: number
   isAtLimit?: boolean
+  blocked?: boolean
+  /** Why creation is blocked; picks the create-card copy. Defaults to the plan/trial message. */
+  reason?: "status" | "mac" | null
   ownerWorkspaceIds?: string[]
   superAdminWorkspaceIds?: string[]
 }
@@ -52,28 +54,30 @@ const CreateWorkspaceCard = ({
   if (disabled) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Card
-            aria-disabled
-            className={cn(CARD_STYLES, "opacity-60 hover:translate-y-0")}
-          >
-            <CardContent className="px-0">
-              <div
-                className={cn(
-                  LINK_STYLES,
-                  "cursor-not-allowed bg-muted text-muted-foreground",
-                )}
-              >
-                <div className="flex size-16 items-center justify-center">
-                  <PlusCircleIcon aria-hidden className="size-8" />
+        <TooltipTrigger
+          render={
+            <Card
+              aria-disabled
+              className={cn(CARD_STYLES, "opacity-60 hover:translate-y-0")}
+            >
+              <CardContent className="px-0">
+                <div
+                  className={cn(
+                    LINK_STYLES,
+                    "cursor-not-allowed bg-muted text-muted-foreground",
+                  )}
+                >
+                  <div className="flex size-16 items-center justify-center">
+                    <PlusCircleIcon aria-hidden className="size-8" />
+                  </div>
+                  <div className="truncate text-center font-medium text-sm">
+                    {label}
+                  </div>
                 </div>
-                <div className="truncate text-center font-medium text-sm">
-                  {label}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TooltipTrigger>
+              </CardContent>
+            </Card>
+          }
+        />
         {disabledReason ? (
           <TooltipContent>{disabledReason}</TooltipContent>
         ) : null}
@@ -120,6 +124,7 @@ const WorkspaceCard = ({
   const firstLetter = workspace.name?.[0]?.toUpperCase() ?? ""
   const name = workspace.name ?? ""
   const href = `/space/${workspace.id}`
+  const isScheduledForDeletion = isWorkspaceScheduledForDeletion(workspace)
   const activeHours =
     workspace.isActive && workspace.startTime && workspace.endTime
       ? t("workspace.schedule.activeHours", {
@@ -132,7 +137,7 @@ const WorkspaceCard = ({
     <Card className={cn(CARD_STYLES, "relative")}>
       <CardContent className="px-0">
         {ownerLabel ? (
-          <span className="absolute top-3 end-3 z-10 rounded-full bg-secondary px-2 py-0.5 font-medium text-[10px] text-secondary-foreground uppercase tracking-wide">
+          <span className="absolute end-3 top-3 z-10 rounded-full bg-secondary px-2 py-0.5 font-medium text-[10px] text-secondary-foreground uppercase tracking-wide">
             {ownerLabel}
           </span>
         ) : null}
@@ -143,6 +148,7 @@ const WorkspaceCard = ({
             isActive: workspace.isActive,
             startTime: workspace.startTime,
             endTime: workspace.endTime,
+            scheduledDeletionAt: workspace.scheduledDeletionAt,
           }}
         />
         <Link
@@ -166,6 +172,11 @@ const WorkspaceCard = ({
                 {activeHours}
               </div>
             ) : null}
+            {isScheduledForDeletion ? (
+              <div className="line-clamp-1 text-center text-destructive text-xs">
+                {t("workspace.deletion.badge")}
+              </div>
+            ) : null}
           </div>
         </Link>
       </CardContent>
@@ -176,9 +187,9 @@ const WorkspaceCard = ({
 const WorkspacesList = async ({
   user,
   workspaces,
-  workspacesLimit,
-  ownedCount = 0,
   isAtLimit = false,
+  blocked = false,
+  reason,
   ownerWorkspaceIds = [],
   superAdminWorkspaceIds = [],
 }: WorkspacesListProps) => {
@@ -186,39 +197,37 @@ const WorkspacesList = async ({
   const createLabel = t("actions.createFeature", {
     feature: t("fields.workspace.label"),
   })
-  const showCreateCard = true
+  const showCreateCard = !isCommunity()
   const ownerIds = new Set(ownerWorkspaceIds)
   const superAdminIds = new Set(superAdminWorkspaceIds)
   const ownerLabel = t("home.owner")
 
-  const usedCount = ownedCount
-  const hasLimit = typeof workspacesLimit === "number"
+  const usedCount = workspaces.length
   const greetingName = user.name?.trim() || user.email
   const hasWorkspaces = workspaces.length > 0
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col">
-      <header className="flex flex-col gap-1">
+    // `4rem` is 2x the host page's `py-8` (top inset + matching bottom
+    // inset), so it must move with that padding — same coupling rule as
+    // the rail's fixed height in `account-rail.tsx`. This column uses
+    // `max-h`, not `h`: a user with only a couple of workspaces should get
+    // a naturally short column, not a tall mostly-empty one; `max-h` still
+    // clips and scrolls once content actually overflows.
+    <main className="flex min-w-0 flex-1 flex-col md:max-h-[calc(100vh-4rem)]">
+      <header className="flex shrink-0 flex-col gap-1">
         <h1 className="font-semibold text-2xl tracking-tight">
           {t("home.welcomeBack", { name: greetingName })}
         </h1>
         <p className="text-muted-foreground text-sm">{t("home.subtitle")}</p>
       </header>
 
-      <div className="mt-8 flex items-baseline gap-3">
+      <div className="mt-8 flex shrink-0 items-baseline gap-3">
         <h2 className="font-semibold text-base">
           {t("billing.usage.workspaces")}
         </h2>
-        {hasLimit && (
-          <span
-            className={cn(
-              "font-medium text-muted-foreground text-sm tabular-nums",
-              isAtLimit && "text-destructive",
-            )}
-          >
-            {`${usedCount} / ${workspacesLimit}`}
-          </span>
-        )}
+        <span className="font-medium text-muted-foreground text-sm tabular-nums">
+          {usedCount}
+        </span>
         {isAtLimit && isCloud() && (
           <UpgradePlanButton className="ms-auto" size="sm" variant="outline">
             <CrownIcon aria-hidden className="size-3.5" />
@@ -227,33 +236,54 @@ const WorkspacesList = async ({
         )}
       </div>
 
-      {hasWorkspaces || showCreateCard ? (
-        <ul className="mt-5 flex list-none flex-wrap gap-5 p-0">
-          {showCreateCard && (
-            <li className="list-none">
-              <CreateWorkspaceCard
-                disabled={isAtLimit}
-                disabledReason={t("billing.limitReached.workspaces")}
-                label={createLabel}
-              />
-            </li>
-          )}
-          {workspaces.map((workspace) => (
-            <li className="list-none" key={workspace.id}>
-              <WorkspaceCard
-                canManageStatus={superAdminIds.has(workspace.id)}
-                ownerLabel={ownerIds.has(workspace.id) ? ownerLabel : undefined}
-                t={t}
-                workspace={workspace}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-5 text-muted-foreground text-sm">
-          {t("home.noWorkspaces")}
-        </p>
-      )}
+      {/*
+        The scrollport for the card grid, kept independent from the header
+        blocks above. `min-h-0` is required for this `flex-1` child to
+        actually shrink and scroll instead of pushing past the `<main>`'s
+        `max-h` — same requirement as the rail's own scrolling body in
+        `account-rail.tsx`. `overscroll-contain` stops scroll-chaining into
+        the document once the grid bottoms out.
+      */}
+      <div className="mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {hasWorkspaces || showCreateCard ? (
+          <ul className="flex list-none flex-wrap gap-5 p-0 pb-1">
+            {showCreateCard && (
+              <li className="list-none">
+                <CreateWorkspaceCard
+                  disabled={isAtLimit || blocked}
+                  disabledReason={
+                    blocked
+                      ? t(
+                          reason === "mac"
+                            ? "billing.macLimitReached.createDisabled"
+                            : "billing.trialExpired.createDisabled",
+                          { feature: t("fields.workspace.label") },
+                        )
+                      : t("billing.limitReached.workspaces")
+                  }
+                  label={createLabel}
+                />
+              </li>
+            )}
+            {workspaces.map((workspace) => (
+              <li className="list-none" key={workspace.id}>
+                <WorkspaceCard
+                  canManageStatus={superAdminIds.has(workspace.id)}
+                  ownerLabel={
+                    ownerIds.has(workspace.id) ? ownerLabel : undefined
+                  }
+                  t={t}
+                  workspace={workspace}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-sm">
+            {t("home.noWorkspaces")}
+          </p>
+        )}
+      </div>
     </main>
   )
 }

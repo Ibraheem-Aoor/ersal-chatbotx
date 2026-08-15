@@ -95,8 +95,6 @@ export default async function BillingPage({
     { key: "workspaces", label: t("billing.usage.workspaces") },
     { key: "channels", label: t("billing.usage.channels") },
     { key: "teamMembers", label: t("billing.usage.teamMembers") },
-    { key: "flows", label: t("billing.usage.flows") },
-    { key: "broadcasts", label: t("billing.usage.broadcasts") },
   ] as const
 
   return (
@@ -164,30 +162,37 @@ export default async function BillingPage({
               {subscription.status === "past_due" && (
                 <>
                   {subscription.paymentToken && <RetryPaymentButton />}
-                  <Button asChild variant="outline">
-                    <Link
-                      href={`/billing/checkout?planId=${subscription.planId}&billingCycle=${subscription.cycle}`}
-                    >
-                      {t("billing.manage.updatePayment")}
-                    </Link>
+                  <Button
+                    render={
+                      <Link
+                        href={`/billing/checkout?planId=${subscription.planId}&billingCycle=${subscription.cycle}`}
+                      />
+                    }
+                    variant="outline"
+                  >
+                    {t("billing.manage.updatePayment")}
                   </Button>
                 </>
               )}
               {subscription.status === "expired" && (
-                <Button asChild variant="destructive">
-                  <Link href="/pricing">{t("billing.manage.resubscribe")}</Link>
+                <Button
+                  render={<Link href="/pricing" />}
+                  variant="destructive"
+                >
+                  {t("billing.manage.resubscribe")}
                 </Button>
               )}
               {subscription.status === "active" && (
-                <Button asChild variant="outline">
-                  <Link href="/pricing">{t("billing.manage.changePlan")}</Link>
+                <Button
+                  render={<Link href="/pricing" />}
+                  variant="outline"
+                >
+                  {t("billing.manage.changePlan")}
                 </Button>
               )}
               {subscription.status === "trial" && (
-                <Button asChild>
-                  <Link href="/pricing">
-                    {t("billing.manage.subscribePlan")}
-                  </Link>
+                <Button render={<Link href="/pricing" />}>
+                  {t("billing.manage.subscribePlan")}
                 </Button>
               )}
             </div>
@@ -200,8 +205,11 @@ export default async function BillingPage({
             <p className="mt-1 text-muted-foreground text-sm">
               {t("billing.manage.noPlanDescription")}
             </p>
-            <Button asChild className="mt-4">
-              <Link href="/pricing">{t("billing.manage.viewPlans")}</Link>
+            <Button
+              className="mt-4"
+              render={<Link href="/pricing" />}
+            >
+              {t("billing.manage.viewPlans")}
             </Button>
           </CardContent>
         </Card>

@@ -87,7 +87,10 @@ export function SubscriptionsTable({
           placeholder={t("subscriptions.filters.searchPlaceholder")}
           value={search}
         />
-        <Select onValueChange={setStatusFilter} value={statusFilter}>
+        <Select
+          onValueChange={(value) => setStatusFilter(String(value))}
+          value={statusFilter}
+        >
           <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>

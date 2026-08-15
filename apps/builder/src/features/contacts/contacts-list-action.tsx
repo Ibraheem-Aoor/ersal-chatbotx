@@ -27,9 +27,9 @@ import {
   UserIcon,
   UserRoundXIcon,
 } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { SequenceStoreProvider } from "@/features/sequences/provider/sequence-store-context"
 import ArchiveConversationDialog from "../conversations/components/archive-conversation"
 import AssignConversationDialog from "../conversations/components/assign-conversation-dialog"
 import DisableBotDialog from "../conversations/components/disable-bot-dialog"
@@ -64,12 +64,14 @@ export function ContactListAction({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline">
-          <ListIcon />
-          Actions
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="outline">
+            <ListIcon />
+            Actions
+          </Button>
+        }
+      />
       <DropdownMenuContent className="w-56">
         <AssignConversationDialog
           contactIds={rows.map((r) => r.id)}
@@ -78,8 +80,9 @@ export function ContactListAction({
           }}
           trigger={
             <DropdownMenuItem
+              closeOnClick={false}
               disabled={rows.length === 0}
-              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
               <MessageCirclePlusIcon />
               {t("actions.assign")}
@@ -91,8 +94,9 @@ export function ContactListAction({
           ids={rows.map((r) => r.id)}
           trigger={
             <DropdownMenuItem
+              closeOnClick={false}
               disabled={rows.length === 0}
-              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
               <TagIcon />
               {t("actions.addTag")}
@@ -100,27 +104,27 @@ export function ContactListAction({
           }
         />
 
-        <SequenceStoreProvider autoInitialize={true} workspaceId={workspaceId}>
-          <AddContactSequenceDialog
-            ids={rows.map((r) => r.id)}
-            trigger={
-              <DropdownMenuItem
-                disabled={rows.length === 0}
-                onSelect={(e) => e.preventDefault()}
-              >
-                <Layers2Icon />
-                {t("actions.addSequence")}
-              </DropdownMenuItem>
-            }
-          />
-        </SequenceStoreProvider>
+        <AddContactSequenceDialog
+          ids={rows.map((r) => r.id)}
+          trigger={
+            <DropdownMenuItem
+              closeOnClick={false}
+              disabled={rows.length === 0}
+              onClick={(e) => e.preventDefault()}
+            >
+              <Layers2Icon />
+              {t("actions.addSequence")}
+            </DropdownMenuItem>
+          }
+        />
 
         <AddContactCustomFieldDialog
           ids={rows.map((r) => r.id)}
           trigger={
             <DropdownMenuItem
+              closeOnClick={false}
               disabled={rows.length === 0}
-              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
               <SaveIcon />
               {t("actions.setCustomField")}
@@ -132,8 +136,9 @@ export function ContactListAction({
           ids={rows.map((r) => r.id)}
           trigger={
             <DropdownMenuItem
+              closeOnClick={false}
               disabled={rows.length === 0}
-              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
               <UserRoundXIcon className="text-destructive" />
               {t("actions.delete")}
@@ -147,8 +152,9 @@ export function ContactListAction({
           filter={filter}
           trigger={
             <DropdownMenuItem
+              closeOnClick={false}
               disabled={rows.length === 0}
-              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.preventDefault()}
             >
               <CloudDownloadIcon />
               {t("actions.export")}
@@ -158,28 +164,29 @@ export function ContactListAction({
         />
 
         <DropdownMenuItem
-          onSelect={() => {
-            router.push(`/space/${workspaceId}/contacts/import`)
-          }}
-        >
-          <CloudUploadIcon />
-          {t("actions.import")}
-        </DropdownMenuItem>
+          render={
+            <Link href={`/space/${workspaceId}/contacts/import`}>
+              <CloudUploadIcon />
+              {t("actions.import")}
+            </Link>
+          }
+        />
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <ListIcon className="me-2" size={16} />
+          <DropdownMenuSubTrigger className="px-3 py-2">
+            <ListIcon />
             {t("actions.more")}
           </DropdownMenuSubTrigger>
 
           <DropdownMenuPortal>
-            <DropdownMenuSubContent>
+            <DropdownMenuSubContent className="w-56">
               <RemoveContactTagDialog
                 ids={rows.map((r) => r.id)}
                 trigger={
                   <DropdownMenuItem
+                    closeOnClick={false}
                     disabled={rows.length === 0}
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <OctagonXIcon />
                     {t("actions.removeTag")}
@@ -187,30 +194,27 @@ export function ContactListAction({
                 }
               />
 
-              <SequenceStoreProvider
-                autoInitialize={true}
-                workspaceId={workspaceId}
-              >
-                <RemoveContactSequenceDialog
-                  ids={rows.map((r) => r.id)}
-                  trigger={
-                    <DropdownMenuItem
-                      disabled={rows.length === 0}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      <Layers2Icon />
-                      {t("actions.removeSequence")}
-                    </DropdownMenuItem>
-                  }
-                />
-              </SequenceStoreProvider>
+              <RemoveContactSequenceDialog
+                ids={rows.map((r) => r.id)}
+                trigger={
+                  <DropdownMenuItem
+                    closeOnClick={false}
+                    disabled={rows.length === 0}
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <Layers2Icon />
+                    {t("actions.removeSequence")}
+                  </DropdownMenuItem>
+                }
+              />
 
               <ClearContactCustomFieldDialog
                 ids={rows.map((r) => r.id)}
                 trigger={
                   <DropdownMenuItem
+                    closeOnClick={false}
                     disabled={rows.length === 0}
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <SaveOffIcon />
                     {t("actions.clearCustomField")}
@@ -226,8 +230,9 @@ export function ContactListAction({
                 }
                 trigger={
                   <DropdownMenuItem
+                    closeOnClick={false}
                     disabled={rows.length === 0}
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <UserIcon />
                     {t("actions.disableBot")}
@@ -243,8 +248,9 @@ export function ContactListAction({
                 }
                 trigger={
                   <DropdownMenuItem
+                    closeOnClick={false}
                     disabled={rows.length === 0}
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <BotIcon />
                     {t("actions.enableBot")}
@@ -260,8 +266,9 @@ export function ContactListAction({
                 }
                 trigger={
                   <DropdownMenuItem
+                    closeOnClick={false}
                     disabled={rows.length === 0}
-                    onSelect={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
                   >
                     <ArchiveIcon />
                     {t("actions.archiveConversation")}

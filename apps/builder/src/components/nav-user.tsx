@@ -22,8 +22,7 @@ import {
   useSidebar,
 } from "@chatbotx.io/ui/components/ui/sidebar"
 import {
-  ChevronsUpDown,
-  CreditCardIcon,
+  CreditCard,
   Crown,
   Settings2,
   ShieldCheck,
@@ -35,6 +34,9 @@ import { useState } from "react"
 import { UpgradePlanDialog } from "@/enterprise/features/billing/upgrade-plan-dialog"
 import { isCloud } from "@/env"
 import { SignOut } from "@/features/auth/sign-out"
+import { EditProfileDialog } from "@/features/workspaces/components/edit-profile-dialog"
+import { RefreshAllChannelTokensButton } from "@/features/workspaces/components/refresh-all-channel-tokens-button"
+import { useUserAvatarUrl } from "@/lib/auth/avatar"
 import { LangSelector } from "./lang-selector"
 import { ThemeSwitcher } from "./theme-switcher"
 
@@ -58,6 +60,7 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const t = useTranslations()
   const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const avatarUrl = useUserAvatarUrl(user.avatar)
 
   return (
     <SidebarMenu>
@@ -66,36 +69,14 @@ export function NavUser({
           <UpgradePlanDialog onOpenChange={setUpgradeOpen} open={upgradeOpen} />
         )}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              size="lg"
-            >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage alt={user.name} src={user.avatar} />
-                <AvatarFallback className="rounded-lg">
-                  {user.name.slice(0, 2) || "  "}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-start text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-muted-foreground text-xs">
-                  {user.email}
-                </span>
-              </div>
-              <ChevronsUpDown className="ms-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                size="lg"
+              >
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage alt={user.name} src={user.avatar} />
+                  <AvatarImage alt={user.name} src={avatarUrl ?? ""} />
                   <AvatarFallback className="rounded-lg">
                     {user.name.slice(0, 2) || "  "}
                   </AvatarFallback>
@@ -106,27 +87,70 @@ export function NavUser({
                     {user.email}
                   </span>
                 </div>
-              </div>
-            </DropdownMenuLabel>
+              </SidebarMenuButton>
+            }
+          />
+          <DropdownMenuContent
+            align="end"
+            className="w-(--anchor-width) min-w-72 rounded-lg"
+            side={isMobile ? "bottom" : "right"}
+            sideOffset={4}
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage alt={user.name} src={avatarUrl ?? ""} />
+                    <AvatarFallback className="rounded-lg">
+                      {user.name.slice(0, 2) || "  "}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-start text-sm leading-tight">
+                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate text-muted-foreground text-xs">
+                      {user.email}
+                    </span>
+                  </div>
+                  <EditProfileDialog
+                    className="ms-auto shrink-0"
+                    user={{
+                      name: user.name,
+                      email: user.email,
+                      image: user.avatar,
+                    }}
+                  />
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {/* Plan + upgrade is cloud-only; self-hosted editions get everything free. */}
             {isCloud() && (
               <>
-                <DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
-                  {t("billing.plan.label", {
-                    plan: planName ?? t("billing.plan.free"),
-                  })}
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
+                    {t("billing.plan.label", {
+                      plan: planName ?? t("billing.plan.free"),
+                    })}
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault()
+                    closeOnClick={false}
+                    onClick={() => {
                       setUpgradeOpen(true)
                     }}
                   >
                     <Crown className="me-2 h-4 w-4" />
                     {t("actions.upgradePlan")}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={
+                      <Link href="/portal/billing">
+                        <CreditCard className="me-2 h-4 w-4" />
+                        {t("billing.title")}
+                      </Link>
+                    }
+                  />
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
@@ -140,75 +164,74 @@ export function NavUser({
                 )}
                 <DropdownMenuGroup>
                   {planName ? (
-                    <DropdownMenuItem asChild>
-                      <Link href={`/space/${workspaceId}/billing`}>
-                        <CreditCardIcon className="h-4 w-4" />
-                        {t("actions.manageSubscription")}
-                      </Link>
-                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      render={
+                        <Link href={`/space/${workspaceId}/billing`}>
+                          <CreditCard className="h-4 w-4" />
+                          {t("actions.manageSubscription")}
+                        </Link>
+                      }
+                    />
                   ) : (
-                    <DropdownMenuItem asChild>
-                      <Link href="/pricing">
-                        <SparklesIcon className="h-4 w-4" />
-                        {t("actions.subscribeNow")}
-                      </Link>
-                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/pricing">
+                          <SparklesIcon className="h-4 w-4" />
+                          {t("actions.subscribeNow")}
+                        </Link>
+                      }
+                    />
                   )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
             )}
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                Language
+              <DropdownMenuItem closeOnClick={false}>
+                {t("fields.language.label")}
                 <LangSelector />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="justify-between">
-                Theme
+              <DropdownMenuItem
+                className="justify-between"
+                closeOnClick={false}
+              >
+                {t("fields.theme.label")}
                 <ThemeSwitcher />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator /> */}
             {(isSuperAdmin || isPlatformAdmin) && (
               <>
                 <DropdownMenuGroup>
                   {isSuperAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">
-                        <ShieldCheck className="h-4 w-4" />
-                        {t("actions.admin")}
-                      </Link>
-                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/admin">
+                          <ShieldCheck className="h-4 w-4" />
+                          {t("actions.admin")}
+                        </Link>
+                      }
+                    />
                   )}
-                  {isPlatformAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/manage">
-                        <Settings2 className="h-4 w-4" />
-                        {t("actions.manage")}
-                      </Link>
-                    </DropdownMenuItem>
+                  {isCloud() && isPlatformAdmin && (
+                    <DropdownMenuItem
+                      render={
+                        <Link href="/manage">
+                          <Settings2 className="h-4 w-4" />
+                          {t("actions.manage")}
+                        </Link>
+                      }
+                    />
                   )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
               </>
             )}
-            <DropdownMenuItem asChild>
-              <SignOut />
-            </DropdownMenuItem>
+            <DropdownMenuItem render={<RefreshAllChannelTokensButton />} />
+            <DropdownMenuItem render={<SignOut />} />
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

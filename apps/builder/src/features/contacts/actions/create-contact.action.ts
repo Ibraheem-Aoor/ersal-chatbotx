@@ -3,6 +3,7 @@
 import {
   contactInboxService,
   contactService,
+  messageCleanupService,
   quotaEnforcementService,
   workspaceService,
 } from "@chatbotx.io/business"
@@ -22,7 +23,6 @@ import { emit } from "@chatbotx.io/event-bus"
 import { emitContactCreated } from "@chatbotx.io/events"
 import { createId } from "@chatbotx.io/utils"
 import { type CountryCode, parsePhoneNumberFromString } from "libphonenumber-js"
-import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { randomString } from "remeda"
 import {
@@ -68,7 +68,7 @@ const resolveContactSourceId = ({
     return parsedInput.email ?? ""
   }
   if (channel === channelTypes.enum.webchat) {
-    return `${randomString()}${createId()}`
+    return `${randomString(10)}${createId()}`
   }
   return parsedInput.contactId ?? ""
 }
@@ -180,6 +180,7 @@ export const createContact = async ({
     const existing = await contactInboxService.findLatestBySource({
       inboxId: inbox.id,
       sourceId,
+      workspaceId,
     })
     if (existing) {
       const dup = {
@@ -201,55 +202,49 @@ export const createContact = async ({
   } = parsedInput
   const contactData = { ...rest, phoneNumber: normalizedPhone }
 
-  const result = await quotaEnforcementService.createNewContactWithMac({
-    ownerId: workspace.ownerId,
-    workspaceId,
-    create: async (tx) => {
-      const contact = await contactService.insert({
-        workspaceId,
-        data: contactData,
-        tx,
-      })
-
-      const [contactInbox] = await tx
-        .insert(contactInboxModel)
-        .values({
-          originalContactId: contact.id,
-          contactId: contact.id,
-          inboxId: inbox.id,
-          channel: inboxChannel,
-          source: contactSources.enum.direct,
-          sourceId,
+  const { contact, contactInbox } =
+    await quotaEnforcementService.createContactWithoutMac({
+      ownerId: workspace.ownerId,
+      workspaceId,
+      create: async (tx) => {
+        const contact = await contactService.insert({
+          workspaceId,
+          data: contactData,
+          tx,
         })
-        .returning()
-      if (!contactInbox) {
-        throw new ChatbotXException("Contact inbox not found")
-      }
 
-      await tx.insert(conversationModel).values({
-        workspaceId,
-        contactId: contact.id,
-        id: createId(),
-      })
+        const [contactInbox] = await tx
+          .insert(contactInboxModel)
+          .values({
+            originalContactId: contact.id,
+            contactId: contact.id,
+            inboxId: inbox.id,
+            channel: inboxChannel,
+            source: contactSources.enum.direct,
+            sourceId,
+          })
+          .returning()
+        if (!contactInbox) {
+          throw new ChatbotXException("Contact inbox not found")
+        }
 
-      return {
-        value: { contact, contactInbox },
-        contactId: contact.id,
-        contactInboxId: contactInbox.id,
-        inboxId: inbox.id,
-      }
-    },
-  })
+        // A re-created contact keeps its history: cancel any pending message
+        // cleanup recorded when a contact with this inbox identity was deleted.
+        await messageCleanupService.cancelByInboxSource({
+          inboxId: inbox.id,
+          sourceIds: [contactInbox.sourceId],
+          tx,
+        })
 
-  if (!result.ok) {
-    const t = await getTranslations("billing.errors")
-    return returnValidationErrors(createContactRequest, {
-      _errors: [t("contactLimitReached")],
-      phoneNumber: { _errors: [t("contactLimitReached")] },
+        await tx.insert(conversationModel).values({
+          workspaceId,
+          contactId: contact.id,
+          id: createId(),
+        })
+
+        return { contact, contactInbox }
+      },
     })
-  }
-
-  const { contact, contactInbox } = result.value
 
   await emitContactCreated(
     workspaceId,

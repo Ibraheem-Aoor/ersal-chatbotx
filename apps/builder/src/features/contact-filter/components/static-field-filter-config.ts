@@ -14,6 +14,8 @@ type StaticFieldRule = {
 }
 
 const STATIC_FIELD_OPERATOR_ORDER = [
+  operatorTypes.enum.in,
+  operatorTypes.enum.notIn,
   operatorTypes.enum.eq,
   operatorTypes.enum.ne,
   operatorTypes.enum.isNotEmpty,
@@ -34,6 +36,12 @@ const BASE_OPERATORS = [
   operatorTypes.enum.eq,
   operatorTypes.enum.ne,
   operatorTypes.enum.isEmpty,
+] as const satisfies readonly OperatorType[]
+
+const SET_OPERATORS = [
+  operatorTypes.enum.in,
+  operatorTypes.enum.notIn,
+  ...BASE_OPERATORS,
 ] as const satisfies readonly OperatorType[]
 
 const BOOLEAN_OPERATORS = [
@@ -77,6 +85,22 @@ const dropdownRule = {
   singleInput: "field",
 } as const satisfies StaticFieldRule
 
+const relationSetRule = {
+  enabledOperators: SET_OPERATORS,
+  singleInput: "field",
+} as const satisfies StaticFieldRule
+
+const PRESENCE_SET_OPERATORS = [
+  operatorTypes.enum.in,
+  operatorTypes.enum.notIn,
+  operatorTypes.enum.isEmpty,
+] as const satisfies readonly OperatorType[]
+
+const presenceSetRule = {
+  enabledOperators: PRESENCE_SET_OPERATORS,
+  singleInput: "field",
+} as const satisfies StaticFieldRule
+
 const booleanRule = {
   enabledOperators: BOOLEAN_OPERATORS,
   singleInput: "boolean",
@@ -110,23 +134,24 @@ const dateRule = {
 
 const staticFieldRules: Record<string, StaticFieldRule> = {
   locale: dropdownRule,
+  language: relationSetRule,
   country: dropdownRule,
   continent: dropdownRule,
   gender: dropdownRule,
-  source: dropdownRule,
-  currentChannel: dropdownRule,
-  inbox: dropdownRule,
+  source: relationSetRule,
+  currentChannel: relationSetRule,
+  inbox: relationSetRule,
   hasOpportunity: dropdownRule,
   hasOpenOpportunity: dropdownRule,
   hasWonOpportunity: dropdownRule,
   hasLostOpportunity: dropdownRule,
   appliedJobs: dropdownRule,
-  tags: dropdownRule,
+  tags: relationSetRule,
   completedWhatsAppFlows: dropdownRule,
   messengerList: dropdownRule,
-  subscribedToDripCampaign: dropdownRule,
-  conversationAssigned: dropdownRule,
-  entryPointsLinks: dropdownRule,
+  subscribedToDripCampaign: relationSetRule,
+  conversationAssigned: relationSetRule,
+  entryPointsLinks: relationSetRule,
   sentMessage: dropdownRule,
   keywordsReceived: dropdownRule,
   executedFlow: dropdownRule,
@@ -136,11 +161,11 @@ const staticFieldRules: Record<string, StaticFieldRule> = {
   votedOnPoll: dropdownRule,
   commentedOnPost: dropdownRule,
   reactedOnPost: dropdownRule,
-  broadcastSent: dropdownRule,
-  broadcastDelivered: dropdownRule,
-  broadcastSeen: dropdownRule,
-  broadcastClicked: dropdownRule,
-  broadcastFailed: dropdownRule,
+  broadcastSent: relationSetRule,
+  broadcastDelivered: relationSetRule,
+  broadcastSeen: relationSetRule,
+  broadcastClicked: relationSetRule,
+  broadcastFailed: relationSetRule,
   emailSent: dropdownRule,
   emailDelivered: dropdownRule,
   emailOpened: dropdownRule,
@@ -171,11 +196,14 @@ const staticFieldRules: Record<string, StaticFieldRule> = {
   optedInForEmail: nonNullableBooleanRule,
   shoppingCartIsEmpty: booleanRule,
   lastSentMessageFailed: booleanRule,
+  fromCtwaAd: booleanRule,
 
   fullName: textFreeRule,
   lastComment: textFreeRule,
   phone: textFreeRule,
   email: textFreeRule,
+  hasContactInfo: presenceSetRule,
+  ctwaConversion: presenceSetRule,
   lastUserInput: textFreeRule,
 
   contactCreatedAt: dateRule,
@@ -187,7 +215,7 @@ const staticFieldRules: Record<string, StaticFieldRule> = {
   bought: dateRule,
 
   contactCreatedDateMinutesAgo: numberRule,
-  timezone: textFreeRule,
+  timezone: dropdownRule,
   followerCountOnInstagram: numberRule,
   lastSeenMinutesAgo: numberRule,
   lastInteractionMinutesAgo: numberRule,
@@ -237,6 +265,9 @@ const isIntervalOperator = (operator?: string): operator is OperatorType =>
   operator === operatorTypes.enum.isBetween ||
   operator === operatorTypes.enum.notBetween
 
+const isSetOperator = (operator?: string): operator is OperatorType =>
+  operator === operatorTypes.enum.in || operator === operatorTypes.enum.notIn
+
 const isValuelessOperator = (operator?: string): operator is OperatorType =>
   operator === operatorTypes.enum.isNotEmpty ||
   operator === operatorTypes.enum.isEmpty
@@ -278,7 +309,7 @@ export const getStaticFieldValueInputConfig = (
   config: FieldConfig | undefined,
   operator: string | undefined,
 ): CustomFieldValueInputConfig | undefined => {
-  if (!config || config.customFieldId) {
+  if (!config || config.customFieldId || config.topicId) {
     return
   }
   if (isValuelessOperator(operator)) {
@@ -304,13 +335,22 @@ export const getStaticFieldValueInputConfig = (
 export const getDefaultStaticFieldValue = (
   config: FieldConfig | undefined,
   operator: string | undefined,
-): string | string[] =>
-  getStaticFieldValueInputConfig(config, operator)?.defaultValue ?? ""
+): string | string[] => {
+  if (isSetOperator(operator)) {
+    return []
+  }
+
+  return getStaticFieldValueInputConfig(config, operator)?.defaultValue ?? ""
+}
 
 export const staticFieldOperatorRequiresArrayValue = (
   config: FieldConfig | undefined,
   operator: string | undefined,
 ): boolean => {
   const input = getStaticFieldValueInputConfig(config, operator)
-  return input?.kind === "numberInterval" || input?.kind === "datetimeInterval"
+  return (
+    isSetOperator(operator) ||
+    input?.kind === "numberInterval" ||
+    input?.kind === "datetimeInterval"
+  )
 }

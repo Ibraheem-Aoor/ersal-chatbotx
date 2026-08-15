@@ -3,6 +3,7 @@
 import {
   buildContext,
   connectChannelIntegration,
+  instagramIntegrationService,
   platformCredentialService,
   resolveTenantSettings,
   workspaceService,
@@ -16,19 +17,22 @@ import {
   integration as integrationInstagramFacebook,
   subscribePageToInstagramWebhook,
 } from "@chatbotx.io/integration-instagram-facebook"
-import { AuthType } from "@chatbotx.io/sdk"
+import { AuthType, SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils/id"
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import {
   BRANDING_TITLE,
   getBrandingUrl,
 } from "@/features/integration-webchat/lib"
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
-import { FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE } from "@/lib/facebook-pending-auth"
+import {
+  FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE,
+  readPendingAuth,
+} from "@/lib/facebook-pending-auth"
+import { persistIntegrationUserInfo } from "@/lib/integration-user-info"
 import { logger } from "@/lib/log"
+import { resolvePlatformOwnerId } from "@/lib/platform-credential-owner"
 import { authActionClient } from "@/lib/safe-action"
-import { translateQuotaError } from "@/lib/translate-business-error"
 import {
   type SelectFacebookAccountRequest,
   selectFacebookAccountRequest,
@@ -47,13 +51,10 @@ export const selectFacebookAccountAction = authActionClient
       try {
         let workspaceId = parsedInput.workspaceId
 
-        const ownerId = parsedInput.workspaceId
-          ? ((
-              await workspaceService.find({
-                where: { id: parsedInput.workspaceId },
-              })
-            )?.ownerId ?? ctx.user.id)
-          : ctx.user.id
+        const ownerId = await resolvePlatformOwnerId({
+          userId: ctx.user.id,
+          workspaceId: parsedInput.workspaceId,
+        })
 
         const instagramCredential =
           await platformCredentialService.resolveForOwner({
@@ -64,6 +65,18 @@ export const selectFacebookAccountAction = authActionClient
           throw new ChatbotXException("Instagram App settings not found")
         }
         const instagramSettings = instagramCredential.config
+
+        // The OAuth callback stored the user token in the pending-auth cookie.
+        // Best-effort: an expired/missing cookie only leaves
+        // `auth.tokens.userAccessToken`/`userId` unset.
+        const pendingAuth = await readPendingAuth(
+          FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE,
+        )
+        if (!pendingAuth) {
+          logger.warn(
+            "Instagram pending-auth cookie missing; connecting without user access token",
+          )
+        }
 
         // DB work only — no external API calls inside the transaction so a
         // rolled-back commit doesn't leave orphaned Facebook webhook subscriptions.
@@ -148,6 +161,22 @@ export const selectFacebookAccountAction = authActionClient
           version: parsedInput.version ?? instagramSettings.version,
         })
 
+        // Best-effort: the connection is already live, so a failed user-info
+        // write must never fail the action.
+        await persistIntegrationUserInfo({
+          workspaceId: workspaceId as string,
+          userId: pendingAuth?.userId,
+          userName: pendingAuth?.userName,
+          userAccessToken: pendingAuth?.userToken,
+          avatarUrl: pendingAuth?.userAvatarUrl,
+          persist: (userInfo) =>
+            instagramIntegrationService.updateUserInfo({
+              id: integrationRow.id,
+              workspaceId: workspaceId as string,
+              userInfo,
+            }),
+        })
+
         const brandingCtx = await buildContext({
           workspaceId: workspaceId as string,
           integrationType: "instagramFacebook",
@@ -157,20 +186,30 @@ export const selectFacebookAccountAction = authActionClient
           },
         })
 
-        await integrationInstagramFacebook.runChannelHandler(
-          "bot",
-          "addBranding",
-          {
-            ctx: brandingCtx,
-            title: BRANDING_TITLE,
-            url: getBrandingUrl("instagram", appUrl),
-          },
-        )
+        // Best-effort: the connection is already live, so a failed branding
+        // write must never fail the action.
+        try {
+          await integrationInstagramFacebook.runChannelHandler(
+            "bot",
+            "addBranding",
+            {
+              ctx: brandingCtx,
+              title: BRANDING_TITLE,
+              url: getBrandingUrl("instagram", appUrl),
+            },
+          )
+        } catch (error) {
+          logger.warn(
+            { err: error },
+            "Failed to add branding to Instagram persistent menu",
+          )
+        }
 
-        // Invalidate the pending-auth cookie now that the account is connected.
-        const cookieStore = await cookies()
-        cookieStore.delete(FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE)
-
+        // NOTE: the pending-auth cookie is intentionally left to expire on its
+        // own (matching the Messenger flow). Deleting it here caused the
+        // onboarding select page — which redirects to `/channels/create` when
+        // the cookie is absent — to redirect on the post-action re-render,
+        // navigating away before the coexist dialog could be shown.
         await updateWorkspaceLogo({
           id: workspaceId as string,
           integration: integrationInstagramFacebook,
@@ -178,6 +217,7 @@ export const selectFacebookAccountAction = authActionClient
         })
 
         return {
+          integrationId: integrationRow.id,
           workspaceId,
         }
       } catch (error) {
@@ -187,7 +227,11 @@ export const selectFacebookAccountAction = authActionClient
               `/space/${parsedInput.workspaceId}/settings/channels?channel=instagram&error=duplicated`,
             )
           }
-          throw await translateQuotaError(error)
+          throw error
+        }
+        if (error instanceof SdkException) {
+          logger.error({ err: error }, "Failed to connect Facebook page")
+          throw error
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Instagram account already connected")

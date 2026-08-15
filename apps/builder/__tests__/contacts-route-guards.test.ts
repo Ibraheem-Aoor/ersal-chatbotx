@@ -24,7 +24,12 @@ vi.mock("next-intl/server", () => ({
 }))
 
 vi.mock("@/features/contacts/queries/list-contacts.queries", () => ({
-  listContactsRSC: vi.fn(async () => ({ data: [], pageCount: 0 })),
+  listContactsRSC: vi.fn(async () => ({
+    data: [],
+    pageCount: 0,
+    totalCount: 0,
+    totalCountCapped: false,
+  })),
 }))
 
 vi.mock("@/features/contacts/schemas/query", () => ({
@@ -105,6 +110,7 @@ describe("contacts route guards", () => {
 
   test("allows assigned-only members to reach contacts and contacts import pages", async () => {
     mockGetCurrentUserAndTargetWorkspace.mockResolvedValue({
+      user: { id: "user-1" },
       targetWorkspaceMember: {
         permissions: {
           ...basePermissions,
@@ -134,6 +140,7 @@ describe("contacts route guards", () => {
 
   test("rejects members without full or assigned-only contact access on contacts routes", async () => {
     mockGetCurrentUserAndTargetWorkspace.mockResolvedValue({
+      user: { id: "user-1" },
       targetWorkspaceMember: {
         permissions: basePermissions,
       },

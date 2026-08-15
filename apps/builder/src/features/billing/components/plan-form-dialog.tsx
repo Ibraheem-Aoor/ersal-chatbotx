@@ -18,7 +18,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { Loader2Icon, PlusIcon, XIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { type ReactNode, useState } from "react"
+import { type ReactElement, useState } from "react"
 import { toast } from "sonner"
 import { createPlanAction } from "../actions/create-plan.action"
 import { updatePlanAction } from "../actions/update-plan.action"
@@ -43,7 +43,7 @@ export function PlanFormDialog({
   trigger,
 }: {
   plan?: PlanRow
-  trigger: ReactNode
+  trigger: ReactElement
 }) {
   const [open, setOpen] = useState(false)
   const t = useTranslations()
@@ -136,7 +136,7 @@ export function PlanFormDialog({
       }}
       open={open}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogTrigger render={trigger} />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogTitle>
           {isEditing ? t("plans.editPlan") : t("plans.createPlan")}

@@ -82,9 +82,7 @@ export function UpdateMessengerForm({
               feature: t("fields.messenger.label"),
             }),
           )
-          router.push(
-            `/space/${workspaceId}/settings/channels?channel=messenger`,
-          )
+          router.push(`/space/${workspaceId}/settings/channels/messenger`)
         },
         onError: ({ error }) => {
           toast.error(error.serverError || "Failed to update messenger.")
@@ -159,8 +157,11 @@ export function UpdateMessengerForm({
     <Form {...form}>
       <form className="space-y-6" onSubmit={handleSubmitWithAction}>
         <ComboboxField
+          allowClear
+          clearLabel={t("messages.none")}
           description={t("fields.welcomeFlowId.description")}
           emptyText={t("actions.noRecordFound")}
+          emptyValue={null}
           label={t("fields.welcomeFlowId.label")}
           name="welcomeFlowId"
           options={flowOptions}
@@ -178,7 +179,7 @@ export function UpdateMessengerForm({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Accordion className="w-full" collapsible type="single">
+              <Accordion className="w-full">
                 {conversationStarters.map((_, index) => (
                   <AccordionItem
                     className="flex flex-col gap-2"
@@ -250,7 +251,7 @@ export function UpdateMessengerForm({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Accordion className="w-full" collapsible type="single">
+              <Accordion className="w-full">
                 {personas.map((persona, index) => (
                   <AccordionItem
                     className="flex flex-col gap-2"
@@ -271,21 +272,23 @@ export function UpdateMessengerForm({
                           </Badge>
                         )}
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              aria-label="Open menu"
-                              className="flex size-8 p-0 data-[state=open]:bg-muted"
-                              variant="ghost"
-                            >
-                              <EllipsisVerticalIcon
-                                aria-hidden="true"
-                                className="size-4"
-                              />
-                            </Button>
-                          </DropdownMenuTrigger>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                aria-label="Open menu"
+                                className="flex size-8 p-0 data-[state=open]:bg-muted"
+                                variant="ghost"
+                              >
+                                <EllipsisVerticalIcon
+                                  aria-hidden="true"
+                                  className="size-4"
+                                />
+                              </Button>
+                            }
+                          />
                           <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem
-                              onSelect={() => setPersonaDefault(index)}
+                              onClick={() => setPersonaDefault(index)}
                             >
                               <UserIcon className="me-2" />
                               {persona.isDefault
@@ -294,7 +297,7 @@ export function UpdateMessengerForm({
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
-                              onSelect={() => removePersona(index)}
+                              onClick={() => removePersona(index)}
                             >
                               <Trash2Icon className="me-2" />
                               {t("actions.delete")}
@@ -364,9 +367,7 @@ export function UpdateMessengerForm({
         <DialogFooter>
           <Button
             onClick={() =>
-              router.push(
-                `/space/${workspaceId}/settings/channels?channel=messenger`,
-              )
+              router.push(`/space/${workspaceId}/settings/channels/messenger`)
             }
             type="button"
             variant="link"

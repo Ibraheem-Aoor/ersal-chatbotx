@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
 import FileDropzone from "@/components/file-dropzone"
+import { peekImportHeadersAction } from "../actions/peek-import-headers.action"
 import {
   type UploadResult,
   usePresignedUpload,
@@ -20,6 +21,8 @@ type ImportDropzoneProps = {
   onUploaded: (result: UploadResult, csvHeaders: string[]) => void
   onCleared: () => void
   onUploadingChange?: (isUploading: boolean) => void
+  uploadLabel?: string
+  headerSource?: "client" | "server"
 }
 
 const noop = () => undefined
@@ -31,6 +34,8 @@ export function ImportDropzone({
   onUploaded,
   onCleared,
   onUploadingChange,
+  uploadLabel,
+  headerSource = "client",
 }: ImportDropzoneProps) {
   const t = useTranslations()
   const { upload } = usePresignedUpload(workspaceId, type, subType)
@@ -41,22 +46,40 @@ export function ImportDropzone({
   const handleDrop = async (file: File) => {
     if (file.size > maxBytes) {
       toast.error(
-        `File exceeds ${config.maxFileSizeMB}MB limit for ${subType} import`,
+        t("fields.import.fileTooLarge", { size: config.maxFileSizeMB }),
       )
       return
     }
     if (!config.acceptedMimeTypes.includes(file.type || "text/csv")) {
-      toast.error(`Unsupported file type for ${subType} import`)
+      toast.error(t("fields.import.unsupportedFileType"))
       return
     }
     setIsUploading(true)
     onUploadingChange?.(true)
     try {
-      const headers = await extractCsvHeaders(file)
       const result = await upload(file)
+      const headers =
+        headerSource === "server"
+          ? await peekImportHeadersAction
+              .bind(
+                null,
+                workspaceId,
+              )({ fileId: result.fileId })
+              .then((response) => {
+                if (!response?.data) {
+                  throw new Error(
+                    response?.serverError ??
+                      t("fields.import.unableToReadHeaders"),
+                  )
+                }
+                return response.data
+              })
+          : await extractCsvHeaders(file)
       onUploaded(result, headers)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload error")
+      toast.error(
+        error instanceof Error ? error.message : t("fields.import.uploadError"),
+      )
     } finally {
       setIsUploading(false)
       onUploadingChange?.(false)
@@ -71,6 +94,7 @@ export function ImportDropzone({
           accept: config.acceptedExtensions,
           maxSize: config.maxFileSizeMB,
           isCard: true,
+          uploadLabel,
         }}
         mode="file"
         onDrop={(file: File) => {

@@ -119,11 +119,13 @@ function CloneMessageTemplateForm({
         />
 
         <div className="flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button type="button" variant="outline">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
 
           <Button
             disabled={!form.formState.isValid || form.formState.isSubmitting}

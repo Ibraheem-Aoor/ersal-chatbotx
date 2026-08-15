@@ -61,11 +61,11 @@ export function BillingBanner({ status, daysLeft }: BillingBannerProps) {
       <p className="flex-1">{message}</p>
       <div className="flex items-center gap-2">
         <Button
-          asChild
+          render={<Link href="/pricing" />}
           size="sm"
           variant={isDestructive ? "destructive" : "default"}
         >
-          <Link href="/pricing">{ctaLabel}</Link>
+          {ctaLabel}
         </Button>
         <button
           className="rounded p-1 opacity-60 hover:opacity-100"

@@ -14,6 +14,7 @@ import {
   ListTodoIcon,
   MailIcon,
   PaletteIcon,
+  RadioTowerIcon,
   ReceiptTextIcon,
   UsersIcon,
 } from "lucide-react"
@@ -29,7 +30,11 @@ import { authClient } from "@/lib/auth/auth-client"
  * Super-admin sidebar for the `/admin` console.
  * Gated by `isSuperAdmin` in the parent layout; no auth check needed here.
  */
-export function AdminSidebar() {
+export function AdminSidebar({
+  showEnterpriseItems,
+}: {
+  showEnterpriseItems: boolean
+}) {
   const t = useTranslations()
   const tManage = useTranslations("manageSidebar")
   const { data: session } = authClient.useSession()
@@ -51,44 +56,46 @@ export function AdminSidebar() {
       url: "/admin/platform-credentials",
       icon: Grid2x2PlusIcon,
     },
-    ...(isCloud()
-      ? []
-      : [
+    {
+      title: t("channels.title"),
+      url: "/admin/platform-channels",
+      icon: RadioTowerIcon,
+    },
+    ...(showEnterpriseItems && !isCloud()
+      ? [
           {
             title: t("platformBranding.title"),
             url: "/admin/branding",
             icon: PaletteIcon,
           },
-        ]),
-    ...(isCloud()
-      ? []
-      : [
           {
             title: t("platformEmailTemplates.title"),
             url: "/admin/email-templates",
             icon: MailIcon,
           },
-        ]),
+        ]
+      : []),
+    ...(showEnterpriseItems
+      ? [
+          {
+            title: t("platformAdmin.helpItems.title"),
+            url: "/admin/help-items",
+            icon: CircleHelpIcon,
+          },
+        ]
+      : []),
     {
-      title: t("platformAdmin.helpItems.title"),
-      url: "/admin/help-items",
-      icon: CircleHelpIcon,
-    },
-  ]
-
-  const financeItems = [
-    {
-      title: t("plans.title"),
+      title: t("platformAdmin.plans.title"),
       url: "/admin/plans",
       icon: BanknoteIcon,
     },
     {
-      title: t("subscriptions.title"),
+      title: t("platformAdmin.subscriptions.title"),
       url: "/admin/subscriptions",
       icon: ReceiptTextIcon,
     },
     {
-      title: t("billing.manage.paymentHistory"),
+      title: t("platformAdmin.paymentHistory.title"),
       url: "/admin/payment-history",
       icon: HistoryIcon,
     },
@@ -115,7 +122,6 @@ export function AdminSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={platformItems} label={tManage("platformGroup")} />
-        <NavMain items={financeItems} label={tManage("financeGroup")} />
         <NavMain items={toolsItems} label={tManage("toolsGroup")} />
       </SidebarContent>
       <SidebarFooter>

@@ -21,10 +21,12 @@ export function ResendBroadcastDialog({
   broadcast,
   open,
   onOpenChange,
+  onSuccess,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
   broadcast: BroadcastModel | null
+  onSuccess?: () => void
 }) {
   const t = useTranslations()
 
@@ -38,6 +40,7 @@ export function ResendBroadcastDialog({
       onSuccess: () => {
         toast.success(t("messages.resendSuccess"))
         onOpenChange(false)
+        onSuccess?.()
       },
       onError: ({ error }) => {
         if (error.serverError) {
@@ -63,11 +66,13 @@ export function ResendBroadcastDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="justify-end">
-          <DialogClose asChild>
-            <Button size="sm" type="button" variant="ghost">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button size="sm" type="button" variant="ghost">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button disabled={isPending} onClick={() => execute()} size="sm">
             {isPending && <Loader2Icon className="animate-spin" />}
             {t("actions.confirm")}

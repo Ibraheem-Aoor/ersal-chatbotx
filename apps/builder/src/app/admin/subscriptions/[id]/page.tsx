@@ -91,8 +91,6 @@ export default async function SubscriptionDetailPage({
     { key: "workspaces", label: t("billing.usage.workspaces") },
     { key: "channels", label: t("billing.usage.channels") },
     { key: "teamMembers", label: t("billing.usage.teamMembers") },
-    { key: "flows", label: t("billing.usage.flows") },
-    { key: "broadcasts", label: t("billing.usage.broadcasts") },
   ] as const
 
   return (

@@ -23,10 +23,11 @@ import {
   UserLockIcon,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { ContactFilterDialog } from "../contact-filter"
+import { EMAIL_PHONE_RESTRICTED_FILTER_FIELDS } from "../contact-filter/lib/restricted-fields"
 import { useConfiguredInboxTypeOptions } from "../inboxes/provider/inbox-hook"
 import { useContactAssigneeOptions } from "../users/provider/user-hook"
 
@@ -35,7 +36,11 @@ import { useContactAssigneeOptions } from "../users/provider/user-hook"
 // chosen channel ("omnichannel" → all channels).
 const EXCLUDED_FILTER_FIELDS = [contactFilterFields.enum.currentChannel]
 
-export function ConversationFilter() {
+export function ConversationFilter({
+  canViewEmailAndPhone = true,
+}: {
+  canViewEmailAndPhone?: boolean
+}) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const { filters } = useChatStore((state) => state)
@@ -48,6 +53,13 @@ export function ConversationFilter() {
 
   const filterCount = filters.contactFilter?.conditions.length ?? 0
   const hasFilter = filterCount > 0
+  const excludedFilterFields = useMemo(
+    () =>
+      canViewEmailAndPhone
+        ? EXCLUDED_FILTER_FIELDS
+        : [...EXCLUDED_FILTER_FIELDS, ...EMAIL_PHONE_RESTRICTED_FILTER_FIELDS],
+    [canViewEmailAndPhone],
+  )
 
   const contactAssigneeOptions = useContactAssigneeOptions({
     includeAll: true,
@@ -84,16 +96,18 @@ export function ConversationFilter() {
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button className="relative px-2" size="sm" variant="outline">
-          <FilterIcon className={hasFilter ? "text-primary" : ""} />
-          {hasFilter && (
-            <Badge className="absolute -top-1.5 -end-1.5 size-4 justify-center rounded-full p-0 text-[10px]">
-              {filterCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button className="relative px-2" size="sm" variant="outline">
+            <FilterIcon className={hasFilter ? "text-primary" : ""} />
+            {hasFilter && (
+              <Badge className="absolute -end-1.5 -top-1.5 size-4 justify-center rounded-full p-0 text-[10px]">
+                {filterCount}
+              </Badge>
+            )}
+          </Button>
+        }
+      />
       <PopoverContent className="w-[min(calc(100vw-2rem),36rem)]">
         <div className="flex flex-col gap-4">
           <SelectField
@@ -122,7 +136,7 @@ export function ConversationFilter() {
 
           <ContactFilterDialog
             btnTitle={t("fields.contactFilter.moreOptions")}
-            excludeFields={EXCLUDED_FILTER_FIELDS}
+            excludeFields={excludedFilterFields}
             inboxChannel={watchedChannel}
             onSubmitted={(submitted) => {
               if (submitted.conditions.length > 0) {

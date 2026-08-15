@@ -14,6 +14,7 @@ import {
   ChevronsRight,
   LightbulbIcon,
   type LucideIcon,
+  MegaphoneIcon,
   MessageCircleMoreIcon,
   RadioIcon,
   SlidersHorizontalIcon,
@@ -50,6 +51,8 @@ type SidebarNavItem = {
   badge?: number
 }
 
+const SETTINGS_GENERAL_URL_SEGMENT = "/settings/general"
+
 export function AppSidebar({
   workspaceId,
   allWorkspaces,
@@ -57,6 +60,7 @@ export function AppSidebar({
   isPlatformAdmin,
   permissions,
   quota,
+  scheduledForDeletion = false,
   ...props
 }: ComponentProps<typeof Sidebar> & {
   workspaceId: string
@@ -67,6 +71,7 @@ export function AppSidebar({
   // `hasWorkspacePermission` fails closed on any missing flag.
   permissions: WorkspaceMemberPermissions
   quota: QuotaSummary
+  scheduledForDeletion?: boolean
 }) {
   const t = useTranslations()
   const { data: session } = authClient.useSession()
@@ -141,6 +146,12 @@ export function AppSidebar({
         icon: WrenchIcon,
       },
       {
+        title: t("ads.title"),
+        url: `/space/${workspaceId}/ads`,
+        icon: MegaphoneIcon,
+        permission: "superAdmin",
+      },
+      {
         title: t("settings.title"),
         url: `/space/${workspaceId}/settings/general`,
         icon: SlidersHorizontalIcon,
@@ -149,13 +160,20 @@ export function AppSidebar({
     ] satisfies SidebarNavItem[],
   }
 
-  const navMain = data.navMain.filter(
-    (item) =>
-      !item.permission ||
-      (item.permission === PERMISSION_NAV.contacts
-        ? canAccessContactsSection(permissions)
-        : hasWorkspacePermission(permissions, item.permission)),
-  )
+  const navMain = data.navMain
+    .filter(
+      (item) =>
+        !item.permission ||
+        (item.permission === PERMISSION_NAV.contacts
+          ? canAccessContactsSection(permissions)
+          : hasWorkspacePermission(permissions, item.permission)),
+    )
+    .map((item) => ({
+      ...item,
+      disabled:
+        scheduledForDeletion &&
+        !item.url.endsWith(SETTINGS_GENERAL_URL_SEGMENT),
+    }))
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -171,7 +189,10 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain
+          disabledTooltip={t("workspace.deletion.navDisabledTooltip")}
+          items={navMain}
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUsage

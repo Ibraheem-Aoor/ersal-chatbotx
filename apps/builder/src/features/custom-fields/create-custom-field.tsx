@@ -1,5 +1,8 @@
 "use client"
-import { rootFolderId } from "@chatbotx.io/database/partials"
+import {
+  type CustomFieldType,
+  rootFolderId,
+} from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
@@ -18,7 +21,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { Loader2Icon, PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { type ReactNode, useEffect, useMemo, useState } from "react"
+import { type ReactElement, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { createCustomFieldAction } from "./actions/create-custom-field.action"
 import { createCustomFieldRequest } from "./schemas/action"
@@ -26,9 +29,10 @@ import { createCustomFieldRequest } from "./schemas/action"
 type CreateCustomFieldDialogProps = {
   workspaceId: string
   folderId: string | null
-  triggerButton?: ReactNode
+  triggerButton?: ReactElement
   onSuccess?: () => void
   modal?: boolean
+  defaultType?: CustomFieldType
 }
 
 export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
@@ -40,6 +44,7 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
     folderId,
     triggerButton,
     modal = true,
+    defaultType,
     onSuccess = () => {
       router.refresh()
     },
@@ -49,23 +54,19 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
 
   return (
     <Dialog modal={modal} onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        {triggerButton ? (
-          triggerButton
-        ) : (
-          <Button size="sm">
-            <PlusIcon />
-            {t("actions.createFeature", {
-              feature: t("fields.customField.label"),
-            })}
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent
-        className={"max-h-screen max-w-lg overflow-y-scroll"}
-        onInteractOutside={(e) => e.stopPropagation()}
-        onPointerDownOutside={(e) => e.stopPropagation()}
-      >
+      <DialogTrigger
+        render={
+          triggerButton ?? (
+            <Button size="sm">
+              <PlusIcon />
+              {t("actions.createFeature", {
+                feature: t("fields.customField.label"),
+              })}
+            </Button>
+          )
+        }
+      />
+      <DialogContent className={"max-h-screen max-w-lg overflow-y-scroll"}>
         <DialogHeader>
           <DialogTitle>
             {t("messages.createFeature", {
@@ -76,6 +77,7 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
         </DialogHeader>
 
         <CreateCustomFieldForm
+          defaultType={defaultType}
           folderId={folderId}
           onClose={() => setOpen(false)}
           onSuccess={() => {
@@ -92,11 +94,13 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
 function CreateCustomFieldForm({
   workspaceId,
   folderId,
+  defaultType = "shortText",
   onSuccess,
   onClose,
 }: {
   workspaceId: string
   folderId: string | null
+  defaultType?: CustomFieldType
   onSuccess?: () => void
   onClose?: () => void
 }) {
@@ -158,7 +162,7 @@ function CreateCustomFieldForm({
           mode: "onChange",
           defaultValues: {
             name: "",
-            type: "shortText",
+            type: defaultType,
             description: "",
             folderId: null,
           },

@@ -5,6 +5,8 @@ import {
   buildPlanNotice,
   buildQuotaMetrics,
   buildTrialInfo,
+  buildWorkspaceQuotaMetrics,
+  isBlockedFromPlan,
   type QuotaMetric,
   quotaUsageState,
   selectPrimaryMetric,
@@ -54,6 +56,21 @@ describe("buildQuotaMetrics", () => {
       "contacts",
       "teamMembers",
     ])
+  })
+})
+
+describe("buildWorkspaceQuotaMetrics", () => {
+  test("includes monthly bot messages with its workspace contribution", () => {
+    expect(
+      buildWorkspaceQuotaMetrics({
+        monthlyBotMessages: { used: 10, limit: 100, workspaceUsed: 7 },
+      }),
+    ).toContainEqual({
+      key: "monthlyBotMessages",
+      used: 10,
+      limit: 100,
+      workspaceUsed: 7,
+    })
   })
 })
 
@@ -187,9 +204,42 @@ describe("buildPlanNotice", () => {
 
   test("returns null for active, expired, null, and unknown statuses", () => {
     expect(buildPlanNotice(ACTIVE_STATUS, null, now)).toBeNull()
-    // expired is handled by the /trial-expired redirect, not the banner
+    // expired is handled by the read/delete-only banner state, not the plan
+    // notice banner.
     expect(buildPlanNotice(EXPIRED_STATUS, null, now)).toBeNull()
     expect(buildPlanNotice(null, null, now)).toBeNull()
     expect(buildPlanNotice("free", null, now)).toBeNull()
+  })
+})
+
+describe("isBlockedFromPlan", () => {
+  const now = new Date("2026-06-19T12:00:00.000Z").getTime()
+  const inDays = (days: number) =>
+    new Date(now + days * 24 * 60 * 60 * 1000).toISOString()
+
+  test("blocks immediately when the plan status is expired", () => {
+    expect(isBlockedFromPlan(EXPIRED_STATUS, null)).toBe(true)
+  })
+
+  test("blocks when a trial end is in the past", () => {
+    const realNow = Date.now
+    Date.now = () => now
+    try {
+      expect(isBlockedFromPlan(TRIAL_STATUS, inDays(-1))).toBe(true)
+    } finally {
+      Date.now = realNow
+    }
+  })
+
+  test("does not block an active or future trial", () => {
+    const realNow = Date.now
+    Date.now = () => now
+    try {
+      expect(isBlockedFromPlan(TRIAL_STATUS, inDays(1))).toBe(false)
+      expect(isBlockedFromPlan(ACTIVE_STATUS, inDays(-1))).toBe(false)
+      expect(isBlockedFromPlan(null, inDays(-1))).toBe(false)
+    } finally {
+      Date.now = realNow
+    }
   })
 })

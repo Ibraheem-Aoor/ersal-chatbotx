@@ -1,11 +1,12 @@
 import {
   connectChannelIntegration,
+  inboxService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { channelTypes, inboxStatuses } from "@chatbotx.io/database/partials"
-import { inboxModel, integrationSmtpModel } from "@chatbotx.io/database/schema"
+import { channelTypes } from "@chatbotx.io/database/partials"
+import { integrationSmtpModel } from "@chatbotx.io/database/schema"
 import type { SmtpAuthValue } from "@chatbotx.io/integration-smtp"
 import { smtpHostMap } from "@chatbotx.io/integration-smtp"
 import { createSmtpTransporter } from "@chatbotx.io/mail/transport"
@@ -135,23 +136,28 @@ export async function updateSmtp(
 }
 
 export async function deleteSmtp(workspaceId: string, id: string) {
-  const integration = await findOrFail({
-    table: integrationSmtpModel,
-    where: {
-      id,
-      workspaceId,
-    },
-    message: "SMTP integration not found",
-  })
+  const [integration, workspace] = await Promise.all([
+    findOrFail({
+      table: integrationSmtpModel,
+      where: {
+        id,
+        workspaceId,
+      },
+      message: "SMTP integration not found",
+    }),
+    workspaceService.findById({ id: workspaceId }),
+  ])
 
   await db.transaction(async (tx) => {
     await tx
       .delete(integrationSmtpModel)
       .where(eq(integrationSmtpModel.id, integration.id))
 
-    await tx
-      .update(inboxModel)
-      .set({ status: inboxStatuses.enum.disconnected })
-      .where(eq(inboxModel.id, integration.inboxId))
+    await inboxService.disconnect({
+      inboxId: integration.inboxId,
+      ownerId: workspace.ownerId,
+      workspaceId,
+      tx,
+    })
   })
 }

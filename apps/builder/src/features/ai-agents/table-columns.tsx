@@ -3,7 +3,6 @@
 import type { AIAgentModel } from "@chatbotx.io/database/types"
 import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
-import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +35,7 @@ export type AIAgentDataTableRowAction<TData> = {
     | "resend"
     | "enable"
     | "toggleDefault"
+    | "botReplyDelay"
 }
 
 type GetAIAgentsColumnsProps = {
@@ -57,9 +57,11 @@ export function getAIAgentsColumns({
       ),
       cell: ({ row }) => (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="max-w-[400px] truncate">{row.original.name}</div>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <div className="max-w-100 truncate">{row.original.name}</div>
+            }
+          />
           <TooltipContent>
             <p>{row.original.name}</p>
           </TooltipContent>
@@ -103,18 +105,12 @@ export function getAIAgentsColumns({
       header: "Actions",
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              aria-label="Open menu"
-              className="flex size-8 p-0 data-[state=open]:bg-muted"
-              variant="ghost"
-            >
-              <EllipsisVerticalIcon aria-hidden="true" className="size-4" />
-            </Button>
+          <DropdownMenuTrigger>
+            <EllipsisVerticalIcon aria-hidden="true" className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
-              onSelect={() => setRowAction({ row, variant: "toggleDefault" })}
+              onClick={() => setRowAction({ row, variant: "toggleDefault" })}
             >
               <BrainIcon className="me-2" />
               {row.original.isDefault
@@ -122,14 +118,20 @@ export function getAIAgentsColumns({
                 : t("actions.setAsDefaultAgent")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={() => setRowAction({ row, variant: "update" })}
+              onClick={() => setRowAction({ row, variant: "botReplyDelay" })}
+            >
+              <PencilIcon className="me-2" />
+              {t("fields.smartResponseDelaySeconds.label")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setRowAction({ row, variant: "update" })}
             >
               <PencilIcon className="me-2" />
               {t("actions.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
-              onSelect={() => setRowAction({ row, variant: "delete" })}
+              onClick={() => setRowAction({ row, variant: "delete" })}
             >
               <Trash2Icon className="me-2" />
               {t("actions.delete")}

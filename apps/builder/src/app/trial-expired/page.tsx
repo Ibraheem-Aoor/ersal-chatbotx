@@ -13,8 +13,8 @@ export default async function TrialExpiredPage() {
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
       <div className="flex flex-col items-center gap-3">
-        <Button asChild size="lg">
-          <Link href="/portal/pricing">{t("cta")}</Link>
+        <Button render={<Link href="/portal/pricing" />} size="lg">
+          {t("cta")}
         </Button>
         <SignOut />
       </div>

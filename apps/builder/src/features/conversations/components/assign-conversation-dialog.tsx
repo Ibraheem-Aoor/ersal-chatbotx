@@ -95,7 +95,7 @@ export default function AssignConversationDialog({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogTrigger render={trigger} />
 
       <DialogContent className="max-h-screen max-w-md">
         <DialogHeader>
@@ -142,11 +142,13 @@ export default function AssignConversationDialog({
                     </Button>
                   )}
                 </div>
-                <DialogClose asChild>
-                  <Button size="sm" type="button" variant="ghost">
-                    {t("actions.cancel")}
-                  </Button>
-                </DialogClose>
+                <DialogClose
+                  render={
+                    <Button size="sm" type="button" variant="ghost">
+                      {t("actions.cancel")}
+                    </Button>
+                  }
+                />
 
                 <Button
                   disabled={!isValid || isSubmitting}

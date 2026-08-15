@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { cn } from "@chatbotx.io/ui/lib/utils"
-import { SiFacebook } from "@icons-pack/react-simple-icons"
+import { SiFacebook, SiInstagram } from "@icons-pack/react-simple-icons"
 import {
   BotIcon,
   CalendarIcon,
@@ -12,6 +12,7 @@ import {
   LinkIcon,
   MapIcon,
   QrCodeIcon,
+  TicketPercentIcon,
   UserCheck2Icon,
   Wand2Icon,
 } from "lucide-react"
@@ -29,10 +30,25 @@ const TOOLS_CONFIG = [
     getLink: (id: string) => `/space/${id}/fb-comments`,
   },
   {
+    id: "instagram-comment",
+    labelKey: "instagramCommentAutomation.title",
+    descriptionKey: "instagramCommentAutomation.description",
+    icon: SiInstagram,
+    getLink: (id: string) => `/space/${id}/ig-comments`,
+  },
+  {
+    id: "instagram-story",
+    labelKey: "instagramStoryAutomation.title",
+    descriptionKey: "instagramStoryAutomation.description",
+    icon: SiInstagram,
+    getLink: (id: string) => `/space/${id}/ig-stories`,
+  },
+  {
     id: "facebook-lead-ads",
     labelKey: "facebookLeadAdsAutomation.title",
     descriptionKey: "facebookLeadAdsAutomation.description",
     icon: SiFacebook,
+    getLink: (id: string) => `/space/${id}/fb-lead-ads`,
   },
   {
     id: "reflinks",
@@ -66,12 +82,14 @@ const TOOLS_CONFIG = [
     labelKey: "appointmentScheduling.title",
     descriptionKey: "appointmentScheduling.description",
     icon: CalendarIcon,
+    getLink: (id: string) => `/space/${id}/appointment-calendars`,
   },
   {
     id: "questionnaires",
     labelKey: "questionnaires.title",
     descriptionKey: "questionnaires.description",
     icon: CircleQuestionMarkIcon,
+    getLink: (id: string) => `/space/${id}/questionnaires`,
   },
   {
     id: "ecommerce",
@@ -97,6 +115,13 @@ const TOOLS_CONFIG = [
     labelKey: "botSimulator.title",
     descriptionKey: "botSimulator.description",
     icon: BotIcon,
+  },
+  {
+    id: "coupons",
+    labelKey: "coupons.title",
+    descriptionKey: "coupons.description",
+    icon: TicketPercentIcon,
+    getLink: (id: string) => `/space/${id}/topic-coupons`,
   },
   // {
   //   id: "webhooks",

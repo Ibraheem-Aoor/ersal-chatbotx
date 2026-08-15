@@ -99,9 +99,9 @@ export function UpdateWebchatForm({
           conversationStarters: [],
           persistentMenus: [],
           brandColor: "#007bff",
-          hideHeader: true,
-          showLogo: false,
-          hideMessageInput: true,
+          hideHeader: false,
+          showLogo: true,
+          hideMessageInput: false,
           customCss: "",
         },
       },
@@ -143,6 +143,8 @@ export function UpdateWebchatForm({
       <form className="space-y-6" onSubmit={handleSubmitWithAction}>
         <InputField label="Name" name="name" required />
         <ComboboxField
+          allowClear
+          clearLabel={t("messages.none")}
           description={t("fields.welcomeFlowId.description")}
           emptyText={t("actions.noRecordFound")}
           label={t("fields.welcomeFlowId.label")}
@@ -164,7 +166,7 @@ export function UpdateWebchatForm({
           <p className="text-muted-foreground text-sm">
             {t("fields.conversationStarter.description")}
           </p>
-          <Accordion className="w-full" collapsible type="single">
+          <Accordion className="w-full">
             {conversationStarters.map((_, index) => (
               <AccordionItem
                 className="flex flex-col gap-2"

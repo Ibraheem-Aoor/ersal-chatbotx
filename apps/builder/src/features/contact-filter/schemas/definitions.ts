@@ -20,20 +20,34 @@ export type ContactFilterSchemaKind =
  */
 export type ContactFilterOptionSource =
   | "none"
+  | "contactInfoFilterValues"
   | "languages"
+  | "timezones"
   | "countries"
   | "continents"
   | "gender"
+  | "lastUserInputTypes"
   | "contactSources"
   | "channels"
   | "inboxes"
   | "tags"
   | "flows"
+  | "broadcasts"
+  | "sequences"
+  | "reflinks"
+  | "assignees"
+  | "ctwaConversionTypes"
 
 export type ContactFilterFieldDefinition = {
   field: ContactFilterField
   schemaKind: ContactFilterSchemaKind
   optionSource: ContactFilterOptionSource
+  /**
+   * Kept valid in the Zod schema and rendered for existing conditions, but
+   * hidden from the "add condition" picker. Use to retire a field from new use
+   * (e.g. superseded by another) without breaking saved filters/broadcasts.
+   */
+  hidden?: boolean
 }
 
 const conditionSchemaForDef = (def: ContactFilterFieldDefinition) =>
@@ -48,6 +62,14 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
     field: contactFilterFields.enum.locale,
     schemaKind: "multiSelect",
     optionSource: "languages",
+    // Superseded by inbox-level `language`; hidden from the picker but still
+    // valid so existing saved filters keep resolving.
+    hidden: true,
+  },
+  {
+    field: contactFilterFields.enum.language,
+    schemaKind: "multiSelect",
+    optionSource: "languages",
   },
   {
     field: contactFilterFields.enum.fullName,
@@ -58,6 +80,11 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
     field: contactFilterFields.enum.country,
     schemaKind: "multiSelect",
     optionSource: "countries",
+  },
+  {
+    field: contactFilterFields.enum.continent,
+    schemaKind: "multiSelect",
+    optionSource: "continents",
   },
   {
     field: contactFilterFields.enum.gender,
@@ -116,8 +143,8 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
   },
   {
     field: contactFilterFields.enum.timezone,
-    schemaKind: "text",
-    optionSource: "none",
+    schemaKind: "multiSelect",
+    optionSource: "timezones",
   },
   {
     field: contactFilterFields.enum.lastSeen,
@@ -125,9 +152,44 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
     optionSource: "none",
   },
   {
+    field: contactFilterFields.enum.lastSent,
+    schemaKind: "datetime",
+    optionSource: "none",
+  },
+  {
     field: contactFilterFields.enum.lastInteraction,
     schemaKind: "datetime",
     optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.contactCreatedDateMinutesAgo,
+    schemaKind: "number",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.lastSeenMinutesAgo,
+    schemaKind: "number",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.lastInteractionMinutesAgo,
+    schemaKind: "number",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.lastUserInput,
+    schemaKind: "text",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.lastComment,
+    schemaKind: "text",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.lastUserInputType,
+    schemaKind: "select",
+    optionSource: "lastUserInputTypes",
   },
   {
     field: contactFilterFields.enum.email,
@@ -140,9 +202,92 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
     optionSource: "none",
   },
   {
+    field: contactFilterFields.enum.hasContactInfo,
+    schemaKind: "multiSelect",
+    optionSource: "contactInfoFilterValues",
+  },
+  {
     field: contactFilterFields.enum.tags,
     schemaKind: "multiSelect",
     optionSource: "tags",
+  },
+  {
+    field: contactFilterFields.enum.broadcastSent,
+    schemaKind: "multiSelect",
+    optionSource: "broadcasts",
+  },
+  {
+    field: contactFilterFields.enum.broadcastDelivered,
+    schemaKind: "multiSelect",
+    optionSource: "broadcasts",
+  },
+  {
+    field: contactFilterFields.enum.broadcastSeen,
+    schemaKind: "multiSelect",
+    optionSource: "broadcasts",
+  },
+  {
+    field: contactFilterFields.enum.broadcastClicked,
+    schemaKind: "multiSelect",
+    optionSource: "broadcasts",
+  },
+  {
+    field: contactFilterFields.enum.broadcastFailed,
+    schemaKind: "multiSelect",
+    optionSource: "broadcasts",
+  },
+  {
+    field: contactFilterFields.enum.subscribedToDripCampaign,
+    schemaKind: "multiSelect",
+    optionSource: "sequences",
+  },
+  {
+    field: contactFilterFields.enum.entryPointsLinks,
+    schemaKind: "multiSelect",
+    optionSource: "reflinks",
+  },
+  {
+    field: contactFilterFields.enum.questionnaireStarted,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.questionnaireInProgress,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.questionnaireFinished,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.conversationAssigned,
+    schemaKind: "multiSelect",
+    optionSource: "assignees",
+  },
+  {
+    field: contactFilterFields.enum.unreplied,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.unread,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.existingContact,
+    schemaKind: "boolean",
+    optionSource: "none",
+    // Superseded by `hasContactInfo`; hidden from the picker but still valid so
+    // existing filters/broadcasts keep resolving.
+    hidden: true,
+  },
+  {
+    field: contactFilterFields.enum.consecutiveAiFailures,
+    schemaKind: "number",
+    optionSource: "none",
   },
   {
     field: contactFilterFields.enum.emailWasVerified,
@@ -153,6 +298,16 @@ export const CONTACT_FILTER_FIELD_DEFINITIONS = [
     field: contactFilterFields.enum.optedInForEmail,
     schemaKind: "boolean",
     optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.fromCtwaAd,
+    schemaKind: "boolean",
+    optionSource: "none",
+  },
+  {
+    field: contactFilterFields.enum.ctwaConversion,
+    schemaKind: "multiSelect",
+    optionSource: "ctwaConversionTypes",
   },
 ] as const satisfies readonly ContactFilterFieldDefinition[]
 

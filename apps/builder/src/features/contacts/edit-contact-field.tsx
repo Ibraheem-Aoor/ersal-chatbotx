@@ -2,6 +2,7 @@ import {
   type FillableContactKey,
   fillableContactKeys,
 } from "@chatbotx.io/database/partials"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
@@ -12,6 +13,11 @@ import {
   DialogTitle,
 } from "@chatbotx.io/ui/components/ui/dialog"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
+import {
+  isTemporalCustomFieldType,
+  resolveTemporalCustomFieldFormValue,
+  resolveTemporalCustomFieldSaveFormat,
+} from "@chatbotx.io/utils/datetime"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -20,6 +26,7 @@ import { useAction } from "next-safe-action/hooks"
 import { useEffect } from "react"
 import { toast } from "sonner"
 import { BotFieldValueInput } from "../bot-fields/account-field-value-input"
+import { getBrowserTimezone } from "../contact-filter/lib/timezone"
 import { deleteContactCustomFieldAction } from "./actions/delete-contact-custom-field.action"
 import { updateContactFieldAction } from "./actions/update-contact-field.action"
 import { updateContactFieldRequest } from "./schemas/action"
@@ -34,6 +41,8 @@ type EditContactField = {
   onUpdated?: (key: string, value: string) => void
   onDeleted?: (key: string) => void
 }
+
+const contactInboxIdField = "contactInboxId"
 
 export function EditContactField(props: EditContactField) {
   const {
@@ -83,7 +92,15 @@ export function EditContactField(props: EditContactField) {
 
   useEffect(() => {
     if (targetField) {
-      form.setValue(targetField.key ?? "", targetField.value ?? "")
+      const value = targetField.formValue ?? targetField.value ?? ""
+      form.setValue(
+        targetField.key ?? "",
+        isTemporalCustomFieldType(targetField.type)
+          ? resolveTemporalCustomFieldFormValue(targetField.type, value)
+          : value,
+      )
+      form.setValue(contactInboxIdField, targetField.contactInboxId ?? "")
+      form.setValue("clientTimezone", getBrowserTimezone())
     }
   }, [targetField, form])
 
@@ -119,15 +136,36 @@ export function EditContactField(props: EditContactField) {
             className="flex flex-col gap-4"
             onSubmit={handleSubmitWithAction}
           >
-            <BotFieldValueInput
-              name={targetField?.key ?? ""}
-              type={targetField?.type ?? "shortText"}
-            />
+            {targetField?.options ? (
+              <SelectField
+                name={targetField.key}
+                options={targetField.options}
+                placeholder={t("actions.pleaseSelect")}
+              />
+            ) : (
+              <BotFieldValueInput
+                name={targetField?.key ?? ""}
+                saveFormat={resolveTemporalCustomFieldSaveFormat(
+                  targetField?.type ?? "",
+                )}
+                type={targetField?.type ?? "shortText"}
+              />
+            )}
+            {targetField?.contactInboxId && (
+              <input
+                defaultValue={targetField.contactInboxId}
+                type="hidden"
+                {...form.register(contactInboxIdField)}
+              />
+            )}
 
             <DialogFooter className="mt-4 justify-start">
               <div className="flex-1">
-                {!fillableContactKeys.includes(
-                  targetField?.key as FillableContactKey,
+                {!(
+                  targetField?.options ||
+                  fillableContactKeys.includes(
+                    targetField?.key as FillableContactKey,
+                  )
                 ) && (
                   <Button
                     disabled={isDeleting}

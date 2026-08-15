@@ -5,7 +5,6 @@ import {
   DropdownMenuTrigger,
 } from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import { cn } from "@chatbotx.io/ui/lib/utils"
-import { Slot } from "@radix-ui/react-slot"
 import { useNodeId, useReactFlow } from "@xyflow/react"
 import { EllipsisVertical, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -44,9 +43,7 @@ NodeHeader.displayName = "NodeHeader"
 
 /* NODE HEADER TITLE -------------------------------------------------------- */
 
-export type NodeHeaderTitleProps = HTMLAttributes<HTMLHeadingElement> & {
-  asChild?: boolean
-}
+export type NodeHeaderTitleProps = HTMLAttributes<HTMLHeadingElement>
 
 /**
  * The title text for the node. To maintain a native application feel, the title
@@ -55,15 +52,12 @@ export type NodeHeaderTitleProps = HTMLAttributes<HTMLHeadingElement> & {
 export const NodeHeaderTitle = ({
   ref,
   className,
-  asChild,
   ...props
 }: NodeHeaderTitleProps & {
   ref: React.RefObject<HTMLHeadingElement>
 }) => {
-  const Comp = asChild ? Slot : "h3"
-
   return (
-    <Comp
+    <h3
       ref={ref}
       {...props}
       className={cn(className, "user-select-none flex-1 font-semibold")}
@@ -176,11 +170,13 @@ export const NodeHeaderMenuAction = ({
   ref: React.RefObject<HTMLButtonElement>
 }) => (
   <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <NodeHeaderAction ref={ref} {...props}>
-        {trigger ?? <EllipsisVertical />}
-      </NodeHeaderAction>
-    </DropdownMenuTrigger>
+    <DropdownMenuTrigger
+      render={
+        <NodeHeaderAction ref={ref} {...props}>
+          {trigger ?? <EllipsisVertical />}
+        </NodeHeaderAction>
+      }
+    />
     <DropdownMenuContent>{children}</DropdownMenuContent>
   </DropdownMenu>
 )

@@ -1,17 +1,26 @@
+import { resolveTenantByDomain } from "@chatbotx.io/auth/tenant"
 import {
   isPlatformAdmin,
   isSuperAdmin,
   quotaEnforcementService,
   userQuotaService,
 } from "@chatbotx.io/business"
-import { notFound, redirect } from "next/navigation"
+import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
+import { notFound } from "next/navigation"
+import { ExpiredBanner } from "@/components/expired-banner"
+import { WorkspaceDeletionPendingToast } from "@/components/workspace-deletion-pending-toast"
 import { isCloud } from "@/env"
 import { AccountRail } from "@/features/workspaces/components/account-rail"
 import WorkspacesList from "@/features/workspaces/components/workspaces-list"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { enforcePasswordCurrent } from "@/lib/auth/require-password-current"
 import { getCurrentUserAndAllLinkedWorkspaces } from "@/lib/auth/utils"
-import { buildQuotaMetrics, resolveTrialEndsAt } from "@/lib/quota-metrics"
+import { getDomainFromHeader } from "@/lib/domain"
+import {
+  buildQuotaMetrics,
+  resolveBlockReason,
+  resolveTrialEndsAt,
+} from "@/lib/quota-metrics"
 
 export default async function MainPage() {
   const userAndWorkspaces = await getCurrentUserAndAllLinkedWorkspaces()
@@ -25,20 +34,22 @@ export default async function MainPage() {
   // else. Enforced in every protected layout/page, not just here.
   enforcePasswordCurrent(user)
 
-  if (
-    (user.status === "suspended" || user.status === "banned") &&
-    !isSuperAdmin(user)
-  ) {
-    redirect("/suspended")
-  }
-
+  // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
+  // community/enterprise installs use every feature freely — no quota gating.
   const cloud = isCloud()
-  const [usageSummary, atLimit, quota, platformAdmin] = await Promise.all([
-    quotaEnforcementService.getUsageSummary(user.id),
-    quotaEnforcementService.getAtLimitMap(user.id),
-    userQuotaService.getForUser(user.id),
-    isPlatformAdmin(user),
-  ])
+  const domain = await getDomainFromHeader()
+  const [usageSummary, atLimit, quota, platformAdmin, tenantId] =
+    await Promise.all([
+      cloud ? quotaEnforcementService.getUsageSummary(user.id) : null,
+      cloud ? quotaEnforcementService.getAtLimitMap(user.id) : null,
+      cloud ? userQuotaService.getForUser(user.id) : null,
+      isPlatformAdmin(user),
+      resolveTenantByDomain(domain),
+    ])
+  // "Served with platform identity" — not the same claim as user.tenantId,
+  // which the session never carries (see SessionUser in lib/auth/utils.ts).
+  // Gates the Redeem link: /portal/redeem 404s on non-platform hosts.
+  const isPlatformContext = tenantId === ROOT_TENANT_ID
 
   const ownerWorkspaceIds = allWorkspaceMembers
     .filter((member) => member.role === "owner")
@@ -49,37 +60,42 @@ export default async function MainPage() {
     )
     .map((member) => member.workspace.id)
 
-  // Self-managed trial gate (cloud only): a consumed trial can't reach
-  // workspaces. Derived from the quota already fetched above — no extra query.
-  if (cloud && userQuotaService.getAccessStateFromQuota(quota).blocked) {
-    redirect("/trial-expired")
-  }
-
   const trialEndsAt = resolveTrialEndsAt(quota)
+  const blockReason = resolveBlockReason(
+    quota?.planStatus ?? null,
+    trialEndsAt,
+    atLimit?.mac ?? false,
+  )
+  const blocked = blockReason !== null
 
   const userInfo = { name: user.name, email: user.email, image: user.image }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-8 px-6 py-12 md:flex-row md:py-16">
-      <AccountRail
-        isPlatformAdmin={platformAdmin}
-        isSuperAdmin={isSuperAdmin(user)}
-        metrics={buildQuotaMetrics(usageSummary)}
-        planName={quota?.planName ?? null}
-        planStatus={quota?.planStatus ?? null}
-        trialEndsAt={trialEndsAt}
-        user={userInfo}
-      />
+    <div className="mx-auto w-full max-w-6xl px-6">
+      <WorkspaceDeletionPendingToast />
+      <ExpiredBanner blocked={cloud && blocked} reason={blockReason} />
+      <div className="flex flex-col gap-8 py-8 md:flex-row md:items-start">
+        <AccountRail
+          isPlatformAdmin={platformAdmin}
+          isPlatformContext={isPlatformContext}
+          isSuperAdmin={isSuperAdmin(user)}
+          metrics={buildQuotaMetrics(usageSummary)}
+          planName={quota?.planName ?? null}
+          planStatus={quota?.planStatus ?? null}
+          trialEndsAt={trialEndsAt}
+          user={userInfo}
+        />
 
-      <WorkspacesList
-        isAtLimit={atLimit?.workspaces ?? false}
-        ownedCount={usageSummary?.workspaces.used ?? 0}
-        ownerWorkspaceIds={ownerWorkspaceIds}
-        superAdminWorkspaceIds={superAdminWorkspaceIds}
-        user={userInfo}
-        workspaces={allWorkspaces}
-        workspacesLimit={usageSummary?.workspaces.limit ?? null}
-      />
+        <WorkspacesList
+          blocked={cloud && blocked}
+          isAtLimit={atLimit?.workspaces ?? false}
+          ownerWorkspaceIds={ownerWorkspaceIds}
+          reason={blockReason}
+          superAdminWorkspaceIds={superAdminWorkspaceIds}
+          user={userInfo}
+          workspaces={allWorkspaces}
+        />
+      </div>
     </div>
   )
 }

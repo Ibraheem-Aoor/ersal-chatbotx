@@ -5,19 +5,21 @@ import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { workspaceMemberModel } from "@chatbotx.io/database/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
-import { getTranslations } from "next-intl/server"
+import { isCommunity } from "@/env"
 import { workspaceIdAndIdRequestParams } from "@/features/common/schemas"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { normalizeContactsPermissions } from "../helpers"
+import {
+  getSuperAdminPermissions,
+  normalizeContactsPermissions,
+} from "../helpers"
 import { updateWorkspaceMemberRequest } from "../schema/mutation"
 
 export const updateWorkspaceMemberAction = workspaceActionClient
   .inputSchema(updateWorkspaceMemberRequest)
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(async ({ bindArgsParsedInputs: [workspaceId, id], parsedInput }) => {
-    const t = await getTranslations("billing.errors")
     const workspaceMember = await findOrFail({
       table: workspaceMemberModel,
       where: { id, workspaceId },
@@ -27,19 +29,28 @@ export const updateWorkspaceMemberAction = workspaceActionClient
     const currentUserAndTargetChatbot =
       await getCurrentUserAndTargetWorkspace(workspaceId)
     if (!currentUserAndTargetChatbot) {
-      throw new ChatbotXException(t("notAuthorizedUpdateMember"))
+      throw new ChatbotXException(
+        "You are not authorized to update this workspace member",
+      )
     }
 
     const permissions =
       currentUserAndTargetChatbot.targetWorkspaceMember.permissions
     if (!hasWorkspacePermission(permissions, "superAdmin")) {
-      throw new ChatbotXException(t("notAuthorizedUpdateMemberSuperAdmin"))
+      throw new ChatbotXException(
+        "You are not authorized to update this workspace member. You need to be a super admin to do this.",
+      )
     }
 
-    const updateInput = {
-      ...parsedInput,
-      permissions: normalizeContactsPermissions(parsedInput.permissions),
-    }
+    const updateInput = isCommunity()
+      ? {
+          ...parsedInput,
+          permissions: getSuperAdminPermissions(),
+        }
+      : {
+          ...parsedInput,
+          permissions: normalizeContactsPermissions(parsedInput.permissions),
+        }
 
     await db
       .update(workspaceMemberModel)

@@ -11,7 +11,6 @@ vi.mock("@/lib/safe-action", () => ({
 
 const findOrFail = vi.fn()
 const workspaceMemberFindFirst = vi.fn()
-const dbInsertValues = vi.fn()
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     query: {
@@ -19,9 +18,6 @@ vi.mock("@chatbotx.io/database/client", () => ({
         findFirst: (...args: unknown[]) => workspaceMemberFindFirst(...args),
       },
     },
-    insert: () => ({
-      values: (...args: unknown[]) => dbInsertValues(...args),
-    }),
   },
   findOrFail: (...args: unknown[]) => findOrFail(...args),
 }))
@@ -31,11 +27,21 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   workspaceMemberModel: {},
 }))
 
-const tryConsume = vi.fn()
+const hasReachedLimit = vi.fn()
 const workspaceServiceFind = vi.fn()
+const workspaceMemberServiceCreate = vi.fn()
 vi.mock("@chatbotx.io/business", () => ({
+  isWorkspaceScheduledForDeletion: (
+    workspace:
+      | { scheduledDeletionAt?: Date | string | null }
+      | null
+      | undefined,
+  ) => Boolean(workspace?.scheduledDeletionAt),
   quotaEnforcementService: {
-    tryConsume: (...args: unknown[]) => tryConsume(...args),
+    hasReachedLimit: (...args: unknown[]) => hasReachedLimit(...args),
+  },
+  workspaceMemberService: {
+    create: (...args: unknown[]) => workspaceMemberServiceCreate(...args),
   },
   workspaceService: {
     find: (...args: unknown[]) => workspaceServiceFind(...args),
@@ -43,7 +49,21 @@ vi.mock("@chatbotx.io/business", () => ({
 }))
 
 vi.mock("@chatbotx.io/business/errors", () => ({
-  ChatbotXException: class ChatbotXException extends Error {},
+  ChatbotXException: class ChatbotXException extends Error {
+    code: string
+    httpStatusCode: number
+    constructor(message: string, code = "systemError", httpStatusCode = 400) {
+      super(message)
+      this.code = code
+      this.httpStatusCode = httpStatusCode
+    }
+  },
+}))
+
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn(() =>
+    Promise.resolve(() => "This workspace is no longer available"),
+  ),
 }))
 
 const invalidateCacheByTags = vi.fn()
@@ -52,9 +72,13 @@ vi.mock("@chatbotx.io/redis", () => ({
 }))
 
 const createId = vi.fn(() => "member-id")
-vi.mock("@chatbotx.io/utils", () => ({
-  createId,
-}))
+vi.mock("@chatbotx.io/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
+  return {
+    ...actual,
+    createId,
+  }
+})
 
 const isCommunity = vi.fn(() => false)
 vi.mock("@/env", () => ({
@@ -97,7 +121,7 @@ describe("acceptInvitationAction", () => {
     getSuperAdminPermissions.mockReturnValue({ superAdmin: true })
     workspaceMemberFindFirst.mockResolvedValue(undefined)
     workspaceServiceFind.mockResolvedValue({ id: "ws-1", ownerId: "owner-1" })
-    tryConsume.mockResolvedValue({ ok: true })
+    hasReachedLimit.mockResolvedValue(false)
     findOrFail.mockResolvedValue({
       code: "abc123",
       workspaceId: "ws-1",
@@ -109,11 +133,13 @@ describe("acceptInvitationAction", () => {
   test("inserts the new member and invalidates both the user's and workspace's member-list caches", async () => {
     await invoke()
 
-    expect(dbInsertValues).toHaveBeenCalledWith(
+    expect(workspaceMemberServiceCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        workspaceId: "ws-1",
-        userId: "user-1",
-        role: "agent",
+        data: expect.objectContaining({
+          workspaceId: "ws-1",
+          userId: "user-1",
+          role: "agent",
+        }),
       }),
     )
     expect(invalidateCacheByTags).toHaveBeenCalledWith([
@@ -127,8 +153,12 @@ describe("acceptInvitationAction", () => {
 
     await invoke()
 
-    expect(dbInsertValues).toHaveBeenCalledWith(
-      expect.objectContaining({ permissions: { superAdmin: false } }),
+    expect(workspaceMemberServiceCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          permissions: { superAdmin: false },
+        }),
+      }),
     )
     expect(getSuperAdminPermissions).not.toHaveBeenCalled()
   })
@@ -138,8 +168,10 @@ describe("acceptInvitationAction", () => {
 
     await invoke()
 
-    expect(dbInsertValues).toHaveBeenCalledWith(
-      expect.objectContaining({ permissions: { superAdmin: true } }),
+    expect(workspaceMemberServiceCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ permissions: { superAdmin: true } }),
+      }),
     )
   })
 
@@ -152,7 +184,7 @@ describe("acceptInvitationAction", () => {
     })
 
     await expect(invoke()).rejects.toThrow("Invitation expired")
-    expect(dbInsertValues).not.toHaveBeenCalled()
+    expect(workspaceMemberServiceCreate).not.toHaveBeenCalled()
     expect(invalidateCacheByTags).not.toHaveBeenCalled()
   })
 
@@ -162,17 +194,39 @@ describe("acceptInvitationAction", () => {
     await expect(invoke()).rejects.toThrow(
       "You are already a member of this workspace",
     )
-    expect(dbInsertValues).not.toHaveBeenCalled()
+    expect(workspaceMemberServiceCreate).not.toHaveBeenCalled()
     expect(invalidateCacheByTags).not.toHaveBeenCalled()
   })
 
   test("throws and does not insert or invalidate cache when team member quota is exceeded", async () => {
-    tryConsume.mockResolvedValue({ ok: false, level: "user" })
+    hasReachedLimit.mockResolvedValue(true)
 
     await expect(invoke()).rejects.toThrow(
       "Team member limit reached for this workspace plan",
     )
-    expect(dbInsertValues).not.toHaveBeenCalled()
+    expect(workspaceMemberServiceCreate).not.toHaveBeenCalled()
+    expect(invalidateCacheByTags).not.toHaveBeenCalled()
+    expect(hasReachedLimit).toHaveBeenCalledWith({
+      userId: "owner-1",
+      metric: "teamMembers",
+    })
+  })
+
+  test("throws and does not insert when the workspace is scheduled for deletion", async () => {
+    workspaceServiceFind.mockResolvedValue({
+      id: "ws-1",
+      ownerId: "owner-1",
+      scheduledDeletionAt: new Date(),
+    })
+
+    const error = await invoke().catch((caught) => caught)
+
+    expect(error).toMatchObject({
+      code: "workspaceScheduledDeletion",
+      message: "This workspace is no longer available",
+    })
+    expect(workspaceMemberServiceCreate).not.toHaveBeenCalled()
+    expect(hasReachedLimit).not.toHaveBeenCalled()
     expect(invalidateCacheByTags).not.toHaveBeenCalled()
   })
 })

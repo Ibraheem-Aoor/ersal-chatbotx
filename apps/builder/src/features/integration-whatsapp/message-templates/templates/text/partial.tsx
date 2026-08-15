@@ -1,10 +1,10 @@
 "use client"
 
+import { CheckboxGroupField } from "@chatbotx.io/ui/components/form/checkbox-field"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
-import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
-import { memo } from "react"
+import { memo, useCallback } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 
 const VariableInput = memo(
@@ -43,7 +43,7 @@ const TemplateTextPartialComponent = (
   const { parentName = "content", ...rest } = props
 
   const t = useTranslations()
-  const { control } = useFormContext()
+  const { control, setValue } = useFormContext()
 
   const headerVariables = useWatch({
     control,
@@ -53,17 +53,56 @@ const TemplateTextPartialComponent = (
     control,
     name: `${parentName}.body.variables`,
   })
+  const _showHeader = useWatch({
+    control,
+    name: `${parentName}.hideHeader`,
+  })
+  const _showFooter = useWatch({
+    control,
+    name: `${parentName}.showFooter`,
+  })
+
+  const _handleHeaderChange = useCallback(
+    (value: boolean) => {
+      setValue(`${parentName}.hideHeader`, value, {
+        shouldValidate: true,
+      })
+    },
+    [parentName, setValue],
+  )
+
+  const _handleFooterChange = useCallback(
+    (value: boolean) => {
+      setValue(`${parentName}.showFooter`, value, {
+        shouldValidate: true,
+      })
+    },
+    [parentName, setValue],
+  )
 
   return (
     <div className="w-full flex-1" {...rest}>
       <div className="flex gap-4">
-        <SwitchField
-          label={t("whatsapp.showHeader.label")}
+        <CheckboxGroupField
+          label={t("whatsapp.templateHeader.label")}
           name={`${parentName}.hideHeader`}
+          options={[
+            {
+              label: t("whatsapp.showHeader.label"),
+              value: "hideHeader",
+            },
+          ]}
         />
-        <SwitchField
-          label={t("whatsapp.showFooter.label")}
+
+        <CheckboxGroupField
+          label={t("whatsapp.templateFooter.label")}
           name={`${parentName}.showFooter`}
+          options={[
+            {
+              label: t("whatsapp.showFooter.label"),
+              value: "showFooter",
+            },
+          ]}
         />
       </div>
       {headerVariables?.length > 0 && (

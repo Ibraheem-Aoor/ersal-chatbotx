@@ -33,30 +33,44 @@ import { ChatRealtime } from "./chat-realtime"
 import { useChatStore } from "./store/chat-store-provider"
 
 type ChatLayoutProps = {
+  canViewEmailAndPhone?: boolean
   workspaceId: string
   layout?: [number, number, number]
 }
 
 export const ChatLayout = (props: ChatLayoutProps) => {
   const t = useTranslations()
-  const { workspaceId, layout = [25, 50, 25] } = props
+  const {
+    canViewEmailAndPhone = true,
+    workspaceId,
+    layout = [25, 50, 25],
+  } = props
+
+  // Clear all unread notifications when the inbox page mounts — the user
+  // is now looking at conversations directly.
+  useEffect(() => {
+    notificationStore.getState().clearAll()
+  }, [])
 
   const {
     conversations,
     isFirstLoadConversation,
     isLoadingConversation,
+    isBootstrappingUrlConversation,
     activeConversationId,
     updateConversation,
   } = useChatStore((state) => state)
 
   const [activeConversation, setActiveConversation] =
     useState<ConversationResource | null>(null)
-
-  // Clear all unread notifications when the inbox page mounts — the user
-  // is now looking at the conversation list so everything is "seen".
-  useEffect(() => {
-    notificationStore.getState().clearAll()
-  }, [])
+  const isResolvingConversation =
+    (isFirstLoadConversation && isLoadingConversation) ||
+    isBootstrappingUrlConversation
+  const shouldShowEmptyState = !(
+    activeConversation ||
+    isFirstLoadConversation ||
+    isBootstrappingUrlConversation
+  )
 
   const { execute: disableBot, isExecuting: isDisablingBot } = useAction(
     disableBotAction.bind(null, workspaceId),
@@ -101,14 +115,17 @@ export const ChatLayout = (props: ChatLayoutProps) => {
         maxSize={"30%"}
         minSize={"20%"}
       >
-        <ConversationList workspaceId={workspaceId} />
+        <ConversationList
+          canViewEmailAndPhone={canViewEmailAndPhone}
+          workspaceId={workspaceId}
+        />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
 
       {/* MESSAGE LIST */}
       <ResizablePanel className="pt-3" defaultSize={`${layout[1] ?? 50}%`}>
-        {isFirstLoadConversation && isLoadingConversation && (
+        {isResolvingConversation && (
           <Loader2Icon className="mx-auto my-4 animate-spin" />
         )}
         {activeConversation && (
@@ -131,7 +148,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
             <MessageInput />
           </div>
         )}
-        {!(activeConversation || isFirstLoadConversation) && (
+        {shouldShowEmptyState && (
           <div
             aria-live="polite"
             className="flex h-full w-full flex-col items-center justify-center px-6 text-center"
@@ -162,7 +179,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
         maxSize={"30%"}
         minSize={"20%"}
       >
-        {isFirstLoadConversation && isLoadingConversation && (
+        {isResolvingConversation && (
           <Loader2Icon className="mx-auto my-4 animate-spin" />
         )}
         {activeConversation && (
@@ -171,7 +188,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
             workspaceId={workspaceId}
           />
         )}
-        {!(activeConversation || isFirstLoadConversation) && (
+        {shouldShowEmptyState && (
           <div
             aria-live="polite"
             className="flex h-full w-full flex-col items-center justify-center px-6 text-center"

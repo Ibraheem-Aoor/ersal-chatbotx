@@ -11,13 +11,13 @@ import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { Skeleton } from "@chatbotx.io/ui/components/ui/skeleton"
 import { SearchIcon, UserPlusIcon } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { type GridComponents, Virtuoso } from "react-virtuoso"
+import { toast } from "sonner"
 import { useDebouncedCallback } from "use-debounce"
-import { TagStoreProvider } from "@/features/tags/provider/tag-store-context"
 import type { ConversationFilters } from "../chat/store/chat-store"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { CreateContactDialog } from "../contacts/create-contact-dialog"
@@ -25,12 +25,15 @@ import { ConversationFilter } from "./conversation-filter"
 import ConversationItem from "./conversation-item"
 
 export default function ConversationList({
+  canViewEmailAndPhone = true,
   workspaceId,
 }: {
+  canViewEmailAndPhone?: boolean
   workspaceId: string
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const {
     conversations,
@@ -41,6 +44,7 @@ export default function ConversationList({
     nextCursorConversation,
     isLoadingConversation,
     setActiveConversationId,
+    initActiveConversationFromUrl,
   } = useChatStore((state) => state)
 
   const [showSearchInput, setShowSearchInput] = useState(false)
@@ -52,8 +56,15 @@ export default function ConversationList({
   const [page, setPage] = useState(1)
   // biome-ignore lint/correctness/useExhaustiveDependencies: wip
   useEffect(() => {
-    loadMoreConversations(workspaceId)
+    loadMoreConversations(workspaceId).catch(() => {
+      toast.error(t("messages.errorLoadingData"))
+    })
   }, [page])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount to resolve deep-linked conversation
+  useEffect(() => {
+    initActiveConversationFromUrl(workspaceId)
+  }, [])
 
   // Load more items when reaching the end of the list
   const loadMoreItems = () => {
@@ -62,9 +73,25 @@ export default function ConversationList({
     }
   }
 
+  const removeConversationIdFromUrl = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (!params.has("conversationId")) {
+      return
+    }
+
+    params.delete("conversationId")
+    const queryString = params.toString()
+    router.replace(queryString ? `?${queryString}` : pathname)
+  }
+
   const handleChange = useDebouncedCallback(() => {
+    removeConversationIdFromUrl()
     resetState()
-    loadMoreConversations(workspaceId)
+    loadMoreConversations(workspaceId, {
+      respectUrlConversationId: false,
+    }).catch(() => {
+      toast.error(t("messages.errorLoadingData"))
+    })
   }, 300)
 
   const form = useForm<ConversationFilters>({
@@ -123,9 +150,7 @@ export default function ConversationList({
             workspaceId={workspaceId}
           />
 
-          <TagStoreProvider workspaceId={workspaceId}>
-            <ConversationFilter />
-          </TagStoreProvider>
+          <ConversationFilter canViewEmailAndPhone={canViewEmailAndPhone} />
         </div>
 
         <div className="flex-1">

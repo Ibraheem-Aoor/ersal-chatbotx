@@ -19,6 +19,7 @@ import {
   startAnotherNodeStepDefaultFn,
   startExternalFlowStepDefaultFn,
   startExternalNodeStepDefaultFn,
+  stepTypes,
 } from "@chatbotx.io/flow-config"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -55,6 +56,7 @@ import { sendMessageEditorMenusWithButton } from "./nodes/send-message/menu"
 import type { MenuItem } from "./nodes/types"
 import { allSteps, DynamicStepEditor } from "./steps"
 import { allButtonsConfig } from "./steps/button-config"
+import { SpreadsheetDialogProvider } from "./steps/spreadsheet/components/spreadsheet-dialog-context"
 import { useStepStore } from "./stores/step-store-provider"
 
 function AllButtonOptions({
@@ -181,13 +183,15 @@ function ButtonSteps() {
       ))}
 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="w-32" size="sm" variant="outline">
-            <PlusIcon />
-            {t("actions.actions")}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuTrigger
+          render={
+            <Button className="w-32" size="sm" variant="outline">
+              <PlusIcon />
+              {t("actions.actions")}
+            </Button>
+          }
+        />
+        <DropdownMenuContent className="w-max">
           <RecursiveDropdownMenu
             data={sendMessageEditorMenusWithButton(t)}
             onClick={onAddAction}
@@ -233,6 +237,7 @@ export function ButtonEditorDialog() {
   )
   const buttonPath = useStepStore((state) => state.buttonPath)
   const setButtonPath = useStepStore((state) => state.setButtonPath)
+  const buttonInitialData = useStepStore((state) => state.buttonInitialData)
   const openButtonEditorDialog = useStepStore(
     (state) => state.openButtonEditorDialog,
   )
@@ -253,25 +258,21 @@ export function ButtonEditorDialog() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: wip
   useEffect(() => {
-    if (buttonPath && openButtonEditorDialog) {
+    if (buttonPath && openButtonEditorDialog && buttonInitialData) {
       const allNodes = getNodes()
       const foundNode = allNodes.find((node) => node.selected) as FlowNode
       if (foundNode) {
-        const rawData = getProperty(foundNode, buttonPath)
-
-        if (rawData) {
-          setActiveNode(foundNode)
-          form.reset(rawData as ButtonStepProps)
-          setOpenButtonEditorDialog(true)
-          return
-        }
+        setActiveNode(foundNode)
+        form.reset(buttonInitialData)
+        setOpenButtonEditorDialog(true)
+        return
       }
     }
 
     form.reset()
     setActiveNode(null)
     setOpenButtonEditorDialog(false)
-  }, [buttonPath, openButtonEditorDialog])
+  }, [buttonPath, openButtonEditorDialog, buttonInitialData])
 
   const onSave = useCallback(() => {
     if (!(activeNode && buttonPath)) {
@@ -282,13 +283,26 @@ export function ButtonEditorDialog() {
     setProperty(activeNode, buttonPath, values)
     updateNodeData(activeNode.id, activeNode.data)
 
-    if (values.buttonType === buttonTypes.enum.startAnotherNode) {
+    const currentButtonId = values.id as string
+    // `beforeStep.stepType === startAnotherNode` covers buttonType
+    // startAnotherNode itself as well as sendMessage/performAction, which
+    // also always carry a startAnotherNode beforeStep (button.ts) — for all
+    // three, beforeStep.nodeId is a mirror of where the button's own edge
+    // leads (flow.ts skips executing it and follows the edge instead), so
+    // any of them retargeting the combobox must move the edge too.
+    if (values.beforeStep?.stepType === stepTypes.enum.startAnotherNode) {
       const targetNodeId = values.beforeStep.nodeId
-      const currentButtonId = values.id as string
 
       if (currentButtonId && targetNodeId) {
         refreshEdge(currentButtonId, activeNode.id, targetNodeId)
       }
+    } else if (currentButtonId) {
+      // Any action besides a node jump (openWebsite, startExternalFlow,
+      // startExternalNode, ...) fully handles its own routing on the worker
+      // side. Clear a leftover edge from a previous startAnotherNode/
+      // sendMessage/performAction config so it doesn't keep pointing at a
+      // node this button no longer targets.
+      removeEdge(currentButtonId)
     }
 
     setOpenButtonEditorDialog(false)
@@ -302,6 +316,7 @@ export function ButtonEditorDialog() {
     form,
     onChangeButtonData,
     refreshEdge,
+    removeEdge,
     setOpenButtonEditorDialog,
     updateNodeData,
   ])
@@ -455,42 +470,44 @@ export function ButtonEditorDialog() {
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            className="flex w-full flex-col gap-4"
-            onSubmit={(e) => {
-              e.stopPropagation()
-              return form.handleSubmit(onSave)(e)
-            }}
-          >
-            <InputField
-              disabled={!!buttonEditorConfig?.lockLabel}
-              label={t("fields.name.label")}
-              maxLength={BUTTON_LABEL_MAX}
-              name="label"
-              required
-            />
+          <SpreadsheetDialogProvider>
+            <form
+              className="flex w-full flex-col gap-4"
+              onSubmit={(e) => {
+                e.stopPropagation()
+                return form.handleSubmit(onSave)(e)
+              }}
+            >
+              <InputField
+                disabled={!!buttonEditorConfig?.lockLabel}
+                label={t("fields.name.label")}
+                maxLength={BUTTON_LABEL_MAX}
+                name="label"
+                required
+              />
 
-            <div className="mt-2 font-medium">
-              {t("fields.button.whenPressed")}
-            </div>
+              <div className="mt-2 font-medium">
+                {t("fields.button.whenPressed")}
+              </div>
 
-            {buttonType ? (
-              <div className="flex flex-col gap-2">
-                <ActiveButton
-                  buttonType={buttonType}
+              {buttonType ? (
+                <div className="flex flex-col gap-2">
+                  <ActiveButton
+                    buttonType={buttonType}
+                    onChooseButton={onChooseButton}
+                  />
+                  <ButtonSteps />
+                </div>
+              ) : (
+                <AllButtonOptions
+                  hiddenButtonTypes={
+                    buttonEditorConfig?.hiddenButtonTypes ?? undefined
+                  }
                   onChooseButton={onChooseButton}
                 />
-                <ButtonSteps />
-              </div>
-            ) : (
-              <AllButtonOptions
-                hiddenButtonTypes={
-                  buttonEditorConfig?.hiddenButtonTypes ?? undefined
-                }
-                onChooseButton={onChooseButton}
-              />
-            )}
-          </form>
+              )}
+            </form>
+          </SpreadsheetDialogProvider>
         </Form>
 
         <DialogFooter>
@@ -506,11 +523,13 @@ export function ButtonEditorDialog() {
               </Button>
             )}
           </div>
-          <DialogClose asChild>
-            <Button size="sm" type="button" variant="ghost">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button size="sm" type="button" variant="ghost">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button
             disabled={!form.formState.isValid}
             onClick={form.handleSubmit(onSave)}

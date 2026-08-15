@@ -20,6 +20,7 @@ import {
   convertCustomFieldTypeToConditionType,
   getConditionOptions,
 } from "@/features/contact-filter/components/contact-filter-config"
+import { getBrowserTimezone } from "@/features/contact-filter/lib/timezone"
 import { mappingConditions } from "@/features/contact-filter/schemas"
 import { CustomFieldSelect } from "@/features/custom-fields/custom-field-select"
 import { useCustomFieldStore } from "@/features/custom-fields/provider/custom-field-store-context"
@@ -74,6 +75,7 @@ export const CustomFieldValueChanged = ({
       {customFieldId && (
         <>
           <Select
+            items={operatorOptions}
             onValueChange={(value) => {
               form.setValue(`${parentName}.operator`, value, {
                 shouldValidate: true,
@@ -152,7 +154,10 @@ export const CustomFieldValueChanged = ({
                   displayFormat={{ hour24: "yyyy-MM-dd" }}
                   granularity="day"
                   onChange={(date: Date | undefined) =>
-                    field.onChange({ text: date?.toISOString() })
+                    field.onChange({
+                      text: date?.toISOString(),
+                      timezone: getBrowserTimezone(),
+                    })
                   }
                   value={
                     field.value?.text ? new Date(field.value.text) : undefined
@@ -169,7 +174,10 @@ export const CustomFieldValueChanged = ({
               render={({ field }) => (
                 <DateTimePicker
                   onChange={(date: Date | undefined) =>
-                    field.onChange({ text: date?.toISOString() })
+                    field.onChange({
+                      text: date?.toISOString(),
+                      timezone: getBrowserTimezone(),
+                    })
                   }
                   value={
                     field.value?.text ? new Date(field.value.text) : undefined
@@ -187,6 +195,10 @@ export const CustomFieldValueChanged = ({
                 name={`${parentName}.value`}
                 render={({ field }) => (
                   <Select
+                    items={[
+                      { label: t("fields.boolean.true"), value: "true" },
+                      { label: t("fields.boolean.false"), value: "false" },
+                    ]}
                     onValueChange={(value) =>
                       field.onChange({
                         text: value === "true" ? "true" : "false",

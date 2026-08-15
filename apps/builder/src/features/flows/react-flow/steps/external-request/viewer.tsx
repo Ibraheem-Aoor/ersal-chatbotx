@@ -20,7 +20,8 @@ const ExternalRequestViewer = ({
         <div className="px-4 py-2">
           <BaseStepViewer icon={GlobeIcon} title={t("flows.actions.callApi")} />
         </div>
-        <div className="my-2 me-3 flex flex-col gap-1">
+        {/* React Flow keeps each state's connector on physical Position.Right. */}
+        <div className="my-2 mr-3 flex flex-col gap-1">
           {data.states.map((state) => (
             <BaseStateViewer data={state} key={state.id} />
           ))}

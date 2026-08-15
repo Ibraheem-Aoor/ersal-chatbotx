@@ -279,12 +279,14 @@ export const CreateMessageTemplateDialog = memo(
 
     return (
       <Sheet onOpenChange={setOpen} open={open}>
-        <SheetTrigger asChild>
-          <Button size="sm">
-            <PlusIcon className="size-4" />
-            {t("actions.create")}
-          </Button>
-        </SheetTrigger>
+        <SheetTrigger
+          render={
+            <Button size="sm">
+              <PlusIcon className="size-4" />
+              {t("actions.create")}
+            </Button>
+          }
+        />
         <SheetContent className="flex w-full flex-col sm:max-w-2xl lg:max-w-4xl">
           <SheetHeader>
             <SheetTitle>{t("whatsapp.messageTemplate.createTitle")}</SheetTitle>

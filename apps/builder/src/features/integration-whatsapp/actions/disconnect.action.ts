@@ -1,10 +1,10 @@
 "use server"
 
+import { inboxService, workspaceService } from "@chatbotx.io/business"
 import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
-import { inboxStatuses } from "@chatbotx.io/database/partials"
+import { metaCapiEventRepository } from "@chatbotx.io/database/repositories"
 import {
   coexistSyncRunModel,
-  inboxModel,
   integrationWhatsappModel,
   whatsappCoexistStagingModel,
 } from "@chatbotx.io/database/schema"
@@ -15,9 +15,9 @@ import {
   workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
 import { integrations } from "@/integration"
-import { workspaceActionClient } from "@/lib/safe-action"
+import { workspaceActionClientAllowExpired } from "@/lib/safe-action"
 
-export const disconnectWhatsappAction = workspaceActionClient
+export const disconnectWhatsappAction = workspaceActionClientAllowExpired
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(
     async ({
@@ -25,14 +25,17 @@ export const disconnectWhatsappAction = workspaceActionClient
     }: {
       bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
     }) => {
-      const integrationWhatsapp = await findOrFail({
-        table: integrationWhatsappModel,
-        where: {
-          workspaceId,
-          id,
-        },
-        message: "Integration Whatsapp not found",
-      })
+      const [integrationWhatsapp, workspace] = await Promise.all([
+        findOrFail({
+          table: integrationWhatsappModel,
+          where: {
+            workspaceId,
+            id,
+          },
+          message: "Integration Whatsapp not found",
+        }),
+        workspaceService.findById({ id: workspaceId }),
+      ])
 
       try {
         await integrations.whatsapp.disconnect(
@@ -72,14 +75,28 @@ export const disconnectWhatsappAction = workspaceActionClient
             ),
           )
 
+        // Polymorphic FK cleanup — no DB-level cascade for
+        // MetaCapiEvent.integrationId; stale rows would keep occupying the
+        // (workspaceId, channel, sourceKey) dedup slot after a reconnect.
+        await metaCapiEventRepository.deleteByIntegration(
+          {
+            workspaceId,
+            channel: "whatsapp",
+            integrationId: integrationWhatsapp.id,
+          },
+          tx,
+        )
+
         await tx
           .delete(integrationWhatsappModel)
           .where(eq(integrationWhatsappModel.id, integrationWhatsapp.id))
 
-        await tx
-          .update(inboxModel)
-          .set({ status: inboxStatuses.enum.disconnected })
-          .where(eq(inboxModel.id, integrationWhatsapp.inboxId))
+        await inboxService.disconnect({
+          inboxId: integrationWhatsapp.inboxId,
+          ownerId: workspace.ownerId,
+          workspaceId,
+          tx,
+        })
       })
     },
   )

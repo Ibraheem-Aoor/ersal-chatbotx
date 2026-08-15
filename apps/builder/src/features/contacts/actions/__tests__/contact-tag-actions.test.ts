@@ -114,6 +114,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
 // ---------------------------------------------------------------------------
 const enqueueAttach = vi.fn(async () => undefined)
 const enqueueDetach = vi.fn(async () => undefined)
+const tagUpsertByNames = vi.fn(async () => state.txTagFindMany)
 const contactFindManyByIds = vi.fn(async () => state.contactFindMany)
 const contactFindByIdOrFail = vi.fn(() => {
   if (state.findOrFailError) {
@@ -121,12 +122,17 @@ const contactFindByIdOrFail = vi.fn(() => {
   }
   return Promise.resolve(state.findOrFailResult ?? {})
 })
+const enqueueTagAppliedEvaluationsBulk = vi.fn(async () => undefined)
 
 vi.mock("@chatbotx.io/business", () => ({
   tagSyncService: { enqueueAttach, enqueueDetach },
+  tagService: { upsertByNames: tagUpsertByNames },
   contactService: {
     findByIdOrFail: contactFindByIdOrFail,
     findManyByIds: contactFindManyByIds,
+  },
+  adsConversionService: {
+    enqueueTagAppliedEvaluationsBulk,
   },
   // safe-action.ts also imports isPlatformAdmin
   isPlatformAdmin: vi.fn(async () => false),
@@ -149,14 +155,13 @@ vi.mock("@chatbotx.io/events", () => ({
 let idCounter = 0
 const createId = vi.fn(() => `generated-id-${++idCounter}`)
 
-vi.mock("@chatbotx.io/utils", () => ({
-  createId,
-  zodBigintAsString: () => ({
-    describe: vi.fn(),
-    safeParse: vi.fn(() => ({ data: "ws-1" })),
-    parse: vi.fn((v: unknown) => String(v)),
-  }),
-}))
+vi.mock("@chatbotx.io/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
+  return {
+    ...actual,
+    createId,
+  }
+})
 
 // ---------------------------------------------------------------------------
 // Mock: @chatbotx.io/redis — invalidateCacheByTags
@@ -268,6 +273,7 @@ describe("addContactTags", () => {
 
     const { db } = await import("@chatbotx.io/database/client")
     expect(db.transaction).not.toHaveBeenCalled()
+    expect(tagUpsertByNames).not.toHaveBeenCalled()
     expect(enqueueAttach).not.toHaveBeenCalled()
     expect(emitTagApplied).not.toHaveBeenCalled()
   })
@@ -280,6 +286,7 @@ describe("addContactTags", () => {
 
     const { db } = await import("@chatbotx.io/database/client")
     expect(db.transaction).not.toHaveBeenCalled()
+    expect(tagUpsertByNames).not.toHaveBeenCalled()
     expect(enqueueAttach).not.toHaveBeenCalled()
     expect(emitTagApplied).not.toHaveBeenCalled()
   })
@@ -287,15 +294,17 @@ describe("addContactTags", () => {
   // ── Tags resolve to zero rows ────────────────────────────────────────────
 
   test("returns early when no tags found in DB (zero rows)", async () => {
-    state.txTagFindMany = [] // transaction returns empty tag list
+    state.txTagFindMany = [] // tag service returns empty tag list
 
     await addContactTags({
       workspaceId: "ws-1",
       parsedInput: { ids: ["c-1"], tags: ["ghost-tag"] },
     })
 
-    const { db } = await import("@chatbotx.io/database/client")
-    expect(db.transaction).toHaveBeenCalledOnce()
+    expect(tagUpsertByNames).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      names: ["ghost-tag"],
+    })
     // No contact queries or inserts beyond the tag resolution
     expect(contactFindManyByIds).not.toHaveBeenCalled()
     expect(enqueueAttach).not.toHaveBeenCalled()
@@ -331,6 +340,7 @@ describe("addContactTags", () => {
 
     expect(emitTagApplied).toHaveBeenCalledOnce()
     expect(enqueueAttach).not.toHaveBeenCalled()
+    expect(enqueueTagAppliedEvaluationsBulk).not.toHaveBeenCalled()
   })
 
   // ── New rows → enqueueAttach once per new pair ───────────────────────────
@@ -358,6 +368,14 @@ describe("addContactTags", () => {
       workspaceId: "ws-1",
       contactId: "c-1",
       tagId: "tag-2",
+    })
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledOnce()
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      pairs: [
+        { contactId: "c-1", tagId: "tag-1" },
+        { contactId: "c-1", tagId: "tag-2" },
+      ],
     })
   })
 
@@ -728,6 +746,14 @@ describe("updateContactTags", () => {
     })
     expect(emitTagApplied).toHaveBeenCalledTimes(2)
     expect(emitTagRemoved).not.toHaveBeenCalled()
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledOnce()
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      pairs: [
+        { contactId: "c-1", tagId: "tag-1" },
+        { contactId: "c-1", tagId: "tag-2" },
+      ],
+    })
   })
 
   // ── purely subtractive → only enqueueDetach ──────────────────────────────
@@ -778,6 +804,11 @@ describe("updateContactTags", () => {
       contactId: "c-1",
       tagId: "tag-3",
     })
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledOnce()
+    expect(enqueueTagAppliedEvaluationsBulk).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      pairs: [{ contactId: "c-1", tagId: "tag-3" }],
+    })
     // tag-1 was removed → detach
     expect(enqueueDetach).toHaveBeenCalledOnce()
     expect(enqueueDetach).toHaveBeenCalledWith({
@@ -804,6 +835,7 @@ describe("updateContactTags", () => {
     expect(enqueueDetach).not.toHaveBeenCalled()
     expect(emitTagApplied).not.toHaveBeenCalled()
     expect(emitTagRemoved).not.toHaveBeenCalled()
+    expect(enqueueTagAppliedEvaluationsBulk).not.toHaveBeenCalled()
   })
 
   // ── emitTagApplied throws during update → swallowed, enqueueAttach still called

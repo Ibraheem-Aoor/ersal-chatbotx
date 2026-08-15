@@ -5,9 +5,11 @@ import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { FilterIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { pruneExcludedConditions } from "../lib/prune-conditions"
+import { getBrowserTimezone } from "../lib/timezone"
 import type { ContactFilterCondition, ContactFilterCriteria } from "../schemas"
+import { ContactFilterConditionEditDialog } from "./contact-filter-condition-dialog"
 import { ContactFilterConditionForm } from "./contact-filter-condition-form"
 import { ContactFilterConditionRow } from "./contact-filter-condition-row"
 import { useContactFilterConfigs } from "./use-contact-filter-configs"
@@ -60,8 +62,16 @@ export function ContactListFilterPanel({
   inboxChannel,
 }: ContactListFilterPanelProps) {
   const t = useTranslations()
-  const { configs, operatorLabelByValue } =
+  const { configs, conditionOptions, operatorLabelByValue } =
     useContactFilterConfigs(inboxChannel)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const filteredConfigs = useMemo(
+    () =>
+      configs.filter(
+        (config) => !excludeFields.includes(config.name as ContactFilterField),
+      ),
+    [configs, excludeFields],
+  )
 
   useEffect(() => {
     const pruned = pruneExcludedConditions(filter.conditions, excludeFields)
@@ -69,9 +79,19 @@ export function ContactListFilterPanel({
       onFilterChange({
         operator: pruned.length > 0 ? filter.operator : "and",
         conditions: pruned,
+        timezone: filter.timezone,
       })
     }
   }, [excludeFields, filter, onFilterChange])
+
+  // Stamp the browser timezone onto an active filter so the backend interprets
+  // naive date/datetime values in the user's local zone. Fires at most once per
+  // filter (guarded on the absent timezone), mirroring the prune effect above.
+  useEffect(() => {
+    if (filter.conditions.length > 0 && !filter.timezone) {
+      onFilterChange({ ...filter, timezone: getBrowserTimezone() })
+    }
+  }, [filter, onFilterChange])
 
   const handleToggleOperator = () => {
     onFilterChange({
@@ -87,18 +107,34 @@ export function ContactListFilterPanel({
     })
   }
 
+  const handleUpdateCondition = (
+    index: number,
+    condition: ContactFilterCondition,
+  ) => {
+    onFilterChange({
+      ...filter,
+      conditions: filter.conditions.map((currentCondition, currentIndex) =>
+        currentIndex === index ? condition : currentCondition,
+      ),
+    })
+  }
+
   const handleRemoveCondition = (index: number) => {
     const conditions = filter.conditions.filter((_, i) => i !== index)
     onFilterChange({
       operator: conditions.length > 0 ? filter.operator : "and",
       conditions,
+      timezone: conditions.length > 0 ? filter.timezone : undefined,
     })
   }
 
   const getConditionKey = (condition: ContactFilterCondition) =>
-    `${condition.field}-${condition.operator}-${
+    `${condition.field}-${"operator" in condition ? condition.operator : "none"}-${
       "value" in condition ? JSON.stringify(condition.value) : "empty"
     }`
+
+  const editingCondition =
+    editingIndex === null ? null : (filter.conditions[editingIndex] ?? null)
 
   return (
     <div
@@ -127,6 +163,7 @@ export function ContactListFilterPanel({
           <ContactFilterConditionRow
             configs={configs}
             key={getConditionKey(condition)}
+            onEdit={() => setEditingIndex(index)}
             onRemove={() => handleRemoveCondition(index)}
             operatorLabelByValue={operatorLabelByValue}
             row={condition}
@@ -134,10 +171,24 @@ export function ContactListFilterPanel({
         ))}
 
         <ContactFilterConditionForm
-          excludeFields={excludeFields}
-          inboxChannel={inboxChannel}
+          conditionOptions={conditionOptions}
+          configs={filteredConfigs}
           onAdd={handleAddCondition}
         />
+
+        {editingCondition && editingIndex !== null ? (
+          <ContactFilterConditionEditDialog
+            condition={editingCondition}
+            conditionOptions={conditionOptions}
+            configs={filteredConfigs}
+            key={editingIndex}
+            onClose={() => setEditingIndex(null)}
+            onSubmit={(data) => {
+              handleUpdateCondition(editingIndex, data)
+              setEditingIndex(null)
+            }}
+          />
+        ) : null}
       </div>
     </div>
   )

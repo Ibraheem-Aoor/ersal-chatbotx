@@ -81,8 +81,9 @@ export const NodeViewer = memo((props: NodeViewerProps) => {
             ))}
 
           {!disabledContinueNodeTypes.includes(type) && (
-            <div className="relative w-full text-end">
-              <span className="me-4">{t("actions.continue")}</span>
+            <div className="relative w-full text-right">
+              {/* React Flow keeps this connector on physical Position.Right. */}
+              <span className="mr-4">{t("actions.continue")}</span>
               <BaseHandle id={id} position={Position.Right} type="source" />
             </div>
           )}

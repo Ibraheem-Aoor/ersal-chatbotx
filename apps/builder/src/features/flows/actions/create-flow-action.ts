@@ -1,7 +1,5 @@
 "use server"
 
-import { quotaEnforcementService } from "@chatbotx.io/business"
-import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
 import {
   flowAnalyticsSessionModel,
@@ -10,7 +8,6 @@ import {
 } from "@chatbotx.io/database/schema"
 import { sendMessageNodeDefaultFn } from "@chatbotx.io/flow-config"
 import { createId } from "@chatbotx.io/utils"
-import { getTranslations } from "next-intl/server"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -26,21 +23,10 @@ export const createFlowAction = workspaceActionClient
     async ({
       bindArgsParsedInputs: [workspaceId],
       parsedInput,
-      ctx,
     }: {
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: CreateFlowSchema
-      ctx: { workspace: { ownerId: string } }
     }) => {
-      const consumed = await quotaEnforcementService.tryConsume({
-        userId: ctx.workspace.ownerId,
-        metric: "flows",
-      })
-      if (!consumed.ok) {
-        const t = await getTranslations("billing.quotaLimits")
-        throw new ChatbotXException(t("flowLimitReached"), "quotaExceeded", 422)
-      }
-
       if (parsedInput.folderId) {
         await ensureFolderIsExists(parsedInput.folderId, workspaceId, "flow")
       }

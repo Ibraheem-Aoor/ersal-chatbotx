@@ -62,6 +62,9 @@ export const createWebchatMessageRequest = z
       initRef: z.string(),
     }),
     z.object({
+      init: z.literal(true),
+    }),
+    z.object({
       files: z
         .array(
           z.instanceof(File).refine((file) => file.size <= MAX_FILE_SIZE, {
@@ -78,8 +81,11 @@ export const createWebchatMessageRequest = z
       webchatId: zodBigintAsString(),
       guestConversationId: zodBigintAsString(),
       ref: z.string().optional(),
+      parentUrl: z.url().max(2048).optional(),
       locale: z.string().max(35).optional(),
       timezone: z.string().max(64).optional(),
+      accessToken: z.string().optional(),
+      parentOrigin: z.string().optional(),
     }),
   )
 export type CreateWebchatMessageRequest = z.infer<

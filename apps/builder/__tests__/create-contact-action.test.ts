@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { z } from "zod"
 
 const mockFindByPhone = vi.fn()
 const mockContactInboxFindLatestBySource = vi.fn()
 const mockContactInsert = vi.fn()
-const mockCreateNewContactWithMac = vi.fn()
+const mockCreateContactWithoutMac = vi.fn()
 const mockQuotaIncrement = vi.fn()
 const mockWorkspaceFind = vi.fn()
 const mockFindOrFail = vi.fn()
@@ -21,11 +20,14 @@ vi.mock("@chatbotx.io/business", () => ({
     insert: mockContactInsert,
   },
   quotaEnforcementService: {
-    createNewContactWithMac: mockCreateNewContactWithMac,
+    createContactWithoutMac: mockCreateContactWithoutMac,
     increment: mockQuotaIncrement,
   },
   workspaceService: {
     find: mockWorkspaceFind,
+  },
+  messageCleanupService: {
+    cancelByInboxSource: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -66,10 +68,13 @@ vi.mock("@chatbotx.io/events", () => ({
   emitContactCreated: mockEmitContactCreated,
 }))
 
-vi.mock("@chatbotx.io/utils", () => ({
-  createId: () => "generated-id",
-  zodBigintAsString: () => z.string(),
-}))
+vi.mock("@chatbotx.io/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
+  return {
+    ...actual,
+    createId: () => "generated-id",
+  }
+})
 
 vi.mock("next-safe-action", () => ({
   returnValidationErrors: mockReturnValidationErrors,
@@ -125,13 +130,13 @@ type CreateContactTestTx = {
 }
 
 type CreateContactQuotaArgs = {
-  create: (tx: CreateContactTestTx) => Promise<{ value: unknown }>
+  create: (tx: CreateContactTestTx) => Promise<unknown>
 }
 
 const mockCreateWithInsertedRows = () => {
   const insertedRows: InsertedContactInboxRow[] = []
-  mockCreateNewContactWithMac.mockImplementation(
-    async (args: CreateContactQuotaArgs) => {
+  mockCreateContactWithoutMac.mockImplementation(
+    (args: CreateContactQuotaArgs) => {
       const tx: CreateContactTestTx = {
         insert: () => ({
           values: (row) => {
@@ -142,8 +147,7 @@ const mockCreateWithInsertedRows = () => {
           },
         }),
       }
-      const created = await args.create(tx)
-      return { ok: true, value: created.value }
+      return args.create(tx)
     },
   )
   return insertedRows
@@ -158,8 +162,8 @@ beforeEach(() => {
   mockContactInsert.mockResolvedValue(contact)
   mockQuotaIncrement.mockResolvedValue(undefined)
   mockEmitContactCreated.mockResolvedValue(undefined)
-  mockCreateNewContactWithMac.mockImplementation(
-    async (args: CreateContactQuotaArgs) => {
+  mockCreateContactWithoutMac.mockImplementation(
+    (args: CreateContactQuotaArgs) => {
       const tx: CreateContactTestTx = {
         insert: () => ({
           values: () => ({
@@ -167,14 +171,13 @@ beforeEach(() => {
           }),
         }),
       }
-      const created = await args.create(tx)
-      return { ok: true, value: created.value }
+      return args.create(tx)
     },
   )
 })
 
 describe("createContact", () => {
-  test("creates manual contacts through the atomic MAC reservation helper", async () => {
+  test("creates manual contacts through the no-MAC quota helper", async () => {
     const result = await createContact({
       workspaceId: "ws-1",
       parsedInput: {
@@ -189,38 +192,15 @@ describe("createContact", () => {
     })
 
     expect(result).toEqual(contact)
-    expect(mockCreateNewContactWithMac).toHaveBeenCalledWith(
+    expect(mockCreateContactWithoutMac).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId: "owner-1",
         workspaceId: "ws-1",
       }),
     )
-    // The info-only `contacts` counter is now recorded inside the atomic
-    // chokepoint (createNewContactWithMac), not by the action, so the action
-    // must not separately increment it (that would double-count).
-    expect(mockQuotaIncrement).not.toHaveBeenCalled()
-  })
-
-  test("does not increment contacts when MAC reservation is rejected", async () => {
-    mockCreateNewContactWithMac.mockResolvedValue({ ok: false, level: "user" })
-
-    const result = await createContact({
-      workspaceId: "ws-1",
-      parsedInput: {
-        email: "ada@example.com",
-        firstName: "Ada",
-        gender: "unknown",
-        inboxId: "inbox-1",
-        phoneNumber: "+15551234567",
-        channel: "webchat",
-        contactId: "",
-      },
-    })
-
-    expect(result).toMatchObject({
-      phoneNumber: { _errors: ["Contact limit reached"] },
-    })
-    expect(mockContactInsert).not.toHaveBeenCalled()
+    // The info-only `contacts` counter is recorded inside
+    // createContactWithoutMac itself, not by the action, so the action must
+    // not separately increment it (that would double-count).
     expect(mockQuotaIncrement).not.toHaveBeenCalled()
   })
 
@@ -288,6 +268,7 @@ describe("createContact", () => {
     expect(mockContactInboxFindLatestBySource).toHaveBeenCalledWith({
       inboxId: selectedInbox.id,
       sourceId: "15551234567",
+      workspaceId: "ws-1",
     })
     expect(insertedRows).toContainEqual(
       expect.objectContaining({
@@ -334,6 +315,7 @@ describe("createContact", () => {
     expect(mockContactInboxFindLatestBySource).toHaveBeenCalledWith({
       inboxId: selectedInbox.id,
       sourceId: "84901234567",
+      workspaceId: "ws-1",
     })
     expect(insertedRows).toContainEqual(
       expect.objectContaining({
@@ -378,7 +360,7 @@ describe("createContact", () => {
       },
     })
     expect(mockContactInsert).not.toHaveBeenCalled()
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("uses email as the source id for SMTP contacts", async () => {
@@ -402,6 +384,7 @@ describe("createContact", () => {
     expect(mockContactInboxFindLatestBySource).toHaveBeenCalledWith({
       inboxId: selectedInbox.id,
       sourceId: "ada@example.com",
+      workspaceId: "ws-1",
     })
     expect(insertedRows).toContainEqual(
       expect.objectContaining({
@@ -461,7 +444,7 @@ describe("createContact", () => {
       },
     })
     expect(mockContactInboxFindLatestBySource).not.toHaveBeenCalled()
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("returns a field validation error when the selected inbox identity already exists", async () => {
@@ -489,7 +472,7 @@ describe("createContact", () => {
         _errors: ["This contact already exists on the selected inbox"],
       },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("uses an already-international WhatsApp number even when a target country is set", async () => {
@@ -614,7 +597,7 @@ describe("createContact", () => {
     expect(result).toMatchObject({
       phoneNumber: { _errors: ["Please include the country code (e.g. +84)"] },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("dedups WhatsApp by the normalized phone number", async () => {
@@ -649,7 +632,7 @@ describe("createContact", () => {
     expect(result).toMatchObject({
       phoneNumber: { _errors: ["Phone number is exists"] },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("maps a duplicate WhatsApp wa_id to the phoneNumber field", async () => {
@@ -680,13 +663,14 @@ describe("createContact", () => {
     expect(mockContactInboxFindLatestBySource).toHaveBeenCalledWith({
       inboxId: "whatsapp-inbox-1",
       sourceId: "84901234567",
+      workspaceId: "ws-1",
     })
     expect(result).toMatchObject({
       phoneNumber: {
         _errors: ["This contact already exists on the selected inbox"],
       },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("maps a duplicate SMTP identity to the email field", async () => {
@@ -711,7 +695,7 @@ describe("createContact", () => {
         _errors: ["This contact already exists on the selected inbox"],
       },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("normalizes the phone for non-WhatsApp channels too", async () => {
@@ -773,7 +757,7 @@ describe("createContact", () => {
     expect(result).toMatchObject({
       phoneNumber: { _errors: ["Please include the country code (e.g. +84)"] },
     })
-    expect(mockCreateNewContactWithMac).not.toHaveBeenCalled()
+    expect(mockCreateContactWithoutMac).not.toHaveBeenCalled()
   })
 
   test("skips the phone dedup when no phone is provided", async () => {

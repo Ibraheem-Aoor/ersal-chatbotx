@@ -1,4 +1,7 @@
-import { workspaceService } from "@chatbotx.io/business"
+import {
+  isWorkspaceScheduledForDeletion,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { ORPCError } from "@orpc/server"
 import { base } from "./context"
 
@@ -19,6 +22,12 @@ export const workspaceTokenAuthMidddleware = base.middleware(
     const workspace = await workspaceService.find({ where: { token } })
     if (!workspace) {
       throw new ORPCError("INVALID_CHATBOT_TOKEN")
+    }
+
+    if (isWorkspaceScheduledForDeletion(workspace)) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "Workspace deletion scheduled",
+      })
     }
 
     // Adds session and user to the context

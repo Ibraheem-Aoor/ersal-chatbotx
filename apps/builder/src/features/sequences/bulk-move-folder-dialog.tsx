@@ -87,12 +87,14 @@ export function BulkMoveFolderDialog({
   return (
     <Dialog onOpenChange={onOpenChange} {...props}>
       {showTrigger ? (
-        <DialogTrigger asChild>
-          <Button size="sm" variant="outline">
-            <FolderUpIcon aria-hidden="true" className="size-4" />
-            {t("actions.move")}
-          </Button>
-        </DialogTrigger>
+        <DialogTrigger
+          render={
+            <Button size="sm" variant="outline">
+              <FolderUpIcon aria-hidden="true" className="size-4" />
+              {t("actions.move")}
+            </Button>
+          }
+        />
       ) : null}
       <DialogContent className="max-w-lg">
         <DialogHeader>

@@ -91,8 +91,8 @@ export default async function BillingSuccessPage(props: {
               </div>
             </div>
           )}
-          <Button asChild className="w-full" size="lg">
-            <Link href="/">{t("plans.billing.goToWorkspace")}</Link>
+          <Button className="w-full" render={<Link href="/" />} size="lg">
+            {t("plans.billing.goToWorkspace")}
           </Button>
         </CardContent>
       </Card>

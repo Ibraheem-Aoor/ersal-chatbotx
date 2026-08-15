@@ -14,18 +14,28 @@ import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
+import type { SetCoexistInstagramResponse } from "@/features/integration-instagram/api/coexist"
 import type { SetCoexistMessengerResponse } from "@/features/integration-messenger/api/coexist"
 import type { SetCoexistWhatsappResponse } from "@/features/integration-whatsapp/api/coexist"
 import { clientErrorHandler } from "@/lib/errors/client-handler"
 
 type CoexistPopupProps = {
-  channel: "whatsapp" | "messenger"
+  channel: "whatsapp" | "messenger" | "instagram"
   integrationId: string
   workspaceId: string
   onDone: () => void
 }
 
-type CoexistResponse = SetCoexistWhatsappResponse | SetCoexistMessengerResponse
+type CoexistResponse =
+  | SetCoexistWhatsappResponse
+  | SetCoexistMessengerResponse
+  | SetCoexistInstagramResponse
+
+const CHANNEL_DESCRIPTION_KEYS = {
+  whatsapp: "coexist.descriptionWhatsapp",
+  messenger: "coexist.descriptionMessenger",
+  instagram: "coexist.descriptionInstagram",
+} as const satisfies Record<CoexistPopupProps["channel"], string>
 
 const KNOWN_REASONS = [
   "already_triggered",
@@ -71,12 +81,9 @@ export function CoexistPopup({
       if (result.success) {
         toast.success(
           t(enabled ? "coexist.success.enabled" : "coexist.success.disabled"),
-          { duration: 5000 },
         )
       } else if (result.msg) {
-        toast.error(result.msg, {
-          duration: 5000,
-        })
+        toast.error(result.msg)
       } else {
         const reason = result.reason
         const messageKey =
@@ -84,9 +91,7 @@ export function CoexistPopup({
             ? REASON_TO_KEY[reason]
             : "coexist.errors.unknown"
 
-        toast.error(t(messageKey), {
-          duration: 5000,
-        })
+        toast.error(t(messageKey))
       }
     } catch (error) {
       await clientErrorHandler(error)
@@ -100,24 +105,19 @@ export function CoexistPopup({
 
   return (
     <Dialog
-      onOpenChange={() => {
-        // Mandatory billing gate — user must pick explicitly, cannot dismiss
+      onOpenChange={(isOpen, eventDetails) => {
+        if (!isOpen) {
+          // Mandatory billing gate — user must pick explicitly, cannot dismiss.
+          eventDetails.cancel()
+        }
       }}
       open
     >
-      <DialogContent
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        showCloseButton={false}
-      >
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="mb-4">{t("coexist.title")}</DialogTitle>
           <DialogDescription>
-            {t(
-              channel === "whatsapp"
-                ? "coexist.descriptionWhatsapp"
-                : "coexist.descriptionMessenger",
-            )}
+            {t(CHANNEL_DESCRIPTION_KEYS[channel])}
           </DialogDescription>
         </DialogHeader>
 

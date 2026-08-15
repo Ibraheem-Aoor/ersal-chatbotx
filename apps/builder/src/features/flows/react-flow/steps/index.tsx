@@ -13,13 +13,16 @@ import { aiGenerateTextStep } from "./ai-generate-text"
 import { aiGenerateTextAgentStep } from "./ai-generate-text-agent"
 import { aiSpeechToTextStep } from "./ai-speech-to-text"
 import { aiTextToSpeechStep } from "./ai-text-to-speech"
+import { appointmentSchedulingStep } from "./appointment-scheduling"
 import { archiveConversationStep } from "./archive-conversation"
 import { assignConversationStep } from "./assign-conversation"
 import { autoAssignConversationStep } from "./auto-assign-conversation"
 import { blockContactStep } from "./block-contact"
 import { chooseChannelStep } from "./choose-channel"
 import { clearCustomFieldStep } from "./clear-custom-field"
+import { conditionStep } from "./condition"
 import { countCharactersStep } from "./count-characters"
+import { markCouponUsedStep, setUpCouponStep } from "./coupon"
 import type { StepDefinition } from "./definition"
 import { deleteContactStep } from "./delete-contact"
 import { disableBotStep } from "./disable-bot"
@@ -28,8 +31,11 @@ import { dripSubscribeSubscriberStep } from "./drip-subscribe-subscriber"
 import emailStep from "./email"
 import { enableBotStep } from "./enable-bot"
 import { enableMessengerComposerStep } from "./enable-messenger-composer"
+import { executeJavascriptStep } from "./execute-javascript"
 import { externalRequestStep } from "./external-request"
+import { facebookCustomAudienceStep } from "./facebook-custom-audience"
 import { followConversationStep } from "./follow-conversation"
+import { followUpStep } from "./follow-up"
 import { formatDateStep } from "./format-date"
 import { generateCodeStep } from "./generate-code"
 import { getDataFromJsonStep } from "./get-data-from-json"
@@ -38,11 +44,13 @@ import { getUserDataStep } from "./get-user-data"
 import { klaviyoSyncProfileStep } from "./klaviyo-sync-profile"
 import { mailchimpAddMemberStep } from "./mailchimp-add-member"
 import { mailerLiteAddSubscriberStep } from "./mailer-lite-add-subscriber"
+import { makeStep } from "./make"
 import { markEmailVerifiedStep } from "./mark-email-verified"
 import { moosendCreateContactStep } from "./moosend-create-contact"
 import { openWebsiteStep } from "./open-website"
 import { optInEmailStep } from "./opt-in-email"
 import { optOutEmailStep } from "./opt-out-email"
+import { questionnairesStep } from "./questionnaires"
 import { removeContactTagStep } from "./remove-contact-tag"
 import sendAudioStep from "./send-audio"
 import { sendCarouselStep } from "./send-carousel"
@@ -50,6 +58,7 @@ import sendFileStep from "./send-file"
 import sendGifStep from "./send-gif"
 import sendImageStep from "./send-image"
 import sendMessengerTemplateMessageStep from "./send-messenger-template-message"
+import { sendMetaCapiEventStep } from "./send-meta-capi-event"
 import sendTextStep from "./send-text"
 import { sendVideoStep } from "./send-video"
 import sendWaTemplateMessageStep from "./send-wa-template-message"
@@ -68,12 +77,14 @@ import { sendExternalFlowStep } from "./start-external-flow"
 import { sendExternalNodeStep } from "./start-external-node"
 import { subscribeBroadcastStep } from "./subscribe-broadcast"
 import { subscribeSequenceStep } from "./subscribe-schedule"
+import { triggerN8nStep } from "./trigger-n8n"
 import typingStep from "./typing"
 import { unarchiveConversationStep } from "./unarchive-conversation"
 import { unassignConversationStep } from "./unassign-conversation"
 import { unfollowConversationStep } from "./unfollow-conversation"
 import { unsubscribeBroadcastStep } from "./unsubscribe-broadcast"
 import { unsubscribeSequenceStep } from "./unsubscribe-sequence"
+import { updateMessengerContactDataStep } from "./update-messenger-contact-data"
 import { waitStep } from "./wait"
 import whatsappFlowStep from "./whatsapp-flow"
 import whatsappOptionListStep from "./whatsapp-option-list"
@@ -99,6 +110,9 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.notifyAgent]: undefined,
   [stepTypes.enum.deleteContact]: deleteContactStep,
   [stepTypes.enum.callApi]: externalRequestStep,
+  [stepTypes.enum.make]: makeStep,
+  [stepTypes.enum.triggerN8n]: triggerN8nStep,
+  [stepTypes.enum.executeJavascript]: executeJavascriptStep,
   [stepTypes.enum.disableBot]: disableBotStep,
   [stepTypes.enum.enableBot]: enableBotStep,
   [stepTypes.enum.assignConversation]: assignConversationStep,
@@ -112,6 +126,8 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.blockContact]: blockContactStep,
   [stepTypes.enum.markEmailVerified]: markEmailVerifiedStep,
   [stepTypes.enum.activeCampaignSyncContact]: activeCampaignSyncContactStep,
+  [stepTypes.enum.facebookCustomAudience]: facebookCustomAudienceStep,
+  [stepTypes.enum.sendMetaCapiEvent]: sendMetaCapiEventStep,
   [stepTypes.enum.getResponseAddContact]: getResponseAddContactStep,
   [stepTypes.enum.dripSubscribeSubscriber]: dripSubscribeSubscriberStep,
   [stepTypes.enum.mailchimpAddMember]: mailchimpAddMemberStep,
@@ -131,6 +147,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.startExternalNode]: sendExternalNodeStep,
   [stepTypes.enum.startAnotherNode]: startAnotherNodeStep,
   [stepTypes.enum.wait]: waitStep,
+  [stepTypes.enum.followUp]: followUpStep,
   [stepTypes.enum.performAction]: undefined,
   [stepTypes.enum.openWebsite]: openWebsiteStep,
   [stepTypes.enum.setCustomField]: setCustomFieldStep,
@@ -141,7 +158,11 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.subscribeSequence]: subscribeSequenceStep,
   [stepTypes.enum.unsubscribeSequence]: unsubscribeSequenceStep,
   [stepTypes.enum.chooseChannel]: chooseChannelStep,
-  [stepTypes.enum.filterContact]: undefined,
+  [stepTypes.enum.appointmentScheduling]: appointmentSchedulingStep,
+  [stepTypes.enum.questionnaires]: questionnairesStep,
+  [stepTypes.enum.setUpCoupon]: setUpCouponStep,
+  [stepTypes.enum.markCouponUsed]: markCouponUsedStep,
+  [stepTypes.enum.condition]: conditionStep,
   [stepTypes.enum.addNotes]: addNotesStep,
   [stepTypes.enum.waitUserReply]: undefined,
   [stepTypes.enum.aiGenerateText]: aiGenerateTextStep,
@@ -168,6 +189,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.enableMessengerComposer]: enableMessengerComposerStep,
   [stepTypes.enum.disableMessengerComposer]: disableMessengerComposerStep,
   [stepTypes.enum.setMessengerPersona]: setMessengerPersonaStep,
+  [stepTypes.enum.updateMessengerContactData]: updateMessengerContactDataStep,
 }
 
 export const DynamicStepEditor = memo(

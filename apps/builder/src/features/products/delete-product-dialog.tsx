@@ -61,12 +61,14 @@ export function DeleteProductsDialog({
   return (
     <Dialog {...props}>
       {showTrigger ? (
-        <DialogTrigger asChild>
-          <Button size="sm" variant="outline">
-            <Trash aria-hidden="true" className="me-2 size-4" />
-            {t("actions.delete")} ({products.length})
-          </Button>
-        </DialogTrigger>
+        <DialogTrigger
+          render={
+            <Button size="sm" variant="outline">
+              <Trash aria-hidden="true" className="me-2 size-4" />
+              {t("actions.delete")} ({products.length})
+            </Button>
+          }
+        />
       ) : null}
       <DialogContent className="max-w-xl">
         <DialogHeader>
@@ -78,15 +80,17 @@ export function DeleteProductsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:space-x-0">
-          <DialogClose asChild>
-            <Button
-              onClick={() => onOpenChange(false)}
-              size="sm"
-              variant="ghost"
-            >
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button
+                onClick={() => onOpenChange(false)}
+                size="sm"
+                variant="ghost"
+              >
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button
             aria-label="Delete selected rows"
             disabled={isPending}

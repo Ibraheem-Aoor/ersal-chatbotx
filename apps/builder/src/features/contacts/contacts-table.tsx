@@ -20,8 +20,8 @@ import type { Column, ColumnDef } from "@tanstack/react-table"
 import { format, formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useTranslations } from "next-intl"
-import { use, useCallback, useEffect, useMemo, useState } from "react"
+import { useFormatter, useTranslations } from "next-intl"
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   type ContactFilterCriteria,
   ContactListFilterButton,
@@ -29,9 +29,11 @@ import {
   EMPTY_CONTACT_FILTER,
   useContactFilterQueryState,
 } from "@/features/contact-filter"
+import { EMAIL_PHONE_RESTRICTED_FILTER_FIELDS } from "@/features/contact-filter/lib/restricted-fields"
 import { client } from "@/lib/orpc/orpc"
 import { InboxIcon } from "../inboxes/components/inbox-icon"
 import { getUserName } from "../users/schemas/resource"
+import { CONTACTS_DEFAULT_PER_PAGE } from "./constants"
 import { ContactListAction } from "./contacts-list-action"
 import type { listContacts } from "./queries/list-contacts.queries"
 import type { ExportContactsFilter } from "./schemas/action"
@@ -87,7 +89,7 @@ function NameCell({
             </AvatarFallback>
           </Avatar>
           {channel && (
-            <div className="absolute end-0 bottom-0 translate-x-1">
+            <div className="absolute end-0 bottom-0 ltr:translate-x-1 rtl:-translate-x-1">
               <InboxIcon
                 channel={channel}
                 iconClassName="size-3"
@@ -99,15 +101,17 @@ function NameCell({
         </div>
       </Link>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            className="truncate font-medium leading-5"
-            href={inboxHref}
-            target="_blank"
-          >
-            {contact.fullName}
-          </Link>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <Link
+              className="truncate font-medium leading-5"
+              href={inboxHref}
+              target="_blank"
+            >
+              {contact.fullName}
+            </Link>
+          }
+        />
         <TooltipContent>
           <p>{contact.fullName}</p>
         </TooltipContent>
@@ -117,23 +121,38 @@ function NameCell({
 }
 
 type ContactsTableProps = {
+  canViewEmailAndPhone?: boolean
   initialContactFilter?: ContactFilterCriteria
   workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listContacts>>]>
 }
 
 export function ContactsTable({
+  canViewEmailAndPhone = true,
   initialContactFilter = EMPTY_CONTACT_FILTER,
   workspaceId,
   promises,
 }: ContactsTableProps) {
   const t = useTranslations()
+  const formatter = useFormatter()
   const searchParams = useSearchParams()
   const searchParamsKey = searchParams.toString()
-  const [{ data: initialData, pageCount: initialPageCount }] = use(promises)
+  const [
+    {
+      data: initialData,
+      pageCount: initialPageCount,
+      totalCount: initialTotalCount,
+      totalCountCapped: initialTotalCountCapped,
+    },
+  ] = use(promises)
   const [tableData, setTableData] =
     useState<ListContactsResponse["data"]>(initialData)
   const [tablePageCount, setTablePageCount] = useState(initialPageCount)
+  const [tableTotalCount, setTableTotalCount] = useState(initialTotalCount)
+  const [tableTotalCountCapped, setTableTotalCountCapped] = useState(
+    initialTotalCountCapped,
+  )
+  const didHydrateInitialDataRef = useRef(false)
   const {
     filter: contactFilter,
     setFilter: setContactFilter,
@@ -146,6 +165,11 @@ export function ContactsTable({
   )
   const isOptimisticContactFilterActive =
     optimisticContactFilter.conditions.length > 0
+  const excludedFilterFields = useMemo(
+    () =>
+      canViewEmailAndPhone ? [] : [...EMAIL_PHONE_RESTRICTED_FILTER_FIELDS],
+    [canViewEmailAndPhone],
+  )
 
   const keyword = useMemo(() => {
     const params = new URLSearchParams(searchParamsKey)
@@ -153,6 +177,11 @@ export function ContactsTable({
   }, [searchParamsKey])
 
   useEffect(() => {
+    if (!didHydrateInitialDataRef.current) {
+      didHydrateInitialDataRef.current = true
+      return
+    }
+
     let ignore = false
     const params = new URLSearchParams(searchParamsKey)
 
@@ -160,7 +189,9 @@ export function ContactsTable({
       .listContactsByPOSTAuthenticatedAPI({
         workspaceId,
         page: Number(params.get("page") ?? "1"),
-        perPage: Number(params.get("perPage") ?? "10"),
+        perPage: Number(
+          params.get("perPage") ?? String(CONTACTS_DEFAULT_PER_PAGE),
+        ),
         sort: parseSortParam(params.get("sort")),
         keyword: params.get("keyword") ?? undefined,
         contactFilter: isContactFilterActive ? contactFilter : undefined,
@@ -172,6 +203,8 @@ export function ContactsTable({
 
         setTableData(response.data)
         setTablePageCount(response.pageCount)
+        setTableTotalCount(response.totalCount)
+        setTableTotalCountCapped(response.totalCountCapped)
       })
       .catch(() => {
         if (ignore) {
@@ -180,6 +213,8 @@ export function ContactsTable({
 
         setTableData(initialData)
         setTablePageCount(initialPageCount)
+        setTableTotalCount(initialTotalCount)
+        setTableTotalCountCapped(initialTotalCountCapped)
       })
 
     return () => {
@@ -189,6 +224,8 @@ export function ContactsTable({
     contactFilter,
     initialData,
     initialPageCount,
+    initialTotalCount,
+    initialTotalCountCapped,
     isContactFilterActive,
     searchParamsKey,
     workspaceId,
@@ -213,6 +250,10 @@ export function ContactsTable({
     }),
     [keyword, isOptimisticContactFilterActive, optimisticContactFilter],
   )
+  const totalCountDisplay = formatter.number(tableTotalCount)
+  const totalCountLabel = tableTotalCountCapped
+    ? t("contacts.countCapped", { count: totalCountDisplay })
+    : t("contacts.countExact", { count: totalCountDisplay })
 
   const columns = useMemo<ColumnDef<ListContactsResponse["data"][number]>[]>(
     () => [
@@ -221,10 +262,8 @@ export function ContactsTable({
         header: ({ table: innerTable }) => (
           <Checkbox
             aria-label={t("actions.selectAll")}
-            checked={
-              innerTable.getIsAllPageRowsSelected() ||
-              (innerTable.getIsSomePageRowsSelected() && "indeterminate")
-            }
+            checked={innerTable.getIsAllPageRowsSelected()}
+            indeterminate={innerTable.getIsSomePageRowsSelected()}
             onCheckedChange={(value) =>
               innerTable.toggleAllPageRowsSelected(Boolean(value))
             }
@@ -308,14 +347,16 @@ export function ContactsTable({
         ),
         cell: ({ row }) => (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="inline-block max-w-[200px] truncate">
-                {getUserName(
-                  row.original.conversation?.assignedUser,
-                  t("assignAdmin.unAssigned"),
-                )}
-              </div>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <div className="inline-block max-w-[200px] truncate">
+                  {getUserName(
+                    row.original.conversation?.assignedUser,
+                    t("assignAdmin.unAssigned"),
+                  )}
+                </div>
+              }
+            />
             <TooltipContent>
               {getUserName(
                 row.original.conversation?.assignedUser,
@@ -381,6 +422,10 @@ export function ContactsTable({
     columns,
     pageCount: tablePageCount,
     initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: CONTACTS_DEFAULT_PER_PAGE,
+      },
       sorting: [{ id: "createdAt", desc: true }],
       columnPinning: { right: ["actions"] },
     },
@@ -407,11 +452,15 @@ export function ContactsTable({
     >
       {showContactFilterPanel && (
         <ContactListFilterPanel
+          excludeFields={excludedFilterFields}
           filter={optimisticContactFilter}
           onFilterChange={handleContactFilterChange}
         />
       )}
       <DataTableToolbar table={table}>
+        <span className="whitespace-nowrap text-muted-foreground text-sm">
+          {totalCountLabel}
+        </span>
         <ContactListFilterButton
           active={isOptimisticContactFilterActive}
           filter={optimisticContactFilter}

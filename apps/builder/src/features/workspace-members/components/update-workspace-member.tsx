@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { toast } from "sonner"
+import { isCommunity } from "@/env"
 import { updateWorkspaceMemberAction } from "../actions/update-workspace-member.action"
 import { getSuperAdminPermissions } from "../helpers"
 import { useWorkspaceMemberPermissionsCoupling } from "../hooks/use-permissions-coupling"
@@ -138,17 +139,8 @@ export function UpdateWorkspaceMemberForm({
     if (workspaceMember) {
       reset({
         permissions: workspaceMember.permissions,
-        notificationTypes: workspaceMember.notificationTypes ?? {
-          notifyAdmin: false,
-          newMessageToHuman: false,
-          newOrder: false,
-        },
-        notificationChannels: workspaceMember.notificationChannels ?? {
-          messenger: false,
-          email: false,
-          browser: false,
-          telegram: false,
-        },
+        // notificationTypes: workspaceMember.notificationTypes,
+        // notificationChannels: workspaceMember.notificationChannels,
       })
     }
   }, [workspaceMember, reset])
@@ -163,7 +155,7 @@ export function UpdateWorkspaceMemberForm({
           <Label>{t("fields.permissions.label")}</Label>
           <div className="flex flex-col gap-4">
             <SwitchField
-              disabled={false}
+              disabled={isCommunity()}
               formItemClassName="flex flex-row-reverse items-center justify-end gap-2"
               label={t("fields.permissions.superAdmin")}
               name="permissions.superAdmin"

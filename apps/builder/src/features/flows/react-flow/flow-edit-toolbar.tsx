@@ -34,6 +34,7 @@ import {
   HistoryIcon,
   LinkIcon,
   Loader2Icon,
+  MegaphoneIcon,
   RefreshCcwIcon,
   RotateCcwIcon,
   RotateCwIcon,
@@ -49,31 +50,36 @@ import { GetInboxUrlDialog } from "@/features/inboxes/components/get-inbox-url"
 import { publishFlowAction } from "../actions/publish-flow-action"
 import { revertToPublishedAction } from "../actions/revert-to-published-action"
 import { DeleteFlowsDialog } from "../delete-flow-dialog"
+import { DuplicateFlowDialog } from "../duplicate-flow-dialog"
 import {
   type PublishFlowSchema,
   updateFlowVersionSchema,
 } from "../schemas/action"
 import AnalyticsFlow from "./components/analytics-flow"
-import { DuplicateFlowDialog } from "./components/duplicate-flow"
 import { FlowVersionsDialog } from "./components/flow-versions-dialog"
+import { MessengerAdPayloadDialog } from "./components/messenger-ad-payload-dialog"
+import { MessengerAdsJsonDialog } from "./components/messenger-ads-json-dialog"
 import { RenameFlowDialog } from "./components/rename-flow"
 import {
   isEditableTarget,
   isRedoShortcut,
   isUndoShortcut,
 } from "./flow-edit-toolbar-keyboard"
+import { resolveFlowValidationMessageKey } from "./flow-validation-message"
 import { useFlowHistory } from "./stores/use-flow-history"
 
 export function FlowEditToolbar({
   workspaceId,
   flow,
   canRevertToPublished,
+  hasPublishedVersion,
   cancelAutosave,
   markSaved,
 }: {
   workspaceId: string
   flow: FlowModel
   canRevertToPublished: boolean
+  hasPublishedVersion: boolean
   cancelAutosave: (() => void) | null
   markSaved: ((nodes: Node[], edges: Edge[]) => void) | null
 }) {
@@ -88,6 +94,8 @@ export function FlowEditToolbar({
     | "duplicate"
     | "getDraftLink"
     | "getPublishedLink"
+    | "getMessengerAdsJson"
+    | "getMessengerAdPayload"
     | "analytics"
     | "flowVersions"
     | "delete"
@@ -157,6 +165,12 @@ export function FlowEditToolbar({
     {
       onSuccess: () => {
         toast.success(t("messages.publishVersionSuccess"))
+        // Publishing makes the canvas the published version. Clear the dirty
+        // baseline and refresh server state so gates that depend on
+        // "published & clean" (the Messenger Ads JSON action, the revert
+        // button) update immediately instead of staying stale until reload.
+        markSaved?.(getNodes(), getEdges())
+        router.refresh()
       },
     },
   )
@@ -187,45 +201,60 @@ export function FlowEditToolbar({
     // validate nodes & edges
     const nodes = getNodes()
     const edges = getEdges()
-    const { success } = updateFlowVersionSchema.safeParse({
+    const validationResult = updateFlowVersionSchema.safeParse({
       nodes,
       edges,
     })
 
-    if (success) {
+    if (validationResult.success) {
       executePublish({
         nodes: nodes as unknown as PublishFlowSchema["nodes"],
         edges: edges as unknown as PublishFlowSchema["edges"],
       })
     } else {
-      toast.error(t("messages.flowConfigIncomplete"))
+      toast.error(t(resolveFlowValidationMessageKey(validationResult.error)), {
+        duration: 5000,
+      })
     }
     setIsValidating(false)
+  }
+
+  const onClickGetMessengerAdsJson = () => {
+    // The ad JSON must reflect a fully published flow. Detect "never published"
+    // or "unpublished changes" client-side and surface it as a toast — no API
+    // call, and no dialog flashing open before an error popup replaces it.
+    if (!hasPublishedVersion || canRevertToPublished) {
+      toast.error(t("messages.messengerAdsNotPublished"))
+      return
+    }
+    setAction("getMessengerAdsJson")
   }
 
   return (
     <div className="flex gap-2">
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            aria-label={t("actions.undo")}
-            className="relative px-1.5"
-            disabled={!canUndo}
-            onClick={undo}
-            size="sm"
-            variant="ghost"
-          >
-            <RotateCcwIcon />
-            {pastCount > 0 && (
-              <Badge
-                className="absolute -top-1 -end-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
-                variant="secondary"
-              >
-                {pastCount}
-              </Badge>
-            )}
-          </Button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={t("actions.undo")}
+              className="relative px-1.5"
+              disabled={!canUndo}
+              onClick={undo}
+              size="sm"
+              variant="ghost"
+            >
+              <RotateCcwIcon />
+              {pastCount > 0 && (
+                <Badge
+                  className="absolute -end-1 -top-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
+                  variant="secondary"
+                >
+                  {pastCount}
+                </Badge>
+              )}
+            </Button>
+          }
+        />
         <TooltipContent>
           <p>
             {t("actions.undo")}{" "}
@@ -234,26 +263,28 @@ export function FlowEditToolbar({
         </TooltipContent>
       </Tooltip>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            aria-label={t("actions.redo")}
-            className="relative px-1.5"
-            disabled={!canRedo}
-            onClick={redo}
-            size="sm"
-            variant="ghost"
-          >
-            <RotateCwIcon />
-            {futureCount > 0 && (
-              <Badge
-                className="absolute -top-1 -end-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
-                variant="secondary"
-              >
-                {futureCount}
-              </Badge>
-            )}
-          </Button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={t("actions.redo")}
+              className="relative px-1.5"
+              disabled={!canRedo}
+              onClick={redo}
+              size="sm"
+              variant="ghost"
+            >
+              <RotateCwIcon />
+              {futureCount > 0 && (
+                <Badge
+                  className="absolute -end-1 -top-1 min-h-5 min-w-5 rounded-full px-1 text-[10px]"
+                  variant="secondary"
+                >
+                  {futureCount}
+                </Badge>
+              )}
+            </Button>
+          }
+        />
         <TooltipContent>
           <p>
             {t("actions.redo")}{" "}
@@ -278,7 +309,7 @@ export function FlowEditToolbar({
         <DropdownMenuTrigger className="px-1.5">
           <EllipsisIcon />
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent className="w-max whitespace-nowrap">
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => setAction("rename")}>
               <TypeIcon />
@@ -295,6 +326,16 @@ export function FlowEditToolbar({
             <DropdownMenuItem onClick={() => setAction("getPublishedLink")}>
               <LinkIcon />
               {t("actions.getPublishedLink")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onClickGetMessengerAdsJson}>
+              <MegaphoneIcon />
+              {t("actions.getMessengerAdsJson")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setAction("getMessengerAdPayload")}
+            >
+              <MegaphoneIcon />
+              {t("actions.getMessengerAdPayload")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -340,7 +381,11 @@ export function FlowEditToolbar({
       <DuplicateFlowDialog
         flow={flow}
         onOpenChange={() => setAction(null)}
+        onSuccess={(duplicatedFlowId) =>
+          router.push(`/space/${workspaceId}/flows/${duplicatedFlowId}`)
+        }
         open={action === "duplicate"}
+        workspaceId={workspaceId}
       />
 
       <DeleteFlowsDialog
@@ -367,6 +412,19 @@ export function FlowEditToolbar({
           type: "flow",
           flowId: flow.id,
         }}
+      />
+
+      <MessengerAdsJsonDialog
+        flowId={flow.id}
+        onOpenChange={() => setAction(null)}
+        open={action === "getMessengerAdsJson"}
+        workspaceId={workspaceId}
+      />
+
+      <MessengerAdPayloadDialog
+        flowId={flow.id}
+        onOpenChange={() => setAction(null)}
+        open={action === "getMessengerAdPayload"}
       />
 
       <FlowVersionsDialog

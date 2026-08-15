@@ -1,12 +1,20 @@
 "use server"
 
-import { type ContactAccessScope, contactService } from "@chatbotx.io/business"
+import {
+  type ContactAccessScope,
+  contactCustomFieldService,
+  contactInboxService,
+  contactService,
+  emitContactInfoChangeEvents,
+  normalizeLanguage,
+  normalizeStoredTimezone,
+} from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
 import {
   type FillableContactKey,
   fillableContactKeys,
+  genderTypes,
 } from "@chatbotx.io/database/partials"
-import { contactCustomFieldModel } from "@chatbotx.io/database/schema"
 import type { ContactModel } from "@chatbotx.io/database/types"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { listCustomFields } from "@/features/custom-fields/queries"
@@ -18,6 +26,9 @@ import {
   type UpdateContactFieldRequest,
   updateContactFieldRequest,
 } from "../schemas/action"
+
+const contactInboxIdField = "contactInboxId"
+const clientTimezoneField = "clientTimezone"
 
 export const updateContactFieldAction = workspaceActionClient
   .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])
@@ -40,7 +51,7 @@ export const updateContactFields = async (
   },
   parsedInput: UpdateContactFieldRequest,
 ) => {
-  await contactService.findByIdOrFail({
+  const existingContact = await contactService.findByIdOrFail({
     workspaceId: ctx.workspaceId,
     id: ctx.id,
     accessScope: ctx.accessScope,
@@ -58,41 +69,110 @@ export const updateContactFields = async (
 
   // Prepare data
   const contactFields: Partial<ContactModel> = {}
-  const customFields: Record<string, unknown> = {}
+  const customFields: Record<string, string> = {}
+  const contactInboxId = parsedInput[contactInboxIdField]
+  const clientTimezone = parsedInput[clientTimezoneField]
+  const language = normalizeLanguage(parsedInput.language)
 
   for (const [key, value] of Object.entries(parsedInput)) {
+    if (
+      key === contactInboxIdField ||
+      key === "language" ||
+      key === clientTimezoneField
+    ) {
+      continue
+    }
+
     if (fillableContactKeys.includes(key as FillableContactKey)) {
-      // biome-ignore lint/suspicious/noExplicitAny: we know the key is a valid field
-      ;(contactFields as any)[key] = value
+      assignContactFieldValue(contactFields, key as FillableContactKey, value)
     } else if (allCustomFieldsMap.has(key)) {
       customFields[key] = value
     }
   }
 
-  await db.transaction(async (tx) => {
+  const hasCustomFields = Object.keys(customFields).length > 0
+
+  const customFieldChanges = await db.transaction(async (tx) => {
     if (Object.keys(contactFields).length > 0) {
       await contactService.update(ctx, contactFields, tx)
     }
 
-    if (Object.keys(customFields).length > 0) {
-      for (const [key, value] of Object.entries(customFields)) {
-        await tx
-          .insert(contactCustomFieldModel)
-          .values({
-            contactId: ctx.id,
-            customFieldId: key,
-            value: value as string,
-          })
-          .onConflictDoUpdate({
-            target: [
-              contactCustomFieldModel.contactId,
-              contactCustomFieldModel.customFieldId,
-            ],
-            set: {
-              value: value as string,
-            },
-          })
-      }
+    if (contactInboxId && language) {
+      await contactInboxService.updateLanguage({
+        tx,
+        workspaceId: ctx.workspaceId,
+        contactId: ctx.id,
+        contactInboxId,
+        language,
+      })
     }
+
+    if (!hasCustomFields) {
+      return []
+    }
+
+    return await contactCustomFieldService.setValuesInTransaction(
+      {
+        workspaceId: ctx.workspaceId,
+        contactId: ctx.id,
+        fields: Object.entries(customFields).map(([customFieldId, value]) => ({
+          customFieldId,
+          value,
+        })),
+        sourceTimezone: clientTimezone,
+      },
+      tx,
+    )
   })
+
+  await emitContactInfoChangeEvents(ctx.workspaceId, ctx.id, existingContact, {
+    phoneNumber: contactFields.phoneNumber ?? existingContact.phoneNumber,
+    email: contactFields.email ?? existingContact.email,
+  })
+
+  // Emit custom-field change events only after the transaction commits: the
+  // trigger worker re-reads the value from the DB, so a mid-transaction emit
+  // could surface uncommitted or rolled-back data.
+  if (hasCustomFields) {
+    await contactCustomFieldService.emitCustomFieldChanges({
+      workspaceId: ctx.workspaceId,
+      contactId: ctx.id,
+      changes: customFieldChanges,
+    })
+  }
+}
+
+const assignContactFieldValue = (
+  contactFields: Partial<ContactModel>,
+  key: FillableContactKey,
+  value: string,
+) => {
+  switch (key) {
+    case "phoneNumber":
+      contactFields.phoneNumber = value
+      break
+    case "email":
+      contactFields.email = value
+      break
+    case "firstName":
+      contactFields.firstName = value
+      break
+    case "lastName":
+      contactFields.lastName = value
+      break
+    case "gender": {
+      const parsedGender = genderTypes.safeParse(value)
+      if (parsedGender.success) {
+        contactFields.gender = parsedGender.data
+      }
+      break
+    }
+    case "timezone":
+      contactFields.timezone = normalizeStoredTimezone(value) ?? value
+      break
+    default: {
+      const exhaustiveKey: never = key
+      return exhaustiveKey
+    }
+  }
 }

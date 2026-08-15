@@ -1,6 +1,6 @@
 import type { TenantModel } from "@chatbotx.io/database/types"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
-import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { buttonVariants } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardDescription,
@@ -19,6 +19,7 @@ type TemplateConfig = {
     | "signupEmailTemplate"
     | "forgotPasswordEmailTemplate"
     | "magicLinkEmailTemplate"
+    | "accountCredentialsEmailTemplate"
   >
   type: string
   titleKey:
@@ -26,11 +27,13 @@ type TemplateConfig = {
     | "platformEmailTemplates.sections.invitation.title"
     | "platformEmailTemplates.sections.forgotPassword.title"
     | "platformEmailTemplates.sections.magicLink.title"
+    | "platformEmailTemplates.sections.accountCredentials.title"
   descriptionKey:
     | "platformEmailTemplates.sections.signup.description"
     | "platformEmailTemplates.sections.invitation.description"
     | "platformEmailTemplates.sections.forgotPassword.description"
     | "platformEmailTemplates.sections.magicLink.description"
+    | "platformEmailTemplates.sections.accountCredentials.description"
 }
 
 const TEMPLATES: TemplateConfig[] = [
@@ -52,6 +55,13 @@ const TEMPLATES: TemplateConfig[] = [
     type: "magicLink",
     titleKey: "platformEmailTemplates.sections.magicLink.title",
     descriptionKey: "platformEmailTemplates.sections.magicLink.description",
+  },
+  {
+    settingKey: "accountCredentialsEmailTemplate",
+    type: "accountCredentials",
+    titleKey: "platformEmailTemplates.sections.accountCredentials.title",
+    descriptionKey:
+      "platformEmailTemplates.sections.accountCredentials.description",
   },
 ]
 
@@ -95,12 +105,13 @@ export async function PlatformEmailTemplatesSettings({
                 <CardDescription>{t(config.descriptionKey)}</CardDescription>
               </CardHeader>
               <CardFooter>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`${basePath}/${config.type}`}>
-                    <PencilIcon className="size-3.5" />
-                    {t("actions.edit")}
-                  </Link>
-                </Button>
+                <Link
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                  href={`${basePath}/${config.type}`}
+                >
+                  <PencilIcon className="size-3.5" />
+                  {t("actions.edit")}
+                </Link>
               </CardFooter>
             </Card>
           )

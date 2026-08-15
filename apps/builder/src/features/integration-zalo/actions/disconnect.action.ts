@@ -1,9 +1,9 @@
 "use server"
 
+import { inboxService, workspaceService } from "@chatbotx.io/business"
 import { and, db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { channelTypes, inboxStatuses } from "@chatbotx.io/database/partials"
+import { channelTypes } from "@chatbotx.io/database/partials"
 import {
-  inboxModel,
   integrationZaloModel,
   tagChannelModel,
 } from "@chatbotx.io/database/schema"
@@ -14,22 +14,25 @@ import {
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { integrations } from "@/integration"
 import { logger } from "@/lib/log"
-import { workspaceActionClient } from "@/lib/safe-action"
+import { workspaceActionClientAllowExpired } from "@/lib/safe-action"
 
-export const disconnectZaloAction = workspaceActionClient
+export const disconnectZaloAction = workspaceActionClientAllowExpired
   .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])
   .action(async (props) => {
     const {
       bindArgsParsedInputs: [workspaceId, id],
     } = props
-    const integrationZalo = await findOrFail({
-      table: integrationZaloModel,
-      where: {
-        workspaceId,
-        id,
-      },
-      message: "Integration Zalo OA not found",
-    })
+    const [integrationZalo, workspace] = await Promise.all([
+      findOrFail({
+        table: integrationZaloModel,
+        where: {
+          workspaceId,
+          id,
+        },
+        message: "Integration Zalo OA not found",
+      }),
+      workspaceService.findById({ id: workspaceId }),
+    ])
 
     try {
       await integrations.zalo.disconnect(integrationZalo.auth as ZaloAuthValue)
@@ -57,9 +60,11 @@ export const disconnectZaloAction = workspaceActionClient
       await tx
         .delete(integrationZaloModel)
         .where(eq(integrationZaloModel.id, integrationZalo.id))
-      await tx
-        .update(inboxModel)
-        .set({ status: inboxStatuses.enum.disconnected })
-        .where(eq(inboxModel.id, integrationZalo.inboxId))
+      await inboxService.disconnect({
+        inboxId: integrationZalo.inboxId,
+        ownerId: workspace.ownerId,
+        workspaceId,
+        tx,
+      })
     })
   })

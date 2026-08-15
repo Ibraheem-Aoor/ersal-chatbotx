@@ -47,6 +47,17 @@ vi.mock("@chatbotx.io/business/errors", () => ({
   ChatbotXException: MockChatbotXException,
 }))
 
+vi.mock("@/lib/auth/utils", () => ({
+  getCurrentUserAndTargetWorkspace: vi.fn().mockResolvedValue({
+    targetWorkspaceMember: { permissions: ["emailAndPhone"] },
+  }),
+}))
+
+vi.mock("@chatbotx.io/database/queries/contact-filter/permission", () => ({
+  pruneEmailPhoneFilterConditions: (contactFilter: unknown) =>
+    contactFilter ?? undefined,
+}))
+
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     transaction: mockDbTransaction,
@@ -81,7 +92,8 @@ const baseBroadcast = {
   channel: "whatsapp" as const,
   flowId: "flow-1",
   integrationWhatsappId: "wa-1",
-  subaction: "flow" as const,
+  integrationMessengerId: "msg-1",
+  subaction: "whatsappWithin24Hours" as const,
   templateId: null,
   templateData: null,
   schedulesType: "now" as const,
@@ -151,11 +163,15 @@ describe("resendBroadcast", () => {
       flowId: string
       channel: string
       schedulesType: string
+      integrationWhatsappId: string
+      integrationMessengerId: string
     }
     expect(insertedValues.workspaceId).toBe(WORKSPACE_ID)
     expect(insertedValues.flowId).toBe("flow-1")
     expect(insertedValues.channel).toBe("whatsapp")
     expect(insertedValues.schedulesType).toBe("now")
+    expect(insertedValues.integrationWhatsappId).toBe("wa-1")
+    expect(insertedValues.integrationMessengerId).toBe("msg-1")
   })
 
   test("new broadcast uses a new id from createId", async () => {

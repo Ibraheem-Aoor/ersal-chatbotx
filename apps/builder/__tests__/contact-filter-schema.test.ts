@@ -8,6 +8,7 @@ import {
 import { describe, expect, test } from "vitest"
 import {
   contactFilterCriteriaSchema,
+  couponTopicConditionSchema,
   customFieldConditionSchema,
   singleContactFilterConditionSchema,
 } from "@/features/contact-filter/schemas"
@@ -33,6 +34,22 @@ describe("staticFieldFilter", () => {
     ).toBe(true)
 
     expect(
+      staticFieldFilter("locale").safeParse({
+        field: "locale",
+        operator: operatorTypes.enum.eq,
+        value: ["vi_VN"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter("timezone").safeParse({
+        field: "timezone",
+        operator: operatorTypes.enum.eq,
+        value: ["Asia/Ho_Chi_Minh"],
+      }).success,
+    ).toBe(true)
+
+    expect(
       staticFieldFilter("blocked").safeParse({
         field: "blocked",
         operator: operatorTypes.enum.eq,
@@ -49,12 +66,68 @@ describe("staticFieldFilter", () => {
     ).toBe(true)
   })
 
+  test("accepts hasContactInfo presence operators and rejects the rest", () => {
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.in,
+        value: ["phone", "email"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.notIn,
+        value: ["email"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.in,
+        value: ["phoneAndEmail"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.isEmpty,
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.eq,
+        value: ["phone"],
+      }).success,
+    ).toBe(false)
+
+    expect(
+      staticFieldFilter("hasContactInfo").safeParse({
+        field: "hasContactInfo",
+        operator: operatorTypes.enum.in,
+      }).success,
+    ).toBe(false)
+  })
+
   test("rejects disabled operators and missing interval values", () => {
     expect(
       staticFieldFilter("tags").safeParse({
         field: "tags",
         operator: operatorTypes.enum.contains,
         value: "vip",
+      }).success,
+    ).toBe(false)
+
+    expect(
+      staticFieldFilter("timezone").safeParse({
+        field: "timezone",
+        operator: operatorTypes.enum.contains,
+        value: "Asia",
       }).success,
     ).toBe(false)
 
@@ -108,6 +181,163 @@ describe("staticFieldFilter", () => {
         operator: operatorTypes.enum.isEmpty,
       }).success,
     ).toBe(true)
+  })
+
+  test.each([
+    "broadcastSent",
+    "broadcastDelivered",
+    "broadcastSeen",
+    "broadcastClicked",
+    "broadcastFailed",
+    "subscribedToDripCampaign",
+    "entryPointsLinks",
+    "conversationAssigned",
+  ])("accepts relation-set operators for activated field %s", (field) => {
+    expect(
+      staticFieldFilter(field).safeParse({
+        field,
+        operator: operatorTypes.enum.in,
+        value: ["option-1"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      staticFieldFilter(field).safeParse({
+        field,
+        operator: operatorTypes.enum.contains,
+        value: "option-1",
+      }).success,
+    ).toBe(false)
+  })
+
+  test("accepts W1-2 activated field operators", () => {
+    expect(
+      staticFieldFilter("continent").safeParse({
+        field: "continent",
+        operator: operatorTypes.enum.eq,
+        value: ["AS", "unknown"],
+      }).success,
+    ).toBe(true)
+
+    for (const field of ["existingContact", "unreplied", "unread"] as const) {
+      expect(
+        staticFieldFilter(field).safeParse({
+          field,
+          operator: operatorTypes.enum.eq,
+          value: "true",
+        }).success,
+      ).toBe(true)
+
+      expect(
+        staticFieldFilter(field).safeParse({
+          field,
+          operator: operatorTypes.enum.contains,
+          value: "true",
+        }).success,
+      ).toBe(false)
+    }
+  })
+
+  test("accepts W1-3 activated date and number field operators", () => {
+    expect(
+      staticFieldFilter("lastSent").safeParse({
+        field: "lastSent",
+        operator: operatorTypes.enum.isBetween,
+        value: ["2026-05-01T00:00:00Z", "2026-05-31T23:59:59Z"],
+      }).success,
+    ).toBe(true)
+
+    for (const field of [
+      "contactCreatedDateMinutesAgo",
+      "lastSeenMinutesAgo",
+      "lastInteractionMinutesAgo",
+      "consecutiveAiFailures",
+    ] as const) {
+      expect(
+        staticFieldFilter(field).safeParse({
+          field,
+          operator: operatorTypes.enum.gte,
+          value: "30",
+        }).success,
+      ).toBe(true)
+
+      expect(
+        staticFieldFilter(field).safeParse({
+          field,
+          operator: operatorTypes.enum.isBetween,
+          value: ["10", "30"],
+        }).success,
+      ).toBe(true)
+    }
+  })
+})
+
+describe("couponTopicConditionSchema", () => {
+  test("accepts isNotEmpty and used without a value", () => {
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.isNotEmpty,
+      }).success,
+    ).toBe(true)
+
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.used,
+      }).success,
+    ).toBe(true)
+  })
+
+  test("accepts eq with a coupon code value", () => {
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.eq,
+        value: "SAVE10",
+      }).success,
+    ).toBe(true)
+  })
+
+  test("rejects a missing topicId", () => {
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "",
+        operator: operatorTypes.enum.isNotEmpty,
+      }).success,
+    ).toBe(false)
+  })
+
+  test("rejects eq without a value and unsupported operators", () => {
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.eq,
+      }).success,
+    ).toBe(false)
+
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.contains,
+        value: "SAVE10",
+      }).success,
+    ).toBe(false)
+
+    expect(
+      couponTopicConditionSchema.safeParse({
+        field: "couponTopic",
+        topicId: "topic-1",
+        operator: operatorTypes.enum.ne,
+        value: "topic-1",
+      }).success,
+    ).toBe(false)
   })
 })
 
@@ -226,6 +456,76 @@ describe("contact filter union schemas", () => {
             value: "vip",
           },
         ],
+      }).success,
+    ).toBe(false)
+  })
+})
+
+describe("CTWA fields", () => {
+  test("accepts fromCtwaAd boolean conditions", () => {
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "fromCtwaAd",
+        operator: operatorTypes.enum.eq,
+        value: "true",
+      }).success,
+    ).toBe(true)
+
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "fromCtwaAd",
+        operator: operatorTypes.enum.isEmpty,
+      }).success,
+    ).toBe(true)
+
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "fromCtwaAd",
+        operator: operatorTypes.enum.contains,
+        value: "true",
+      }).success,
+    ).toBe(false)
+  })
+
+  test("accepts ctwaConversion in/notIn/isEmpty conditions", () => {
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "ctwaConversion",
+        operator: operatorTypes.enum.in,
+        value: ["lead"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "ctwaConversion",
+        operator: operatorTypes.enum.notIn,
+        value: ["purchase"],
+      }).success,
+    ).toBe(true)
+
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "ctwaConversion",
+        operator: operatorTypes.enum.isEmpty,
+      }).success,
+    ).toBe(true)
+  })
+
+  test("rejects disallowed operators for ctwaConversion", () => {
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "ctwaConversion",
+        operator: operatorTypes.enum.contains,
+        value: "lead",
+      }).success,
+    ).toBe(false)
+
+    expect(
+      singleContactFilterConditionSchema.safeParse({
+        field: "ctwaConversion",
+        operator: operatorTypes.enum.eq,
+        value: ["lead"],
       }).success,
     ).toBe(false)
   })

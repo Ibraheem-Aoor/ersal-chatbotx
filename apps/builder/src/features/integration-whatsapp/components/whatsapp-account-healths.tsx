@@ -7,7 +7,7 @@ import type {
 } from "@chatbotx.io/integration-whatsapp/api/phone-number"
 import type { WhatsappWabaMMLite } from "@chatbotx.io/integration-whatsapp/api/waba"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
-import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { buttonVariants } from "@chatbotx.io/ui/components/ui/button"
 import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
 import {
   Tooltip,
@@ -43,9 +43,9 @@ function FieldRow({
       <div className="mb-2 flex items-center gap-1.5 text-muted-foreground text-sm">
         <span>{label}</span>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <InfoIcon className="size-3.5 cursor-help" />
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={<InfoIcon className="size-3.5 cursor-help" />}
+          />
           <TooltipContent>
             <p className="max-w-xs">{tooltip}</p>
           </TooltipContent>
@@ -233,7 +233,11 @@ export const WhatsappAccountHealths = memo(
     const healthEntities = (phoneNumber.health_status?.entities ?? []).filter(
       (entity) => entity.entity_type !== "APP",
     )
-    const canSendMessage = true
+    const hasMessagingBlock = healthEntities.some(
+      (entity) =>
+        entity.can_send_message === "BLOCKED" ||
+        entity.can_send_message === "LIMITED",
+    )
 
     const canSendMessageLabels: Record<string, string> = {
       AVAILABLE: t("canSendMessage.AVAILABLE"),
@@ -252,20 +256,19 @@ export const WhatsappAccountHealths = memo(
                 {t("description")}
               </p>
             </div>
-            <Button asChild size="sm">
-              <Link
-                href={businessManagerUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {t("goToBusinessManager")}
-              </Link>
-            </Button>
+            <Link
+              className={buttonVariants({ size: "sm" })}
+              href={businessManagerUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {t("goToBusinessManager")}
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-1">
             <FieldRow label={t("health.label")} tooltip={t("health.tooltip")}>
-              {canSendMessage && (
+              {hasMessagingBlock && (
                 <div className="mt-4 mb-2 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600 text-sm">
                   <XCircle className="size-4 shrink-0 text-red-500" />
                   {t("health.blockedMessage")}

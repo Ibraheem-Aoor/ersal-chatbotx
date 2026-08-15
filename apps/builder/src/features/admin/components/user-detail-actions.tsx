@@ -121,12 +121,14 @@ export function UserDetailActions({
 
         {currentStatus !== "banned" && (
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={isPending} size="sm" variant="destructive">
-                <BanIcon className="mr-2 h-4 w-4" />
-                {t("platformAdmin.users.actions.ban")}
-              </Button>
-            </AlertDialogTrigger>
+            <AlertDialogTrigger
+              render={
+                <Button disabled={isPending} size="sm" variant="destructive">
+                  <BanIcon className="mr-2 h-4 w-4" />
+                  {t("platformAdmin.users.actions.ban")}
+                </Button>
+              }
+            />
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
@@ -172,7 +174,7 @@ export function UserDetailActions({
             <span className="text-muted-foreground text-xs">
               {t("platformAdmin.users.actions.changePlan")}
             </span>
-            <Select onValueChange={setSelectedPlanId} value={selectedPlanId}>
+            <Select onValueChange={(value) => setSelectedPlanId(String(value))} value={selectedPlanId}>
               <SelectTrigger className="w-48">
                 <SelectValue
                   placeholder={t("platformAdmin.users.actions.selectPlan")}

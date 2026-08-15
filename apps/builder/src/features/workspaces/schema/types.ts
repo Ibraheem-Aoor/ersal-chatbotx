@@ -1,5 +1,5 @@
 import { getAllCountries, getAllTimezones } from "countries-and-timezones"
-import { continents } from "countries-list"
+import { localeMeta, locales } from "@/i18n/config"
 
 export const UNKNOWN_COUNTRY = "unknown"
 export const allCountryCodes = [
@@ -14,10 +14,10 @@ export const allCountryOptions = [
   })),
 ]
 
-export const allSupportedLanguages = [
-  { label: "English", value: "en" },
-  { label: "Tiếng Việt", value: "vi" },
-]
+export const allSupportedLanguages = locales.map((locale) => ({
+  label: localeMeta[locale].nativeLabel,
+  value: locale,
+}))
 export const allLanguageCodes = allSupportedLanguages.map(
   (language) => language.value,
 )
@@ -30,9 +30,13 @@ export const allTimezoneOptions = Object.values(getAllTimezones()).map(
 )
 export const allTimezoneCodes = Object.keys(getAllTimezones())
 
-export const allContinentOptions = Object.entries(continents).map(
-  ([code, name]) => ({
-    value: code,
-    label: name,
-  }),
-)
+export const UNKNOWN_CONTINENT = "unknown"
+export const allContinentOptions = [
+  { value: UNKNOWN_CONTINENT, label: "Unknown" },
+  { value: "AS", label: "Asia" },
+  { value: "EU", label: "Europe" },
+  { value: "AF", label: "Africa" },
+  { value: "OC", label: "Australia" },
+  { value: "NA", label: "North America" },
+  { value: "SA", label: "South America" },
+]

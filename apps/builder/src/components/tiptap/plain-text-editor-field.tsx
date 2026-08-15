@@ -1,5 +1,6 @@
 "use client"
 
+import type { ChannelType } from "@chatbotx.io/database/partials"
 import {
   FormControl,
   FormDescription,
@@ -20,7 +21,12 @@ export type PlainTextEditorFieldProps = {
   placeholder?: string
   formItemClassName?: string
   showEmojiPicker?: boolean
+  channels?: ChannelType[]
+  includeCouponVariables?: boolean
+  includeRawCustomFieldVariables?: boolean
   description?: string
+  /** Single-line layout with the variable picker inline (e.g. filter value inputs). */
+  inline?: boolean
 }
 
 export const PlainTextEditorField = ({
@@ -30,7 +36,11 @@ export const PlainTextEditorField = ({
   required = false,
   formItemClassName,
   placeholder,
+  channels,
+  includeCouponVariables = false,
+  includeRawCustomFieldVariables = false,
   showEmojiPicker = true,
+  inline = false,
 }: PlainTextEditorFieldProps) => {
   const { control, getValues } = useFormContext()
 
@@ -59,7 +69,11 @@ export const PlainTextEditorField = ({
           ) : null}
           <FormControl>
             <PlainTextTiptapEditor
+              channels={channels}
+              includeCouponVariables={includeCouponVariables}
+              includeRawCustomFieldVariables={includeRawCustomFieldVariables}
               initValue={initValue}
+              inline={inline}
               onChange={field.onChange}
               placeholder={placeholder}
               showEmojiPicker={showEmojiPicker}

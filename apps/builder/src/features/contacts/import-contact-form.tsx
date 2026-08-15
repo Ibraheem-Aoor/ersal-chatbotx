@@ -2,9 +2,11 @@
 
 import {
   channelTypes,
+  contactImportFields,
   importTypes,
   uploadTypes,
 } from "@chatbotx.io/database/partials"
+import { matchContactImportHeaders } from "@chatbotx.io/imports"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import {
@@ -20,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
   ArrowRightIcon,
+  DownloadIcon,
   HistoryIcon,
   Loader2Icon,
   Trash2Icon,
@@ -39,6 +42,7 @@ import {
   useInboxOptionsByChannel,
 } from "@/features/inboxes/provider/inbox-hook"
 import { useTagSelectOptions } from "@/features/tags/provider/tag-hook"
+import { getBrowserTimezone } from "../contact-filter/lib/timezone"
 
 export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
   const t = useTranslations()
@@ -46,6 +50,7 @@ export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
   const [fileId, setFileId] = useState("")
   const [csvHeaders, setCsvHeaders] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [timezone, setTimezone] = useState("")
   const hasFile = fileId !== ""
 
   const { form, handleSubmitWithAction } = useHookFormAction(
@@ -83,6 +88,7 @@ export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
         defaultValues: {
           fileId: "",
           inboxId: "",
+          timezone: undefined,
           countryCode: undefined,
           fieldMapping: [{ column: "", customFieldId: "" }],
         },
@@ -95,9 +101,41 @@ export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
     form.setValue("fileId", fileId, { shouldValidate: true })
   }, [fileId, form.setValue])
 
+  useEffect(() => {
+    setTimezone(getBrowserTimezone())
+  }, [])
+
+  useEffect(() => {
+    if (timezone) {
+      form.setValue("timezone", timezone, {
+        shouldValidate: true,
+      })
+    }
+  }, [timezone, form.setValue])
+
+  // Set the column mapping from a file's headers. Done in the same event
+  // handler that updates `csvHeaders` (never a later effect) so each Select
+  // sees its new value and new options in one commit — otherwise Base UI
+  // Select briefly holds the previous file's value against the new options,
+  // fires `onValueChange(null)`, and overwrites the mapping with null.
+  const applyHeaderMapping = (headers: string[]) => {
+    const columnByField = matchContactImportHeaders(headers)
+    for (const field of contactImportFields.options) {
+      form.setValue(field, columnByField[field], { shouldValidate: true })
+    }
+  }
+
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <a
+          className="inline-flex items-center gap-1 text-blue-600 text-sm hover:underline"
+          download
+          href={`/space/${workspaceId}/contacts/import/template`}
+        >
+          <DownloadIcon size={16} />
+          {t("actions.downloadTemplate")}
+        </a>
         <Link
           className="inline-flex items-center gap-1 text-blue-600 text-sm hover:underline"
           href={`/space/${workspaceId}/contacts/import/histories`}
@@ -110,10 +148,12 @@ export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
         onCleared={() => {
           setFileId("")
           setCsvHeaders([])
+          applyHeaderMapping([])
         }}
         onUploaded={(result, headers) => {
           setFileId(result.fileId)
           setCsvHeaders(headers)
+          applyHeaderMapping(headers)
         }}
         onUploadingChange={setIsUploading}
         subType={importTypes.enum.contacts}
@@ -240,8 +280,13 @@ function HeaderConnectField({
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
+        {/* Remount the Select when the header set changes so it re-renders
+            from the current form value instead of keeping the previous file's
+            label (Base UI Select does not clear a stale label when its options
+            change out from under it). */}
         <SelectField
           allowClear={allowClear}
+          key={csvHeaders.join("")}
           name={name}
           options={csvHeaders.map((col) => ({ label: col, value: col }))}
         />
@@ -264,7 +309,7 @@ function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
   })
 
   return (
-    <Accordion className="w-full" collapsible type="single">
+    <Accordion className="w-full">
       <AccordionItem
         className="transition-all hover:data-[state=open]:rounded-none"
         key="moreOptions"

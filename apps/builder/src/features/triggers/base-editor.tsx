@@ -44,6 +44,8 @@ export const BaseEditor = ({
         return t("trigger.conditions.conversationTransferredToBot")
       case triggerEventTypes.enum.newContact:
         return t("trigger.conditions.newContact")
+      case triggerEventTypes.enum.contactInfoUpdated:
+        return t("trigger.conditions.contactInfoUpdated")
       case triggerEventTypes.enum.contactUnsubscribedFormBroadcast:
         return t("trigger.conditions.contactUnsubscribedFormBroadcast")
       case triggerEventTypes.enum.archived:
@@ -121,6 +123,8 @@ export const BaseEditor = ({
         return t("trigger.actions.startAnotherFlow")
       case triggerActions.enum.transferConversationToHuman:
         return t("trigger.actions.transferConversationToHuman")
+      case triggerActions.enum.sendMetaCapiEvent:
+        return t("trigger.actions.sendMetaCapiEvent")
       case triggerActions.enum.runGoogleSheet:
         return "Google Sheets"
       default:
@@ -134,7 +138,7 @@ export const BaseEditor = ({
       <CardHeader>
         <CardTitle>{label}</CardTitle>
         <Button
-          className="absolute top-0 end-0 hidden hover:bg-red hover:text-destructive group-hover:block"
+          className="absolute end-0 top-0 hidden hover:bg-red hover:text-destructive group-hover:block"
           onClick={onRemove}
           type="button"
           variant="ghost"

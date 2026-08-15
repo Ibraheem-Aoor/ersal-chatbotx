@@ -1,11 +1,8 @@
 "use server"
 
+import { inboxService, workspaceService } from "@chatbotx.io/business"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { inboxStatuses } from "@chatbotx.io/database/partials"
-import {
-  inboxModel,
-  integrationTelegramModel,
-} from "@chatbotx.io/database/schema"
+import { integrationTelegramModel } from "@chatbotx.io/database/schema"
 import type { TelegramAuthValue } from "@chatbotx.io/integration-telegram"
 import {
   type WorkspaceIdAndIdRequestParams,
@@ -13,9 +10,9 @@ import {
 } from "@/features/common/schemas"
 import { integrations } from "@/integration"
 import { logger } from "@/lib/log"
-import { workspaceActionClient } from "@/lib/safe-action"
+import { workspaceActionClientAllowExpired } from "@/lib/safe-action"
 
-export const disconnectTelegramAction = workspaceActionClient
+export const disconnectTelegramAction = workspaceActionClientAllowExpired
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(
     async ({
@@ -23,11 +20,14 @@ export const disconnectTelegramAction = workspaceActionClient
     }: {
       bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
     }) => {
-      const integrationTelegram = await findOrFail({
-        table: integrationTelegramModel,
-        where: { workspaceId, id },
-        message: "Integration Telegram not found",
-      })
+      const [integrationTelegram, workspace] = await Promise.all([
+        findOrFail({
+          table: integrationTelegramModel,
+          where: { workspaceId, id },
+          message: "Integration Telegram not found",
+        }),
+        workspaceService.findById({ id: workspaceId }),
+      ])
 
       try {
         await integrations.telegram.disconnect(
@@ -44,10 +44,12 @@ export const disconnectTelegramAction = workspaceActionClient
         await tx
           .delete(integrationTelegramModel)
           .where(eq(integrationTelegramModel.id, integrationTelegram.id))
-        await tx
-          .update(inboxModel)
-          .set({ status: inboxStatuses.enum.disconnected })
-          .where(eq(inboxModel.id, integrationTelegram.inboxId))
+        await inboxService.disconnect({
+          inboxId: integrationTelegram.inboxId,
+          ownerId: workspace.ownerId,
+          workspaceId,
+          tx,
+        })
       })
     },
   )

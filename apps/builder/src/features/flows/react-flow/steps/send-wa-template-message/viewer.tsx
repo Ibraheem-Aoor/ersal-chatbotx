@@ -38,6 +38,7 @@ export const SendWaTemplateMessageStepViewer = (
             className="relative flex items-center justify-end gap-2"
             key={data.buttons[0].id}
           >
+            {/* React Flow routes from physical Position.Right, so this offset must stay physical. */}
             <span className={cn("font-medium text-sm", "text-green-600")}>
               {data.buttons[0].label}
             </span>
@@ -49,7 +50,7 @@ export const SendWaTemplateMessageStepViewer = (
             >
               <BaseHandle
                 className={cn(
-                  "end-[6px]! h-3! w-3! opacity-0!",
+                  "right-[6px]! h-3! w-3! opacity-0!",
                   "border-green-500",
                 )}
                 id={data.buttons[0].id}
@@ -72,7 +73,7 @@ export const SendWaTemplateMessageStepViewer = (
             >
               <BaseHandle
                 className={cn(
-                  "end-[6px]! h-3! w-3! opacity-0!",
+                  "right-[6px]! h-3! w-3! opacity-0!",
                   "border-red-500",
                 )}
                 id={data.buttons[1].id}

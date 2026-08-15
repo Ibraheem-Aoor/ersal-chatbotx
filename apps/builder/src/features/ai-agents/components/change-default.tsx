@@ -69,11 +69,13 @@ export function ChangeDefault(props: ChangeDefaultProps) {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose asChild>
-            <Button size="sm" variant="outline">
-              {t("actions.cancel")}
-            </Button>
-          </DialogClose>
+          <DialogClose
+            render={
+              <Button size="sm" variant="outline">
+                {t("actions.cancel")}
+              </Button>
+            }
+          />
           <Button
             disabled={isPending}
             onClick={() => execute({ isDefault: !aiAgent?.isDefault })}

@@ -1,11 +1,12 @@
 import { BaseDashboard } from "@chatbotx.io/analytics-nextjs/components/base-dashboard"
-import { workspaceService } from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
+import { isCloud } from "@/env"
 import { InboxCardList } from "@/features/inboxes/components/inbox-card-list"
 import { listInboxes } from "@/features/inboxes/queries"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
+import { resolveWorkspaceBlockState } from "@/lib/workspace-quota"
 
 export default async function Dashboard({
   params,
@@ -31,10 +32,12 @@ export default async function Dashboard({
   }
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const cloud = isCloud()
+  const { targetWorkspace } = userAndWorkspace
 
-  const [inboxesResult, workspace] = await Promise.all([
+  const [inboxesResult, { blocked, blockReason }] = await Promise.all([
     listInboxes({ workspaceId, includes: ["integration"] }),
-    workspaceService.find({ where: { id: workspaceId } }),
+    resolveWorkspaceBlockState(targetWorkspace.ownerId),
   ])
 
   const inboxes = inboxesResult.data.filter((inbox) => inbox.channel !== "smtp")
@@ -46,7 +49,9 @@ export default async function Dashboard({
           userAndWorkspace.targetWorkspaceMember.permissions,
           "superAdmin",
         )}
+        blocked={cloud && blocked}
         inboxes={inboxes}
+        reason={cloud ? blockReason : null}
         workspaceId={workspaceId}
       />
 
@@ -55,7 +60,7 @@ export default async function Dashboard({
           workspaceId,
           timezone,
         }}
-        workspaceCreatedAt={workspace?.createdAt}
+        workspaceCreatedAt={targetWorkspace.createdAt}
       />
     </div>
   )

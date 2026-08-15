@@ -26,7 +26,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { useCopyToClipboard } from "usehooks-ts"
 import { UpgradePlanButton } from "@/enterprise/features/billing/upgrade-plan-dialog"
-import { isCloud } from "@/env"
+import { isCloud, isCommunity } from "@/env"
 import { useWorkspaceId } from "@/hooks/routing"
 import { inviteWorkspaceMemberAction } from "../actions/invite-workspace-member.action"
 import { getSuperAdminPermissions } from "../helpers"
@@ -61,16 +61,18 @@ export function InviteWorkspaceMemberDialog({
       {atLimit ? (
         <div className="flex items-center gap-2">
           <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <Button disabled>
-                  <PlusIcon className="size-4" />
-                  {t("actions.inviteFeature", {
-                    feature: t("fields.member.label"),
-                  })}
-                </Button>
-              </span>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <span className="inline-flex">
+                  <Button disabled>
+                    <PlusIcon className="size-4" />
+                    {t("actions.inviteFeature", {
+                      feature: t("fields.member.label"),
+                    })}
+                  </Button>
+                </span>
+              }
+            />
             <TooltipContent>
               {t("billing.limitReached.teamMembers")}
             </TooltipContent>
@@ -83,14 +85,16 @@ export function InviteWorkspaceMemberDialog({
           )}
         </div>
       ) : (
-        <DialogTrigger asChild>
-          <Button>
-            <PlusIcon className="size-4" />
-            {t("actions.inviteFeature", {
-              feature: t("fields.member.label"),
-            })}
-          </Button>
-        </DialogTrigger>
+        <DialogTrigger
+          render={
+            <Button>
+              <PlusIcon className="size-4" />
+              {t("actions.inviteFeature", {
+                feature: t("fields.member.label"),
+              })}
+            </Button>
+          }
+        />
       )}
       <DialogContent className={"max-h-screen max-w-xl overflow-y-scroll"}>
         <DialogHeader>
@@ -189,7 +193,7 @@ export function AddWorkspaceMemberForm({
         <Label>{t("fields.permissions.label")}</Label>
         <div className="flex flex-col gap-4">
           <SwitchField
-            disabled={false}
+            disabled={isCommunity()}
             formItemClassName="flex flex-row-reverse items-center justify-end gap-2"
             label={t("fields.permissions.superAdmin")}
             name="permissions.superAdmin"

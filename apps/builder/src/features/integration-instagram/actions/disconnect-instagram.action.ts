@@ -1,25 +1,13 @@
 "use server"
 
-import { db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { inboxStatuses } from "@chatbotx.io/database/partials"
-import {
-  inboxModel,
-  integrationInstagramModel,
-} from "@chatbotx.io/database/schema"
-import {
-  type InstagramAuthValue,
-  isRevokedTokenError,
-} from "@chatbotx.io/integration-instagram"
-import { isRevokedTokenError as isRevokedTokenErrorFacebook } from "@chatbotx.io/integration-instagram-facebook"
 import {
   type WorkspaceIdAndIdRequestParams,
   workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
-import { integrations } from "@/integration"
-import { logger } from "@/lib/log"
-import { workspaceActionClient } from "@/lib/safe-action"
+import { workspaceActionClientAllowExpired } from "@/lib/safe-action"
+import { disconnectInstagram } from "./disconnect-instagram"
 
-export const disconnectInstagramAction = workspaceActionClient
+export const disconnectInstagramAction = workspaceActionClientAllowExpired
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(
     async ({
@@ -27,49 +15,6 @@ export const disconnectInstagramAction = workspaceActionClient
     }: {
       bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
     }) => {
-      const integrationInstagram = await findOrFail({
-        table: integrationInstagramModel,
-        where: {
-          id: integrationInstagramId,
-          workspaceId,
-        },
-        message: "Integration Instagram not found",
-      })
-
-      const authValue = integrationInstagram.auth as InstagramAuthValue
-
-      const isFacebook = integrationInstagram.type === "facebook"
-
-      try {
-        if (isFacebook) {
-          await integrations.instagramFacebook.disconnect(authValue)
-        } else {
-          await integrations.instagram.disconnect(authValue)
-        }
-      } catch (error) {
-        logger.warn(
-          error,
-          "Instagram disconnect API call failed — proceeding with local cleanup",
-        )
-
-        const isRevoked = isFacebook
-          ? isRevokedTokenErrorFacebook(error)
-          : isRevokedTokenError(error)
-
-        if (!isRevoked) {
-          throw error
-        }
-      }
-
-      await db.transaction(async (tx) => {
-        await tx
-          .delete(integrationInstagramModel)
-          .where(eq(integrationInstagramModel.id, integrationInstagram.id))
-
-        await tx
-          .update(inboxModel)
-          .set({ status: inboxStatuses.enum.disconnected })
-          .where(eq(inboxModel.id, integrationInstagram.inboxId))
-      })
+      await disconnectInstagram({ workspaceId, integrationInstagramId })
     },
   )

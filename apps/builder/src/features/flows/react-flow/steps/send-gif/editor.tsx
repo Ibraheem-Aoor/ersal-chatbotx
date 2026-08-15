@@ -11,13 +11,19 @@ import {
 } from "@chatbotx.io/ui/components/ui/dialog"
 import type { IGif } from "@giphy/js-types"
 import { ImagePlayIcon } from "lucide-react"
+import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { type SyntheticEvent, useState } from "react"
 import { useFormContext } from "react-hook-form"
-import { GifFinder } from "@/components/gif-finder"
 import { usePlatformCredentialsStore } from "@/features/platform-credentials/provider/platform-credentials-store-context"
 import { BaseStepEditor } from "../base/editor"
+
+// Giphy SDK is heavy — load it only when the send-gif editor mounts.
+const GifFinder = dynamic(
+  () => import("@/components/gif-finder").then((m) => m.GifFinder),
+  { ssr: false },
+)
 
 const FindGifDialog = ({ parentName }: { parentName: string }) => {
   const t = useTranslations()
@@ -37,22 +43,22 @@ const FindGifDialog = ({ parentName }: { parentName: string }) => {
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <div className="flex justify-center">
-          {gifUrl && gifUrl.length > 0 ? (
-            <Button
-              className="relative h-[150px] w-[240px] p-0!"
-              variant="ghost"
-            >
-              <Image alt={parentName} fill={true} src={gifUrl} />
-            </Button>
-          ) : (
-            <Button size="sm" type="button" variant="outline">
-              {t("flows.actions.findGif")}
-            </Button>
-          )}
-        </div>
-      </DialogTrigger>
+      <DialogTrigger
+        nativeButton={false}
+        render={
+          <div className="flex justify-center">
+            {gifUrl && gifUrl.length > 0 ? (
+              <Button className="relative h-37.5 w-60 p-0!" variant="ghost">
+                <Image alt={parentName} fill={true} src={gifUrl} />
+              </Button>
+            ) : (
+              <Button size="sm" type="button" variant="outline">
+                {t("flows.actions.findGif")}
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       <DialogContent className="max-h-screen overflow-y-scroll lg:max-w-5xl">
         <DialogHeader>

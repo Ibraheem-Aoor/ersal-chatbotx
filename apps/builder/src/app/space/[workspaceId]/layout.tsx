@@ -1,9 +1,9 @@
 import {
+  integrationService,
   isPlatformAdmin,
   isSuperAdmin,
+  isWorkspaceScheduledForDeletion,
   quotaEnforcementService,
-  subscriptionService,
-  userQuotaService,
   workspaceMemberService,
 } from "@chatbotx.io/business"
 import {
@@ -15,14 +15,23 @@ import { getIdFromParams } from "@chatbotx.io/utils"
 import { cookies } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
+import { ExpiredBanner } from "@/components/expired-banner"
 import type { QuotaSummary } from "@/components/nav-usage"
+import { RefreshOnNavigation } from "@/components/refresh-on-navigation"
+import { ScheduledDeletionBanner } from "@/components/scheduled-deletion-banner"
+import { TokenRefreshErrorDialog } from "@/components/token-refresh-error-dialog"
+import { WorkspaceDeletionTabSync } from "@/components/workspace-deletion-tab-sync"
 import { isCloud } from "@/env"
 import { BillingBannerServer } from "@/features/billing/components/billing-banner-server"
+import { CouponTopicStoreProvider } from "@/features/coupons/provider/coupon-topic-store-context"
 import { WorkspaceNotifications } from "@/features/notifications/workspace-notifications"
 import { getTenantSettings } from "@/features/tenant/utils"
+import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { enforcePasswordCurrent } from "@/lib/auth/require-password-current"
 import { getCurrentUser } from "@/lib/auth/utils"
-import { buildQuotaMetrics, resolveTrialEndsAt } from "@/lib/quota-metrics"
+import { buildWorkspaceQuotaMetrics } from "@/lib/quota-metrics"
+import { enforceWorkspaceNotScheduledForDeletionFromRequest } from "@/lib/workspace/require-not-scheduled-for-deletion"
+import { resolveWorkspaceBlockState } from "@/lib/workspace-quota"
 
 export default async function WorkspaceLayout({
   children,
@@ -50,16 +59,16 @@ export default async function WorkspaceLayout({
     redirect("/suspended")
   }
 
+  // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
+  // community/enterprise installs use every feature freely — no quota gating.
   const cloud = isCloud()
 
   // Check if user is a member of the workspace
-  const [allWorkspaceMembers, { storageUrl }, platformAdmin, quota, usage] =
+  const [allWorkspaceMembers, { storageUrl }, platformAdmin] =
     await Promise.all([
       workspaceMemberService.listByUserId({ userId: user.id }),
       getTenantSettings(),
       isPlatformAdmin(user),
-      userQuotaService.getForUser(user.id),
-      quotaEnforcementService.getUsageSummary(user.id),
     ])
   const targetWorkspaceMember = allWorkspaceMembers.find(
     (workspaceMember) => workspaceMember.workspace.id === workspaceId,
@@ -68,30 +77,25 @@ export default async function WorkspaceLayout({
     return notFound()
   }
 
-  // Self-managed trial gate: block the workspace shell once the trial is
-  // consumed. /trial-expired sits outside this layout so it stays reachable.
-  // Derived from the quota already fetched above — no extra query.
-  if (cloud && userQuotaService.getAccessStateFromQuota(quota).blocked) {
-    redirect("/trial-expired")
-  }
+  const [
+    { blocked, blockReason, quota, trialEndsAt },
+    usage,
+    tokenRefreshErrors,
+  ] = await Promise.all([
+    resolveWorkspaceBlockState(targetWorkspaceMember.workspace.ownerId),
+    cloud
+      ? quotaEnforcementService.getWorkspaceUsageSummary({
+          userId: targetWorkspaceMember.workspace.ownerId,
+          workspaceId,
+        })
+      : null,
+    integrationService.findTokenRefreshErrorsByWorkspaceId(workspaceId),
+  ])
 
-  if (!(cloud || platformAdmin)) {
-    const subscription = await subscriptionService.findByUserId({
-      userId: user.id,
-    })
-    if (subscription) {
-      const now = Date.now()
-      const periodEnd = new Date(subscription.currentPeriodEnd).getTime()
-      const shouldBlock =
-        subscription.status === "expired" ||
-        (subscription.status === "trial" && periodEnd < now) ||
-        (subscription.status === "past_due" &&
-          periodEnd + 3 * 24 * 60 * 60 * 1000 < now)
-      if (shouldBlock) {
-        redirect("/pricing")
-      }
-    }
-  }
+  await enforceWorkspaceNotScheduledForDeletionFromRequest(
+    targetWorkspaceMember.workspace,
+    hasWorkspacePermission(targetWorkspaceMember.permissions, "superAdmin"),
+  )
 
   const allWorkspaces = allWorkspaceMembers.map((workspaceMember) => ({
     ...workspaceMember.workspace,
@@ -100,17 +104,19 @@ export default async function WorkspaceLayout({
       : null,
   }))
 
-  const trialEndsAt = resolveTrialEndsAt(quota)
-
   const quotaSummary: QuotaSummary = {
     planName: quota?.planName ?? null,
     planStatus: quota?.planStatus ?? null,
     trialEndsAt,
-    metrics: buildQuotaMetrics(usage),
+    metrics: buildWorkspaceQuotaMetrics(usage),
   }
 
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+
+  const scheduledForDeletion = isWorkspaceScheduledForDeletion(
+    targetWorkspaceMember.workspace,
+  )
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
@@ -120,15 +126,34 @@ export default async function WorkspaceLayout({
         isSuperAdmin={isSuperAdmin(user)}
         permissions={targetWorkspaceMember.permissions}
         quota={quotaSummary}
+        scheduledForDeletion={scheduledForDeletion}
         workspaceId={workspaceId}
       />
       <WorkspaceNotifications workspaceId={workspaceId} />
       <SidebarInset>
         <main className="flex min-w-0 flex-1 flex-col gap-4 p-6">
+          <WorkspaceDeletionTabSync
+            scheduledForDeletion={scheduledForDeletion}
+            workspaceId={workspaceId}
+          />
+          <ScheduledDeletionBanner scheduled={scheduledForDeletion} />
+          {!scheduledForDeletion && (
+            <RefreshOnNavigation workspaceId={workspaceId} />
+          )}
           <BillingBannerServer userId={user.id} />
-          {children}
+          <ExpiredBanner blocked={cloud && blocked} reason={blockReason} />
+          <TokenRefreshErrorDialog
+            errors={tokenRefreshErrors}
+            workspaceId={workspaceId}
+          />
+          <CouponTopicStoreProvider
+            autoInitialize={false}
+            workspaceId={workspaceId}
+          >
+            {children}
+          </CouponTopicStoreProvider>
         </main>
-        <SidebarTrigger className="absolute top-3 -start-2 z-10 border" />
+        <SidebarTrigger className="absolute -inset-s-2 top-3 z-10 border" />
       </SidebarInset>
     </SidebarProvider>
   )

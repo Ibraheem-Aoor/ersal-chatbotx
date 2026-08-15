@@ -1,5 +1,6 @@
 "use client"
 
+import type { ChannelType } from "@chatbotx.io/database/partials"
 import {
   FormControl,
   FormDescription,
@@ -20,6 +21,9 @@ export type TiptapEditorFieldProps = {
   placeholder?: string
   formItemClassName?: string
   showEmojiPicker?: boolean
+  enableEmoji?: boolean
+  channels?: ChannelType[]
+  includeCouponVariables?: boolean
   description?: string
 }
 
@@ -30,7 +34,10 @@ export const TiptapEditorField = ({
   required = false,
   formItemClassName,
   placeholder,
+  channels,
+  includeCouponVariables = false,
   showEmojiPicker = true,
+  enableEmoji = true,
 }: TiptapEditorFieldProps) => {
   const { control, getValues } = useFormContext()
 
@@ -59,6 +66,9 @@ export const TiptapEditorField = ({
           ) : null}
           <FormControl>
             <TiptapEditor
+              channels={channels}
+              enableEmoji={enableEmoji}
+              includeCouponVariables={includeCouponVariables}
               initValue={initValue}
               onChange={field.onChange}
               placeholder={placeholder}

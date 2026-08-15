@@ -62,9 +62,7 @@ export function UpdateInstagramForm({
               feature: t("fields.instagram.label"),
             }),
           )
-          router.push(
-            `/space/${workspaceId}/settings/channels?channel=instagram`,
-          )
+          router.push(`/space/${workspaceId}/settings/channels/instagram`)
         },
         onError: ({ error }) => {
           toast.error(error.serverError || "Failed to update Instagram.")
@@ -107,8 +105,11 @@ export function UpdateInstagramForm({
     <Form {...form}>
       <form className="space-y-6" onSubmit={handleSubmitWithAction}>
         <ComboboxField
+          allowClear
+          clearLabel={t("messages.none")}
           description={t("fields.welcomeFlowId.description")}
           emptyText={t("actions.noRecordFound")}
+          emptyValue={null}
           label={t("fields.welcomeFlowId.label")}
           name="welcomeFlowId"
           options={flowOptions}
@@ -126,7 +127,7 @@ export function UpdateInstagramForm({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Accordion className="w-full" collapsible type="single">
+              <Accordion className="w-full">
                 {conversationStarters.map((_, index) => (
                   <AccordionItem
                     className="flex flex-col gap-2"
@@ -192,9 +193,7 @@ export function UpdateInstagramForm({
         <DialogFooter>
           <Button
             onClick={() =>
-              router.push(
-                `/space/${workspaceId}/settings/channels?channel=instagram`,
-              )
+              router.push(`/space/${workspaceId}/settings/channels/instagram`)
             }
             type="button"
             variant="link"

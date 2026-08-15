@@ -31,6 +31,7 @@ import {
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { use, useMemo, useState } from "react"
+import { useUserAvatarUrl } from "@/lib/auth/avatar"
 import { DeleteWorkspaceMemberDialog } from "./components/delete-workspace-member"
 import { InviteWorkspaceMemberDialog } from "./components/invite-workspace-member"
 import { UpdateWorkspaceMemberDialog } from "./components/update-workspace-member"
@@ -40,6 +41,38 @@ import type { ListWorkspaceMembersResponse } from "./schema/query"
 type WorkspaceMembersTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listWorkspaceMembers>>]>
   teamMembersAtLimit?: boolean
+}
+
+function MemberNameCell({
+  member,
+}: {
+  member: ListWorkspaceMembersResponse["data"][number]
+}) {
+  const avatarUrl = useUserAvatarUrl(member.user.image)
+
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar className="size-7 justify-items-center">
+        <AvatarImage alt="avatar" src={avatarUrl ?? ""} />
+        <AvatarFallback>
+          {(member.user.name || "").charAt(0).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <div className="inline-block max-w-[200px] truncate">
+              {member.user.name}
+            </div>
+          }
+        />
+        <TooltipContent>
+          <p>{member.user.name}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
 }
 
 const renderPermissionCell = (enabled: boolean) =>
@@ -57,9 +90,9 @@ const renderContactsCell = (
   if (contacts) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <CheckCircle2Icon className="size-5 text-primary" />
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={<CheckCircle2Icon className="size-5 text-primary" />}
+        />
         <TooltipContent>{t("fields.permissions.contacts")}</TooltipContent>
       </Tooltip>
     )
@@ -68,9 +101,9 @@ const renderContactsCell = (
   if (onlyAssignedContacts) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>
-          <CircleDashedIcon className="size-5 text-primary" />
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={<CircleDashedIcon className="size-5 text-primary" />}
+        />
         <TooltipContent>
           {t("fields.permissions.onlyAssignedContacts")}
         </TooltipContent>
@@ -104,30 +137,7 @@ export function WorkspaceMembersTable({
             title={t("fields.name.label")}
           />
         ),
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Avatar className="size-7 justify-items-center">
-              <AvatarImage
-                alt="avatar"
-                src={row.original.user.image ?? undefined}
-              />
-              <AvatarFallback>
-                {(row.original.user.name || "").charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="inline-block max-w-[200px] truncate">
-                  {row.original.user.name}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{row.original.user.name}</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        ),
+        cell: ({ row }) => <MemberNameCell member={row.original} />,
         enableHiding: false,
       },
       {
@@ -221,12 +231,14 @@ export function WorkspaceMembersTable({
         id: "actions",
         cell: ({ row }) => (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <MoreHorizontalIcon className="h-4 w-4" />
-                <span className="sr-only">{t("actions.openMenu")}</span>
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button size="icon" variant="ghost">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                  <span className="sr-only">{t("actions.openMenu")}</span>
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 onClick={() => setRowAction({ row, variant: "update" })}

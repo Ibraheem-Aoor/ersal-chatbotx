@@ -1,5 +1,6 @@
 "use client"
 
+import { isWorkspaceScheduledForDeletion } from "@chatbotx.io/business/workspace-lifecycle/predicates"
 import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import {
   Tooltip,
@@ -25,10 +26,12 @@ export function WorkspaceStatusSwitch({
     isActive: boolean
     startTime: string | null
     endTime: string | null
+    scheduledDeletionAt?: Date | string | null
   }
 }) {
   const t = useTranslations()
   const router = useRouter()
+  const scheduledForDeletion = isWorkspaceScheduledForDeletion(workspace)
   const [isActive, setIsActive] = useState(workspace.isActive)
   const [schedule, setSchedule] = useState<Schedule>({
     startTime: workspace.startTime,
@@ -71,27 +74,33 @@ export function WorkspaceStatusSwitch({
   const switchElement = (
     <Switch
       checked={isActive}
-      className="absolute top-3 start-3 z-10"
-      disabled={!canManageStatus}
-      onCheckedChange={canManageStatus ? handleCheckedChange : undefined}
+      className="absolute start-3 top-3 z-10"
+      disabled={!canManageStatus || scheduledForDeletion}
+      onCheckedChange={
+        canManageStatus && !scheduledForDeletion
+          ? handleCheckedChange
+          : undefined
+      }
       onClick={(e) => e.stopPropagation()}
     />
   )
 
+  const disabledTooltip = scheduledForDeletion
+    ? t("workspace.deletion.navDisabledTooltip")
+    : t("workspace.schedule.permissionRequired")
+
   return (
     <>
-      {canManageStatus ? (
+      {canManageStatus && !scheduledForDeletion ? (
         switchElement
       ) : (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="absolute top-3 start-3 z-10 inline-flex">
-              {switchElement}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            {t("workspace.schedule.permissionRequired")}
-          </TooltipContent>
+          <TooltipTrigger
+            render={
+              <span className="absolute z-10 inline-flex">{switchElement}</span>
+            }
+          />
+          <TooltipContent>{disabledTooltip}</TooltipContent>
         </Tooltip>
       )}
 

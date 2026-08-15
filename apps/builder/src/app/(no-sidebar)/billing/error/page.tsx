@@ -45,11 +45,11 @@ export default async function BillingErrorPage(props: {
         <CardContent className="space-y-6">
           <p className="text-muted-foreground">{t(errorKey)}</p>
           <div className="flex flex-col gap-3">
-            <Button asChild className="w-full" size="lg">
-              <Link href="/pricing">{t("plans.billing.tryAgain")}</Link>
+            <Button className="w-full" render={<Link href="/pricing" />} size="lg">
+              {t("plans.billing.tryAgain")}
             </Button>
-            <Button asChild className="w-full" size="lg" variant="outline">
-              <Link href="/">{t("plans.billing.goToWorkspace")}</Link>
+            <Button className="w-full" render={<Link href="/" />} size="lg" variant="outline">
+              {t("plans.billing.goToWorkspace")}
             </Button>
           </div>
         </CardContent>

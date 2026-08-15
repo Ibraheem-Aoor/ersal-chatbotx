@@ -64,7 +64,7 @@ export function EditButtonDialog({
   )
 
   const { formState, handleSubmit } = form
-  const type = useWatch({ name: "type", control: form.control })
+  const type = useWatch({ name: "type" })
 
   const onSubmit = handleSubmit((data) => {
     setValueOriginEditor(parentName, data)

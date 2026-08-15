@@ -1,8 +1,18 @@
 import {
+  contactLanguageOptions,
+  contactLocaleOptions,
+  contactTimezoneOptions,
+} from "@chatbotx.io/business/contact-locale"
+import {
   type ContactFilterField,
+  type ContactInfoFilterValue,
+  type ContactInfoType,
+  contactInfoFilterValues,
+  contactInfoTypes,
   contactSources,
   type FormFieldType,
   formFieldTypes,
+  lastUserInputTypes,
   type OperatorType,
   operatorTypes,
 } from "@chatbotx.io/database/partials"
@@ -14,8 +24,11 @@ import {
 } from "@/features/workspaces/schema/types"
 import {
   CONTACT_FILTER_FIELD_DEFINITIONS,
+  type ContactFilterFieldDefinition,
   type ContactFilterOptionSource,
   type ContactFilterSchemaKind,
+  type CtwaRetargetCondition,
+  type CtwaRetargetSegment,
 } from "../schemas"
 
 export type ConditionOption = {
@@ -25,17 +38,21 @@ export type ConditionOption = {
 }
 
 export type FieldConfig = {
-  /** `ContactFilterField` for static fields, `customField:<id>` for custom fields. */
+  /** `ContactFilterField` for static fields, `customField:<id>` for custom fields, `couponTopic:<id>` for coupon topics. */
   name: string
   /** Set for dynamic custom-field configs; identifies the workspace custom field. */
   customFieldId?: string
   /** Raw custom field type from the workspace, used for custom-field operator rules. */
   customFieldType?: string
-  /** Display label override (custom field name); static fields fall back to i18n. */
+  /** Set for dynamic coupon-topic configs; identifies the workspace coupon topic. */
+  topicId?: string
+  /** Display label override (custom field / coupon topic name); static fields fall back to i18n. */
   label?: string
   formField: FormFieldType
   group: ContactFilterFieldGroup
   options?: SelectOption[]
+  /** Retired field: still rendered/validated, but omitted from the picker. */
+  hidden?: boolean
 }
 
 /** Minimal workspace custom field shape needed to build a per-field filter config. */
@@ -57,7 +74,9 @@ export type ContactFilterFieldGroup =
   | "systemTime"
   | "ecommerce"
   | "systemFields"
+  | "topicCoupon"
   | "customFields"
+  | "ctwaAds"
 
 type GroupedContactFilterFieldGroup = Exclude<
   ContactFilterFieldGroup,
@@ -133,6 +152,57 @@ const getContactSourceOptions = (t: (key: string) => string): SelectOption[] =>
     value: source,
   }))
 
+const CONTACT_INFO_TYPE_LABEL_KEYS = {
+  phone: "fields.phone.label",
+  email: "fields.email.label",
+} as const satisfies Record<ContactInfoType, string>
+
+/** Atomic phone/email options for the `contactInfoUpdated` trigger source. */
+export const getContactInfoTypeOptions = (
+  t: (key: string) => string,
+): SelectOption[] =>
+  contactInfoTypes.options.map((infoType) => ({
+    label: t(CONTACT_INFO_TYPE_LABEL_KEYS[infoType]),
+    value: infoType,
+  }))
+
+const CONTACT_INFO_FILTER_LABEL_KEYS = {
+  phone: "fields.phone.label",
+  email: "fields.email.label",
+  phoneAndEmail: "fields.phoneAndEmail.label",
+} as const satisfies Record<ContactInfoFilterValue, string>
+
+/** Phone / Email / Phone+Email options for the `hasContactInfo` filter. */
+export const getContactInfoFilterOptions = (
+  t: (key: string) => string,
+): SelectOption[] =>
+  contactInfoFilterValues.options.map((value) => ({
+    label: t(CONTACT_INFO_FILTER_LABEL_KEYS[value]),
+    value,
+  }))
+
+const getLocaleOptions = (t: (key: string) => string): SelectOption[] => {
+  const localeOptions = [...languageOptions]
+  const existingValues = new Set(localeOptions.map((option) => option.value))
+  const contactLanguageLabelByLocale = new Map<string, string>(
+    contactLanguageOptions.map((option) => [option.locale, t(option.labelKey)]),
+  )
+
+  for (const option of contactLocaleOptions) {
+    if (existingValues.has(option.value)) {
+      continue
+    }
+
+    localeOptions.push({
+      label: contactLanguageLabelByLocale.get(option.value) ?? option.label,
+      value: option.value,
+    })
+    existingValues.add(option.value)
+  }
+
+  return localeOptions
+}
+
 const resolveContactFilterOptions = (
   optionSource: ContactFilterOptionSource,
   ctx: {
@@ -141,13 +211,21 @@ const resolveContactFilterOptions = (
     inboxOptions: SelectOption[]
     tagOptions: SelectOption[]
     flowVersionOptions: SelectOption[]
+    broadcastOptions: SelectOption[]
+    sequenceOptions: SelectOption[]
+    reflinkOptions: SelectOption[]
+    assigneeOptions: SelectOption[]
   },
 ): SelectOption[] | undefined => {
   switch (optionSource) {
     case "none":
       return
+    case "contactInfoFilterValues":
+      return getContactInfoFilterOptions(ctx.t)
     case "languages":
-      return languageOptions
+      return getLocaleOptions(ctx.t)
+    case "timezones":
+      return contactTimezoneOptions
     case "countries":
       return allCountryOptions
     case "continents":
@@ -158,6 +236,11 @@ const resolveContactFilterOptions = (
         { label: ctx.t("fields.gender.female"), value: "female" },
         { label: ctx.t("fields.gender.unknown"), value: "unknown" },
       ]
+    case "lastUserInputTypes":
+      return lastUserInputTypes.options.map((type) => ({
+        label: ctx.t(`fields.lastUserInputTypes.${type}`),
+        value: type,
+      }))
     case "contactSources":
       return getContactSourceOptions(ctx.t)
     case "channels":
@@ -168,6 +251,25 @@ const resolveContactFilterOptions = (
       return ctx.tagOptions
     case "flows":
       return ctx.flowVersionOptions
+    case "broadcasts":
+      return ctx.broadcastOptions
+    case "sequences":
+      return ctx.sequenceOptions
+    case "reflinks":
+      return ctx.reflinkOptions
+    case "assignees":
+      return ctx.assigneeOptions
+    case "ctwaConversionTypes":
+      return [
+        {
+          label: ctx.t("condition.fields.ctwaConversionTypes.lead"),
+          value: "lead",
+        },
+        {
+          label: ctx.t("condition.fields.ctwaConversionTypes.purchase"),
+          value: "purchase",
+        },
+      ]
     default: {
       const _exhaustive: never = optionSource
       return _exhaustive
@@ -239,6 +341,7 @@ const CONTACT_FILTER_GROUP_FIELDS = {
     "emailOpened",
     "emailClicked",
   ],
+  ctwaAds: ["fromCtwaAd", "ctwaConversion"],
   systemTime: [
     "isWithinWorkingHours",
     "currentDate",
@@ -259,6 +362,9 @@ const CONTACT_FILTER_GROUP_FIELDS = {
     "lastSentMessageFailed",
   ],
   systemFields: ["lastUserInput", "lastUserInputType"],
+  // Populated dynamically — each coupon topic gets its own FieldConfig with
+  // group "topicCoupon" set directly (see couponTopicConfigs below).
+  topicCoupon: [],
   customFields: ["customFields"],
 } as const satisfies Record<
   GroupedContactFilterFieldGroup,
@@ -289,26 +395,41 @@ export const getFieldConfigs = ({
   inboxOptions,
   customFields,
   flowVersionOptions,
+  broadcastOptions = [],
+  sequenceOptions = [],
+  reflinkOptions = [],
+  assigneeOptions = [],
+  couponTopicOptions = [],
 }: {
   t: (key: string) => string
   tagOptions: SelectOption[]
   inboxOptions: SelectOption[]
   customFields: CustomFieldFilterOption[]
   flowVersionOptions: SelectOption[]
+  broadcastOptions?: SelectOption[]
+  sequenceOptions?: SelectOption[]
+  reflinkOptions?: SelectOption[]
+  assigneeOptions?: SelectOption[]
+  couponTopicOptions?: SelectOption[]
 }): FieldConfig[] => {
   const channelOptions = getChannelMultiSelectOptions(t)
 
   const staticConfigs: FieldConfig[] = CONTACT_FILTER_FIELD_DEFINITIONS.map(
-    (def) => ({
+    (def: ContactFilterFieldDefinition) => ({
       name: def.field,
       formField: schemaKindToFormField(def.schemaKind),
       group: getContactFilterFieldGroup(def.field),
+      hidden: def.hidden,
       options: resolveContactFilterOptions(def.optionSource, {
         t,
         channelOptions,
         inboxOptions,
         tagOptions,
         flowVersionOptions,
+        broadcastOptions,
+        sequenceOptions,
+        reflinkOptions,
+        assigneeOptions,
       }),
     }),
   )
@@ -325,7 +446,19 @@ export const getFieldConfigs = ({
     group: "customFields",
   }))
 
-  return [...staticConfigs, ...customFieldConfigs]
+  // Each workspace coupon topic becomes its own filter field (replaces the
+  // old static "Coupon issued"/"Coupon usage" pair). Encoded as
+  // `couponTopic:<id>` so the form/row can map back to a
+  // `{ field: "couponTopic", topicId }` condition.
+  const couponTopicConfigs: FieldConfig[] = couponTopicOptions.map((topic) => ({
+    name: `couponTopic:${topic.value}`,
+    topicId: topic.value,
+    label: topic.label,
+    formField: formFieldTypes.enum.text,
+    group: "topicCoupon",
+  }))
+
+  return [...staticConfigs, ...customFieldConfigs, ...couponTopicConfigs]
 }
 
 export const getFieldOptions = (
@@ -337,12 +470,16 @@ export const getFieldOptions = (
     value: config.name,
   })
 
-  const contactInfoOptions = configs
+  // Retired fields stay valid + rendered for existing conditions but are never
+  // offered for new ones.
+  const pickableConfigs = configs.filter((config) => !config.hidden)
+
+  const contactInfoOptions = pickableConfigs
     .filter((config) => config.group === "contactInfo")
     .map(toOption)
 
   const groupOptions = (group: GroupedContactFilterFieldGroup) => {
-    const children = configs
+    const children = pickableConfigs
       .filter((config) => config.group === group)
       .map(toOption)
 
@@ -400,7 +537,38 @@ export const getConditionOptions = (
     value: operatorTypes.enum.notBetween,
     label: t("fields.operator.notBetween"),
   },
+  { value: operatorTypes.enum.used, label: t("fields.operator.used") },
 ]
+
+const CTWA_RETARGET_SEGMENT_LABEL_KEYS = {
+  conversations: "condition.ctwaRetarget.segments.conversations",
+  leads: "condition.ctwaRetarget.segments.leads",
+  purchases: "condition.ctwaRetarget.segments.purchases",
+} as const satisfies Record<CtwaRetargetSegment, string>
+
+/**
+ * Read-only chip label for the machine-generated `ctwaRetarget` condition
+ * (no operator/value to render — see `contact-filter-condition-row.tsx` /
+ * `contact-filter-summary.tsx`). Composed from individually translated parts
+ * rather than one ICU-templated string, mirroring
+ * `ads-analytics-view.tsx`'s `suggestedName`.
+ */
+export const formatCtwaRetargetChipLabel = (
+  condition: Pick<
+    CtwaRetargetCondition,
+    "segment" | "adId" | "since" | "until"
+  >,
+  t: (key: string) => string,
+): string => {
+  const segmentLabel = t(CTWA_RETARGET_SEGMENT_LABEL_KEYS[condition.segment])
+  const adPart = condition.adId
+    ? `${t("condition.ctwaRetarget.adPrefix")} ${condition.adId}`
+    : t("condition.ctwaRetarget.allAds")
+
+  return [segmentLabel, adPart, `${condition.since}–${condition.until}`].join(
+    " · ",
+  )
+}
 
 export const formatConditionValueDisplay = (
   value: string | string[] | undefined,

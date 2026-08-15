@@ -11,7 +11,9 @@ export const analyticsNodeTypes = {
   [nodeTypeSchema.enum.performAction]: NodeAnalyticsViewer,
   [nodeTypeSchema.enum.addNotes]: NodeAnalyticsViewer,
   [nodeTypeSchema.enum.wait]: NodeAnalyticsViewer,
+  [nodeTypeSchema.enum.followUp]: NodeAnalyticsViewer,
   [nodeTypeSchema.enum.startFlow]: NodeAnalyticsViewer,
+  [nodeTypeSchema.enum.condition]: NodeAnalyticsViewer,
 }
 
 export const edgeTypes = {

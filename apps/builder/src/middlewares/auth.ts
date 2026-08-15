@@ -1,4 +1,8 @@
-import { isSuperAdmin, workspaceMemberService } from "@chatbotx.io/business"
+import {
+  isWorkspaceScheduledForDeletion,
+  workspaceMemberService,
+} from "@chatbotx.io/business"
+import { isSuperAdmin } from "@chatbotx.io/business"
 import { ORPCError } from "@orpc/server"
 import { auth } from "@/lib/auth/auth"
 import { base } from "./context"
@@ -23,7 +27,10 @@ export const authMiddleware = base.middleware(async ({ context, next }) => {
   }
 
   const userStatus =
-    ((sessionData.user as Record<string, unknown>).status as string) ?? "active"
+    ((sessionData.user as Record<string, unknown>).status as
+      | "active"
+      | "suspended"
+      | "banned") ?? "active"
   if (
     (userStatus === "suspended" || userStatus === "banned") &&
     !isSuperAdmin(sessionData.user)
@@ -59,6 +66,12 @@ export const workspaceAuthorizedMidddleware = base.middleware(
 
     if (!workspaceMember) {
       throw new ORPCError("UNAUTHORIZED")
+    }
+
+    if (isWorkspaceScheduledForDeletion(workspaceMember.workspace)) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "Workspace deletion scheduled",
+      })
     }
 
     return next({

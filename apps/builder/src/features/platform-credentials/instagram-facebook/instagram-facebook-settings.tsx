@@ -33,8 +33,10 @@ import { toast } from "sonner"
 import { useClipboard } from "@/hooks/use-clipboard"
 import { buildBrokerCallbackUrl } from "@/lib/oauth-broker"
 import { CredentialFallbackNote } from "../credential-fallback-note"
+import { DeleteCredentialDialog } from "../delete-credential-dialog"
 import { useCredentialScope } from "../provider/credential-scope-context"
 import { cloneFromMessengerAction } from "./clone-from-messenger.action"
+import { deleteInstagramFacebookSettingsAction } from "./delete-instagram-facebook-settings.action"
 import { updateInstagramFacebookSettingAction } from "./update-instagram-facebook-settings.action"
 
 export function InstagramFacebookSettings({
@@ -150,11 +152,13 @@ export function EditInstagramFacebookSettingsDialog({
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" type="button">
-          {t("actions.edit")}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button size="sm" type="button">
+            {t("actions.edit")}
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogTitle>
           {t("messages.editFeature", {
@@ -228,7 +232,19 @@ export function EditInstagramFacebookSettingsForm({
     },
   )
 
-  const isConfigured = publicConfig !== null
+  const { execute: executeDelete, isPending: isDeleting } = useAction(
+    deleteInstagramFacebookSettingsAction.bind(null, scope),
+    {
+      onSuccess: () => {
+        toast.success(
+          t("messages.deletedSuccess", { feature: "Instagram via Facebook" }),
+        )
+        onClose?.()
+      },
+      onError: ({ error }) =>
+        error.serverError && toast.error(error.serverError),
+    },
+  )
 
   return (
     <Form {...form}>
@@ -236,12 +252,9 @@ export function EditInstagramFacebookSettingsForm({
         <InputField label={t("fields.appId.label")} name="clientId" required />
 
         <InputField
-          description={
-            isConfigured ? t("messages.leaveEmptyToKeepSecret") : undefined
-          }
           label={t("fields.appSecret.label")}
           name="clientSecret"
-          required={!isConfigured}
+          required
           type="password"
         />
 
@@ -268,7 +281,15 @@ export function EditInstagramFacebookSettingsForm({
             {t("fields.instagram.cloneFromMessenger")}
           </Button>
 
-          <div className="flex gap-2">
+          <div className="ms-auto flex gap-2">
+            {publicConfig !== null && (
+              <DeleteCredentialDialog
+                disabled={form.formState.isSubmitting}
+                feature="Instagram via Facebook"
+                isDeleting={isDeleting}
+                onConfirm={() => executeDelete()}
+              />
+            )}
             <Button
               onClick={() => {
                 resetFormAndAction()
@@ -280,7 +301,11 @@ export function EditInstagramFacebookSettingsForm({
               {t("actions.cancel")}
             </Button>
             <Button
-              disabled={!form.formState.isValid || form.formState.isSubmitting}
+              disabled={
+                !form.formState.isValid ||
+                form.formState.isSubmitting ||
+                isDeleting
+              }
               type="submit"
             >
               {form.formState.isSubmitting && (

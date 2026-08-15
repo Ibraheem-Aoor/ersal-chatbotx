@@ -1,6 +1,8 @@
 import {
   isPlatformAdmin,
   isSuperAdmin,
+  isWorkspaceScheduledForDeletion,
+  quotaEnforcementService,
   userQuotaService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
@@ -84,7 +86,7 @@ export const superAdminActionClient = authActionClient.use(({ ctx, next }) => {
   return next({ ctx })
 })
 
-export const workspaceActionClient = authActionClient.use(
+export const workspaceActionClientAllowExpired = authActionClient.use(
   async ({ bindArgsClientInputs, ctx, next }) => {
     const { user } = ctx
 
@@ -95,24 +97,112 @@ export const workspaceActionClient = authActionClient.use(
       throw new Error("Workspace not found")
     }
 
-    const { workspaces } = await getAllWorkspaceMembers(user.id)
+    const { workspaceMembers, workspaces } = await getAllWorkspaceMembers(
+      user.id,
+    )
     const workspace = workspaces.find((c) => c.id === workspaceId)
-    if (!workspace) {
+    const member = workspaceMembers.find((m) => m.workspaceId === workspaceId)
+    if (!(workspace && member)) {
       throw new Error("Workspace not found")
     }
 
-    // Server-side trial gate: the RSC layout redirects a blocked user to
-    // /trial-expired, but a stale session could still POST a server action
-    // directly. Re-check the entitlement here so the paywall holds. Cloud-only;
-    // self-hosted editions have no quota row and stay unrestricted. The quota
-    // read is cached, so this adds no per-action DB round-trip in the hot path.
+    // `permissions` is exposed so actions can gate on it (e.g. superAdmin)
+    // without a second user+member round-trip — the same rows are already
+    // loaded here. The `permissions` jsonb defaults to `{}`, so callers must
+    // fail closed on missing keys (see `hasWorkspacePermission`).
+    return next({
+      ctx: {
+        workspaceId: workspace.id,
+        workspace,
+        workspaceMemberPermissions: member.permissions,
+      },
+    })
+  },
+)
+
+async function getWorkspaceOwnerAccessState(ownerId: string) {
+  const accessState = await userQuotaService.getAccessState(ownerId)
+  if (accessState.blocked) {
+    return accessState
+  }
+
+  // getAccessState already checks ownerId's own live MAC counter, so this is a
+  // no-op for a reseller acting directly or a root-tenant owner (isAtLimit
+  // reduces to the same isLimitReached(ownerId, "mac") call in both cases). It
+  // only adds new information when ownerId is a sub-account: isAtLimit then
+  // also checks the reseller pool row, closing a pool-level MAC bypass for
+  // workspaces owned by a sub-account. Costs one extra, uncached lookup of the
+  // owner's tenant on every call — see resolveContext in quota-enforcement/service.ts.
+  if (
+    await quotaEnforcementService.isAtLimit({
+      userId: ownerId,
+      metric: "mac",
+    })
+  ) {
+    return { ...accessState, blocked: true, reason: "mac" as const }
+  }
+
+  return accessState
+}
+
+export const workspaceActionClient = workspaceActionClientAllowExpired.use(
+  async ({ ctx, next }) => {
+    // Server-side deletion gate: a workspace pending deletion must block every
+    // mutation regardless of trial status, so this runs before the trial check
+    // below. Mirrors the RSC-side redirect in enforceWorkspaceNotScheduledForDeletion.
+    if (isWorkspaceScheduledForDeletion(ctx.workspace)) {
+      throw new ChatbotXException(
+        "Workspace deletion scheduled",
+        "workspaceScheduledDeletion",
+        403,
+      )
+    }
+
+    // Server-side owner-quota gate: the RSC banner shows the workspace owner's
+    // blocked read/delete mode, but a stale session could still POST a
+    // create/change action directly. A workspace's owner quota row is the
+    // tenant pool (AGENTS.md invariant #12), so members must never be gated by
+    // their unrelated personal quota. Cloud-only; self-hosted editions have no
+    // quota row and stay unrestricted. getAccessState's quota read is cached,
+    // but getWorkspaceOwnerAccessState's tenant lookup (for the sub-account
+    // pool check) is not — this adds one uncached DB round-trip per action.
     if (isCloud()) {
-      const { blocked } = await userQuotaService.getAccessState(user.id)
+      const { blocked, reason } = await getWorkspaceOwnerAccessState(
+        ctx.workspace.ownerId,
+      )
       if (blocked) {
-        throw new ChatbotXException("Trial expired", "trialExpired", 403)
+        throw reason === "mac"
+          ? new ChatbotXException(
+              "Monthly active contact limit reached",
+              "macLimitReached",
+              403,
+            )
+          : new ChatbotXException("Trial expired", "trialExpired", 403)
       }
     }
 
-    return next({ ctx: { workspaceId: workspace.id, workspace } })
+    return next({ ctx })
   },
 )
+
+// Settings/general remains editable during the deletion grace window so admins
+// can correct workspace metadata before undoing or before the purge deadline.
+export const workspaceActionClientAllowScheduledDeletion =
+  workspaceActionClientAllowExpired.use(async ({ ctx, next }) => {
+    if (isCloud()) {
+      const { blocked, reason } = await getWorkspaceOwnerAccessState(
+        ctx.workspace.ownerId,
+      )
+      if (blocked) {
+        throw reason === "mac"
+          ? new ChatbotXException(
+              "Monthly active contact limit reached",
+              "macLimitReached",
+              403,
+            )
+          : new ChatbotXException("Trial expired", "trialExpired", 403)
+      }
+    }
+
+    return next({ ctx })
+  })

@@ -3,9 +3,11 @@
 import {
   buildContext,
   connectChannelIntegration,
+  messengerIntegrationService,
   platformCredentialService,
   resolveTenantSettings,
   tagSyncService,
+  userQuotaService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
@@ -19,17 +21,23 @@ import {
   exchangeLongLivedToken,
   subscribePageToAppWebhook,
 } from "@chatbotx.io/integration-messenger/apis/page"
-import { AuthType } from "@chatbotx.io/sdk"
+import { AuthType, SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import { redirect } from "next/navigation"
+import { isCloud } from "@/env"
 import {
   BRANDING_TITLE,
   getBrandingUrl,
 } from "@/features/integration-webchat/lib"
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
+import {
+  FB_MESSENGER_PENDING_AUTH_COOKIE,
+  readPendingAuth,
+} from "@/lib/facebook-pending-auth"
+import { persistIntegrationUserInfo } from "@/lib/integration-user-info"
 import { logger } from "@/lib/log"
+import { resolvePlatformOwnerId } from "@/lib/platform-credential-owner"
 import { authActionClient } from "@/lib/safe-action"
-import { translateQuotaError } from "@/lib/translate-business-error"
 import { type SelectPageRequest, selectPageRequest } from "../schema/action"
 
 export const selectPageAction = authActionClient
@@ -46,13 +54,25 @@ export const selectPageAction = authActionClient
         let workspaceId = parsedInput.workspaceId
         let connectedIntegrationId: string | undefined
 
-        const platformOwnerId = parsedInput.workspaceId
-          ? ((
-              await workspaceService.find({
-                where: { id: parsedInput.workspaceId },
-              })
-            )?.ownerId ?? ctx.user.id)
-          : ctx.user.id
+        if (!workspaceId && isCloud()) {
+          const { blocked, reason } = await userQuotaService.getAccessState(
+            ctx.user.id,
+          )
+          if (blocked) {
+            throw reason === "mac"
+              ? new ChatbotXException(
+                  "Monthly active contact limit reached",
+                  "macLimitReached",
+                  403,
+                )
+              : new ChatbotXException("Trial expired", "trialExpired", 403)
+          }
+        }
+
+        const platformOwnerId = await resolvePlatformOwnerId({
+          userId: ctx.user.id,
+          workspaceId: parsedInput.workspaceId,
+        })
 
         const messengerCredential =
           await platformCredentialService.resolveForOwner({
@@ -66,6 +86,18 @@ export const selectPageAction = authActionClient
         const messengerSettings = messengerCredential.config
 
         let integrationId = ""
+
+        // The OAuth callback stored the (long-lived) user token in the
+        // pending-auth cookie. Best-effort: an expired/missing cookie only
+        // leaves `auth.tokens.userAccessToken`/`userId` unset.
+        const pendingAuth = await readPendingAuth(
+          FB_MESSENGER_PENDING_AUTH_COOKIE,
+        )
+        if (!pendingAuth) {
+          logger.warn(
+            "Messenger pending-auth cookie missing; connecting without user access token",
+          )
+        }
 
         const { brandingCtx } = await db.transaction(async (tx) => {
           const longLivedToken = await exchangeLongLivedToken(
@@ -102,6 +134,7 @@ export const selectPageAction = authActionClient
             clientId: messengerSettings.clientId,
             clientSecret: messengerSettings.clientSecret,
             redirectUrl: "",
+            version: messengerSettings.version,
             tokens: {
               accessToken: longLivedToken,
             },
@@ -156,11 +189,21 @@ export const selectPageAction = authActionClient
             integration: { ...integrationRow, auth },
           })
 
-          await integrationMessenger.runChannelHandler("bot", "addBranding", {
-            ctx: brandingCtx,
-            title: BRANDING_TITLE,
-            url: getBrandingUrl("messenger", appUrl),
-          })
+          // Best-effort: the connection is already live, so a failed
+          // branding write must never roll back the transaction or fail
+          // the action.
+          try {
+            await integrationMessenger.runChannelHandler("bot", "addBranding", {
+              ctx: brandingCtx,
+              title: BRANDING_TITLE,
+              url: getBrandingUrl("messenger", appUrl),
+            })
+          } catch (error) {
+            logger.warn(
+              { err: error },
+              "Failed to add branding to Messenger persistent menu",
+            )
+          }
 
           return { brandingCtx }
         })
@@ -174,6 +217,23 @@ export const selectPageAction = authActionClient
         if (!integrationId) {
           throw new ChatbotXException("Failed to create integration")
         }
+
+        // Best-effort: the connection is already live, so a failed user-info
+        // write must never fail the action (the outer catch would report a
+        // bogus connect failure).
+        await persistIntegrationUserInfo({
+          workspaceId: workspaceId as string,
+          userId: pendingAuth?.userId,
+          userName: pendingAuth?.userName,
+          userAccessToken: pendingAuth?.userToken,
+          avatarUrl: pendingAuth?.userAvatarUrl,
+          persist: (userInfo) =>
+            messengerIntegrationService.updateUserInfo({
+              id: integrationId,
+              workspaceId: workspaceId as string,
+              userInfo,
+            }),
+        })
 
         // Import any labels already on the page into local tags + mappings.
         if (connectedIntegrationId) {
@@ -195,7 +255,11 @@ export const selectPageAction = authActionClient
               `/space/${parsedInput.workspaceId}/settings/channels?channel=messenger&error=duplicated`,
             )
           }
-          throw await translateQuotaError(error)
+          throw error
+        }
+        if (error instanceof SdkException) {
+          logger.error({ err: error }, "Failed to connect Facebook page")
+          throw error
         }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Page already connected")

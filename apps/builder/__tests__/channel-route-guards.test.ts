@@ -47,12 +47,45 @@ vi.mock("@chatbotx.io/analytics-nextjs/components/base-dashboard", () => ({
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
+  isWorkspaceScheduledForDeletion: (
+    workspace:
+      | { scheduledDeletionAt?: Date | string | null }
+      | null
+      | undefined,
+  ) => Boolean(workspace?.scheduledDeletionAt),
+  inboxService: {
+    distinctConnectedChannels: vi.fn(async () => []),
+  },
   platformCredentialService: {
     resolveForOwner: vi.fn(async () => null),
+  },
+  tenantService: {
+    resolveVisibleChannels: vi.fn(async () => [
+      "instagram",
+      "messenger",
+      "smtp",
+      "telegram",
+      "tiktok",
+      "webchat",
+      "whatsapp",
+      "zalo",
+    ]),
   },
   workspaceService: {
     find: vi.fn(async () => ({ ownerId: "owner-1" })),
   },
+}))
+
+vi.mock("@/lib/platform-credential-owner", () => ({
+  resolvePlatformOwnerId: vi.fn(async () => "owner-1"),
+  resolveOwnerForWorkspace: vi.fn(async () => "owner-1"),
+}))
+
+vi.mock("@/lib/workspace-quota", () => ({
+  resolveWorkspaceBlockState: vi.fn(async () => ({
+    blocked: false,
+    blockReason: null,
+  })),
 }))
 
 vi.mock("@/features/inboxes/components/inbox-card-list", () => ({
@@ -250,6 +283,7 @@ describe("channel route guards", () => {
 
   test("hides the dashboard add-channel card for non-superAdmins", async () => {
     mockGetCurrentUserAndTargetWorkspace.mockResolvedValue({
+      targetWorkspace: { ownerId: "owner-1" },
       targetWorkspaceMember: {
         permissions: {
           ...basePermissions,
@@ -274,6 +308,7 @@ describe("channel route guards", () => {
 
   test("shows the dashboard add-channel card for superAdmins", async () => {
     mockGetCurrentUserAndTargetWorkspace.mockResolvedValue({
+      targetWorkspace: { ownerId: "owner-1" },
       targetWorkspaceMember: {
         permissions: {
           ...basePermissions,

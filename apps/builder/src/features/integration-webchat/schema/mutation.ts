@@ -17,10 +17,10 @@ export const createWebchatRequest = z.object({
   conversationStarters: z.array(webchatConversationStarter),
   persistentMenus: z.array(webchatPersistentMenu),
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format"),
-  hideHeader: z.boolean().default(true),
-  showLogo: z.boolean().default(false),
-  hideMessageInput: z.boolean().default(true),
-  customCss: z.string().optional(),
+  hideHeader: z.boolean().default(false),
+  showLogo: z.boolean().default(true),
+  hideMessageInput: z.boolean().default(false),
+  customCss: z.string().max(20_000).optional(),
   enable: z.boolean().default(true),
 })
 export type CreateWebchatRequest = z.infer<typeof createWebchatRequest>

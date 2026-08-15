@@ -15,6 +15,7 @@ const {
   mockQuotaHasReachedLimit,
   mockUpdateSet,
   mockWorkspaceFindById,
+  mockWorkspaceMemberServiceDelete,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn()
   const mockInsertValues = vi.fn(() => ({ returning: mockInsertReturning }))
@@ -33,6 +34,7 @@ const {
     mockFindOrFail: vi.fn(),
     mockGetCurrentUserAndTargetWorkspace: vi.fn(),
     mockInsertReturning,
+    mockWorkspaceMemberServiceDelete: vi.fn(),
     mockInsertValues,
     mockInvalidateCacheByTags: vi.fn(),
     mockIsCommunity: vi.fn(),
@@ -48,7 +50,10 @@ vi.mock("@/lib/safe-action", () => {
   chain.bindArgsSchemas = () => chain
   chain.inputSchema = () => chain
   chain.action = (fn: unknown) => fn
-  return { workspaceActionClient: chain }
+  return {
+    workspaceActionClient: chain,
+    workspaceActionClientAllowExpired: chain,
+  }
 })
 
 vi.mock("@/env", () => ({
@@ -60,8 +65,13 @@ vi.mock("@/lib/auth/utils", () => ({
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
+  workspaceMemberCacheTag: (userId: string) =>
+    `users:${userId}:workspace-members`,
   quotaEnforcementService: {
     hasReachedLimit: mockQuotaHasReachedLimit,
+  },
+  workspaceMemberService: {
+    delete: mockWorkspaceMemberServiceDelete,
   },
   workspaceService: {
     findById: mockWorkspaceFindById,
@@ -89,15 +99,16 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   },
 }))
 
-vi.mock("@chatbotx.io/utils", () => ({
-  createId: () => "invitation-id",
-  SymbolicSnowflakeIDs: {
-    generate: () => "invite-code",
-  },
-  zodBigintAsString: () => ({
-    describe: () => ({ _: "zodBigintAsString" }),
-  }),
-}))
+vi.mock("@chatbotx.io/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
+  return {
+    ...actual,
+    createId: () => "invitation-id",
+    SymbolicSnowflakeIDs: {
+      generate: () => "invite-code",
+    },
+  }
+})
 
 const { inviteWorkspaceMemberAction } = await import(
   "../src/features/workspace-members/actions/invite-workspace-member.action"
@@ -176,6 +187,7 @@ function getInsertedValues() {
 function mockCurrentMember(permissions = fullPermissions) {
   mockGetCurrentUserAndTargetWorkspace.mockResolvedValue({
     user: { id: "user-1" },
+    targetWorkspace: { id: WORKSPACE_ID, ownerId: "owner-1" },
     targetWorkspaceMember: { permissions },
   })
 }
@@ -266,6 +278,10 @@ describe("updateWorkspaceMemberAction", () => {
       workspaceId: WORKSPACE_ID,
     })
     mockCurrentMember()
+    mockWorkspaceFindById.mockResolvedValue({
+      id: WORKSPACE_ID,
+      ownerId: "owner-1",
+    })
     mockIsCommunity.mockReturnValue(false)
   })
 
@@ -347,7 +363,7 @@ describe("deleteWorkspaceMemberAction", () => {
       ),
     ).rejects.toThrow("You cannot delete the owner of the workspace")
 
-    expect(mockDbDelete).not.toHaveBeenCalled()
+    expect(mockWorkspaceMemberServiceDelete).not.toHaveBeenCalled()
   })
 
   test("rejects non-super-admin members before deleting", async () => {
@@ -361,7 +377,7 @@ describe("deleteWorkspaceMemberAction", () => {
       "You are not authorized to delete this workspace member. You need to be a super admin to do this.",
     )
 
-    expect(mockDbDelete).not.toHaveBeenCalled()
+    expect(mockWorkspaceMemberServiceDelete).not.toHaveBeenCalled()
   })
 
   test("invalidates the removed member's cached workspace list", async () => {
@@ -369,7 +385,21 @@ describe("deleteWorkspaceMemberAction", () => {
       deleteActionCtx(),
     )
 
-    expect(mockDbDelete).toHaveBeenCalled()
+    expect(mockWorkspaceMemberServiceDelete).toHaveBeenCalledWith({
+      id: MEMBER_ID,
+      workspaceId: WORKSPACE_ID,
+    })
+    expect(mockInvalidateCacheByTags).toHaveBeenCalledWith([
+      `users:${MEMBER_USER_ID}:workspace-members`,
+    ])
+  })
+
+  test("deletes the member without mutating team-member quota", async () => {
+    await (deleteWorkspaceMemberAction as (props: unknown) => Promise<unknown>)(
+      deleteActionCtx(),
+    )
+
+    expect(mockWorkspaceMemberServiceDelete).toHaveBeenCalledOnce()
     expect(mockInvalidateCacheByTags).toHaveBeenCalledWith([
       `users:${MEMBER_USER_ID}:workspace-members`,
     ])

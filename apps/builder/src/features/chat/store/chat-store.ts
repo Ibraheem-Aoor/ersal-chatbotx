@@ -31,12 +31,17 @@ export type ConversationFilters = {
   contactFilter?: ContactFilterRequest["contactFilter"]
 }
 
+type LoadMoreConversationsOptions = {
+  respectUrlConversationId?: boolean
+}
+
 export type ChatState = {
   // conversation list
   isFirstLoadConversation: boolean
   conversations: ListConversationsResponse["data"]
   nextCursorConversation: string | null
   isLoadingConversation: boolean
+  isBootstrappingUrlConversation: boolean
   activeConversationId: string | null
   hasNextConversationPage: boolean
   filters: ConversationFilters
@@ -57,7 +62,11 @@ export type ChatState = {
 export type ChatActions = {
   // Conversation actions
   prependConversation: (newConversation: ListConversationItemResource) => void
-  loadMoreConversations: (workspaceId: string) => Promise<void>
+  initActiveConversationFromUrl: (workspaceId: string) => Promise<void>
+  loadMoreConversations: (
+    workspaceId: string,
+    options?: LoadMoreConversationsOptions,
+  ) => Promise<void>
   setActiveConversationId: (activeConversationId: string | null) => void
   updateConversation: (
     conversationId: string,
@@ -81,6 +90,11 @@ export type ChatActions = {
   appendMessage: (message: MessageResourceWithRelations) => void
   markMessagesDeleted: (messageIds: string[]) => void
   markMessagesRestored: (messageIds: string[]) => void
+  markMessageFailed: (
+    messageId: string,
+    clientId: string | undefined,
+    error: string | null,
+  ) => void
   assignMessageCommentId: (messageId: string, commentId: string) => void
   updateMessageAttributes: (
     messageId: string,
@@ -122,13 +136,30 @@ const appendUniqueConversations = (
   ]
 }
 
+const hasConversationIdInUrl = () =>
+  !!new URLSearchParams(
+    typeof window === "undefined" ? "" : window.location.search,
+  ).get("conversationId")
+
+const shouldAutoSelectConversation = ({
+  activeConversationId,
+  hasUrlConversationId,
+  conversations,
+}: {
+  activeConversationId: string | null
+  hasUrlConversationId: boolean
+  conversations: ListConversationsResponse["data"]
+}) =>
+  !(activeConversationId || hasUrlConversationId) && conversations.length > 0
+
 export const createChatStore = () => {
-  return createStore<ChatStore>((set, get) => ({
+  return createStore<ChatStore>((set, get, store) => ({
     // default conversation state
     isFirstLoadConversation: true,
     conversations: [],
     nextCursorConversation: null,
     isLoadingConversation: false,
+    isBootstrappingUrlConversation: false,
     hasNextConversationPage: true,
     activeConversationId: null,
     filters: {},
@@ -149,70 +180,129 @@ export const createChatStore = () => {
         ],
       })),
 
-    loadMoreConversations: async (workspaceId: string) => {
+    initActiveConversationFromUrl: async (workspaceId: string) => {
+      const urlParams = new URLSearchParams(
+        typeof window === "undefined" ? "" : window.location.search,
+      )
+      const conversationId = urlParams.get("conversationId")
+      if (!conversationId) {
+        return
+      }
+
+      const {
+        activeConversationId,
+        isBootstrappingUrlConversation,
+        prependConversation,
+        setActiveConversationId,
+      } = get()
+      if (activeConversationId || isBootstrappingUrlConversation) {
+        return
+      }
+
+      set({ isBootstrappingUrlConversation: true })
+
+      try {
+        if (get().isFirstLoadConversation && get().isLoadingConversation) {
+          await new Promise<void>((resolve) => {
+            const unsubscribe = store.subscribe((state) => {
+              if (
+                !(state.isFirstLoadConversation && state.isLoadingConversation)
+              ) {
+                unsubscribe()
+                resolve()
+              }
+            })
+          })
+        }
+
+        const { conversations: latestConversations } = get()
+        const loadedConversation = latestConversations.find(
+          (conversation) => conversation.id === conversationId,
+        )
+        if (loadedConversation) {
+          prependConversation(loadedConversation)
+          setActiveConversationId(conversationId)
+          return
+        }
+
+        const response =
+          await client.conversationsAPI.findConversationAuthenticatedAPI({
+            workspaceId,
+            id: conversationId,
+          })
+        prependConversation(response.data)
+        setActiveConversationId(conversationId)
+      } catch {
+        //
+      } finally {
+        set({ isBootstrappingUrlConversation: false })
+      }
+    },
+
+    loadMoreConversations: async (
+      workspaceId: string,
+      options: LoadMoreConversationsOptions = {},
+    ) => {
       const { isLoadingConversation, hasNextConversationPage } = get()
       if (isLoadingConversation || !hasNextConversationPage) {
         return
       }
 
       // fetch next conversation list
-      const {
-        conversations,
-        nextCursorConversation,
-        activeConversationId,
-        filters,
-      } = get()
+      const { nextCursorConversation, activeConversationId, filters } = get()
+      const shouldRespectUrlConversationId =
+        options.respectUrlConversationId ?? true
       set({ isLoadingConversation: true })
 
-      const searchParams = {
-        perPage: "20",
-        cursor: nextCursorConversation ?? "",
-        ...filters,
-      }
-      const { data: newConversations, nextCursor } = await ky
-        .post<ListConversationsResponse>(
-          `/api/workspaces/${workspaceId}/conversations/list`,
-          { json: searchParams },
-        )
-        .json()
-
-      const urlParams = new URLSearchParams(
-        typeof window === "undefined" ? "" : window.location.search,
-      )
       try {
-        const queryConversationId = urlParams.get("conversationId") ?? ""
-        if (!activeConversationId && newConversations.length > 0) {
-          let selectedId: string | null = null
-          if (queryConversationId) {
-            const found = newConversations.find(
-              (c) => c.id === queryConversationId,
-            )
-            if (found) {
-              selectedId = queryConversationId
-            }
-          } else {
-            selectedId = newConversations[0].id
-          }
-          if (selectedId) {
-            set({ activeConversationId: selectedId })
-            // Sync the auto-selected conversation with the notification
-            // store so its badge clears and new-message sound suppresses.
-            notificationStore.getState().setActiveConversation(selectedId)
-          }
-        }
-      } catch {
-        //
-      }
+        const { data: newConversations, nextCursor } = await ky
+          .post<ListConversationsResponse>(
+            `/api/workspaces/${workspaceId}/conversations/list`,
+            {
+              json: {
+                perPage: "20",
+                cursor: nextCursorConversation ?? "",
+                ...filters,
+              },
+              // Default ky timeout (10s) is too tight for this endpoint: it
+              // fans out into per-conversation sharded message lookups, which
+              // can legitimately take longer under cold caches or dev-server
+              // recompiles, so a stricter timeout was tripping spuriously.
+              timeout: 30_000,
+            },
+          )
+          .json()
 
-      set({
-        conversations: appendUniqueConversations(
-          conversations,
-          newConversations,
-        ),
-        nextCursorConversation: nextCursor,
-        isLoadingConversation: false,
-        isFirstLoadConversation: false,
-      })
+        const hasUrlConversationId =
+          shouldRespectUrlConversationId && hasConversationIdInUrl()
+        const firstConversationToOpen = shouldAutoSelectConversation({
+          activeConversationId,
+          hasUrlConversationId,
+          conversations: newConversations,
+        })
+          ? newConversations[0]
+          : null
+
+        set((state) => ({
+          conversations: appendUniqueConversations(
+            state.conversations,
+            newConversations,
+          ),
+          nextCursorConversation: nextCursor,
+          isLoadingConversation: false,
+          isFirstLoadConversation: false,
+        }))
+
+        if (firstConversationToOpen) {
+          get().setActiveConversationId(firstConversationToOpen.id)
+        }
+      } catch (error) {
+        set({
+          isLoadingConversation: false,
+          isFirstLoadConversation: false,
+        })
+        throw error
+      }
     },
 
     setActiveConversationId: (activeConversationId: string | null) => {
@@ -221,7 +311,6 @@ export const createChatStore = () => {
       // conversation still clears its badge, even when the chat store
       // guard short-circuits the state reset.
       notificationStore.getState().setActiveConversation(activeConversationId)
-
       if (oldActiveConversationId !== activeConversationId) {
         set({
           activeConversationId,
@@ -273,6 +362,7 @@ export const createChatStore = () => {
         conversations: [],
         nextCursorConversation: null,
         isLoadingConversation: false,
+        isBootstrappingUrlConversation: false,
         hasNextConversationPage: true,
         activeConversationId: null,
 
@@ -372,6 +462,28 @@ export const createChatStore = () => {
           idSet.has(message.id) ? { ...message, deletedAt: null } : message,
         ),
       }))
+    },
+
+    markMessageFailed: (
+      messageId: string,
+      clientId: string | undefined,
+      error: string | null,
+    ) => {
+      set((state) => {
+        const matchesByClientId =
+          clientId && state.messages.some((m) => m.clientId === clientId)
+        return {
+          messages: state.messages.map((message) =>
+            (
+              matchesByClientId
+                ? message.clientId === clientId
+                : message.id === messageId
+            )
+              ? { ...message, sendError: error }
+              : message,
+          ),
+        }
+      })
     },
 
     assignMessageCommentId: (messageId, commentId) => {
@@ -598,6 +710,11 @@ export const createChatStore = () => {
           newMessages[messageIndex] = {
             ...newMessages[messageIndex],
             ...message,
+            // messageCreated's payload is captured before the async send job
+            // runs, so its sendError is always null at broadcast time — keep
+            // a sendError already recorded by markMessageFailed instead of
+            // letting this stale snapshot clobber it.
+            sendError: newMessages[messageIndex].sendError ?? message.sendError,
           }
           set({
             messages: newMessages,

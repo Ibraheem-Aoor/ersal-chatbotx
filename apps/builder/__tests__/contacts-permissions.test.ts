@@ -1,12 +1,14 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, test, vi } from "vitest"
+import type { ContactFilterCriteria } from "@/features/contact-filter/schemas"
 
 const applyContactFilterSpy = vi.fn<
   (criteria: unknown) => Record<string, unknown>
 >(() => ({}))
 
 vi.mock("@chatbotx.io/database/client", () => ({
+  countWithRelationsFilterCapped: vi.fn(),
   countWithRelationsFilter: vi.fn(),
   db: {
     query: {
@@ -22,6 +24,50 @@ vi.mock("@chatbotx.io/database/client", () => ({
 
 vi.mock("@chatbotx.io/database/queries", () => ({
   applyContactFilter: (criteria: unknown) => applyContactFilterSpy(criteria),
+  buildSmartKeywordWhere: (
+    keyword: string,
+    options?: { includeEmailAndPhone?: boolean },
+  ) => {
+    const normalizedKeyword = keyword.toLowerCase()
+    return {
+      OR: [
+        { firstName: { ilike: `%${normalizedKeyword}%` } },
+        { lastName: { ilike: `%${normalizedKeyword}%` } },
+        ...(options?.includeEmailAndPhone === false
+          ? []
+          : [
+              { email: { ilike: `%${normalizedKeyword}%` } },
+              { phoneNumber: { ilike: `%${normalizedKeyword}%` } },
+            ]),
+      ],
+    }
+  },
+  pruneEmailPhoneFilterConditions: (
+    contactFilter:
+      | { operator: "and" | "or"; conditions: unknown[] }
+      | undefined,
+    canViewEmailAndPhone: boolean,
+  ) =>
+    canViewEmailAndPhone || !contactFilter
+      ? contactFilter
+      : {
+          ...contactFilter,
+          operator: contactFilter.operator,
+          conditions: contactFilter.conditions.filter((condition) => {
+            const field =
+              typeof condition === "object" && condition !== null
+                ? (condition as { field?: unknown }).field
+                : undefined
+            return ![
+              "email",
+              "phone",
+              "hasContactInfo",
+              "emailWasVerified",
+              "optedInForEmail",
+              "existingContact",
+            ].includes(String(field))
+          }),
+        },
 }))
 
 vi.mock("@chatbotx.io/database/schema", () => ({
@@ -119,7 +165,7 @@ describe("contact permission helpers", () => {
     ).toBeUndefined()
   })
 
-  test("strips email and phone fields when PII is denied", () => {
+  test("strips email and phone fields when emailAndPhone is denied", () => {
     expect(
       stripContactPIIFields(
         ["sys:firstName", "sys:email", "sys:phoneNumber", "tag:t1"],
@@ -186,7 +232,7 @@ describe("generateWhere contact permission scope", () => {
     applyContactFilterSpy.mockReturnValue({})
   })
 
-  test("removes email and phoneNumber keyword clauses when PII is denied", () => {
+  test("removes email and phoneNumber keyword clauses when emailAndPhone is denied", () => {
     const where = generateWhere(
       { workspaceId: "ws-1", keyword: "Example" },
       { canViewEmailAndPhone: false },
@@ -198,7 +244,7 @@ describe("generateWhere contact permission scope", () => {
     ])
   })
 
-  test("keeps email and phoneNumber keyword clauses when PII is allowed", () => {
+  test("keeps email and phoneNumber keyword clauses when emailAndPhone is allowed", () => {
     const where = generateWhere(
       { workspaceId: "ws-1", keyword: "Example" },
       { canViewEmailAndPhone: true },
@@ -237,6 +283,30 @@ describe("generateWhere contact permission scope", () => {
     expect(where.conversation).toEqual({
       botEnabled: false,
       assignedUserId: "user-1",
+    })
+  })
+
+  test("prunes email/phone contact-filter conditions before applying the filter", () => {
+    const contactFilter = {
+      operator: "and" as const,
+      conditions: [
+        { field: "email", operator: "eq", value: "ada@example.com" },
+        { field: "hasContactInfo", operator: "in", value: ["phone"] },
+        { field: "fullName", operator: "contains", value: "Ada" },
+      ],
+    } satisfies ContactFilterCriteria
+
+    generateWhere(
+      {
+        workspaceId: "ws-1",
+        contactFilter,
+      },
+      { canViewEmailAndPhone: false },
+    )
+
+    expect(applyContactFilterSpy).toHaveBeenCalledWith({
+      operator: "and",
+      conditions: [{ field: "fullName", operator: "contains", value: "Ada" }],
     })
   })
 })

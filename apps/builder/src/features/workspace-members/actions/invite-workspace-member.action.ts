@@ -9,33 +9,38 @@ import { db } from "@chatbotx.io/database/client"
 import { invitationModel } from "@chatbotx.io/database/schema"
 import { createId, SymbolicSnowflakeIDs } from "@chatbotx.io/utils"
 import { addDays } from "date-fns"
-import { getTranslations } from "next-intl/server"
+import { isCommunity } from "@/env"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { normalizeContactsPermissions } from "../helpers"
+import {
+  getSuperAdminPermissions,
+  normalizeContactsPermissions,
+} from "../helpers"
 import { inviteWorkspaceMemberRequest } from "../schema/mutation"
 
 export const inviteWorkspaceMemberAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(inviteWorkspaceMemberRequest)
   .action(async ({ ctx, parsedInput, bindArgsParsedInputs: [workspaceId] }) => {
-    const t = await getTranslations("billing.errors")
-    // Read-only gate: the team-member quota is consumed when the invitation
-    // is accepted (accept-invitation.ts), so block issuing a new invitation
-    // once the workspace owner is already at the limit (own or reseller pool).
+    // Read-only gate: team-member usage is reconcile-counted after acceptance,
+    // so block issuing an invitation once the owner is already at the limit.
     const workspace = await workspaceService.findById({ id: workspaceId })
     const currentUserAndTargetChatbot =
       await getCurrentUserAndTargetWorkspace(workspaceId)
     if (!currentUserAndTargetChatbot) {
-      throw new ChatbotXException(t("notAuthorizedInvite"))
+      throw new ChatbotXException(
+        "You are not authorized to invite a workspace member",
+      )
     }
 
     const currentPermissions =
       currentUserAndTargetChatbot.targetWorkspaceMember.permissions
     if (!hasWorkspacePermission(currentPermissions, "superAdmin")) {
-      throw new ChatbotXException(t("notAuthorizedInviteSuperAdmin"))
+      throw new ChatbotXException(
+        "You are not authorized to invite a workspace member. You need to be a super admin to do this.",
+      )
     }
 
     const atLimit = await quotaEnforcementService.hasReachedLimit({
@@ -43,7 +48,9 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
       metric: "teamMembers",
     })
     if (atLimit) {
-      throw new ChatbotXException(t("teamMemberLimitReached"))
+      throw new ChatbotXException(
+        "Team member limit reached for this workspace plan",
+      )
     }
 
     return await db
@@ -51,7 +58,9 @@ export const inviteWorkspaceMemberAction = workspaceActionClient
       .values({
         id: createId(),
         code: SymbolicSnowflakeIDs.generate(),
-        permissions: normalizeContactsPermissions(parsedInput.permissions),
+        permissions: isCommunity()
+          ? getSuperAdminPermissions()
+          : normalizeContactsPermissions(parsedInput.permissions),
         expiresAt: addDays(new Date(), 1),
         workspaceId,
         invitedBy: ctx.user.id,
