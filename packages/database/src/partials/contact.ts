@@ -28,6 +28,7 @@ export const systemFieldTypes = z.enum([
   "inbox_link",
   "gender",
   "locale",
+  "language",
   "locale2",
   "ig_user_name",
   "ig_followers",
@@ -63,6 +64,7 @@ export const systemFieldTypes = z.enum([
   "chat_history_large",
   "chat_history_details",
   "chat_history_details_large",
+  "ai.queued.messages",
   "user_notes",
   "last_user_note",
   "webchat",
@@ -78,9 +80,21 @@ export const systemFieldTypes = z.enum([
   "last_ctwa",
   "last_ad_source_url",
   "last_ad_source_platform",
+  "last_fb_comment",
+  "last_post_id",
+  "last_comment_id",
+  "total_new_tagged",
+  "total_tagged",
+  "last_latitude",
+  "last_longitude",
+  "last_error_log",
+  "last_outbound_message_at",
+  "last_commented_post_text",
 
   "last_step",
   "current_step",
+  "booking_calendar",
+  "booking_date",
   "member_name",
   "team_name",
   "last_input_failure",
@@ -101,8 +115,29 @@ export const fillableContactKeys = [
   "firstName",
   "lastName",
   "gender",
+  "timezone",
 ] as const
 export type FillableContactKey = (typeof fillableContactKeys)[number]
+
+/**
+ * The atomic contact-info kinds a contact can hold: exactly one is touched per
+ * change, so this is what the `contactInfoUpdated` trigger reports (which info
+ * type was updated).
+ */
+export const contactInfoTypes = z.enum(["phone", "email"])
+export type ContactInfoType = z.infer<typeof contactInfoTypes>
+
+/**
+ * Selectable values for the `hasContactInfo` filter. Extends the atomic
+ * {@link contactInfoTypes} with the `phoneAndEmail` composite so a contact can
+ * be required to have BOTH a phone and an email, not just either one.
+ */
+export const contactInfoFilterValues = z.enum([
+  "phone",
+  "email",
+  "phoneAndEmail",
+])
+export type ContactInfoFilterValue = z.infer<typeof contactInfoFilterValues>
 
 export const contactFilterFields = z.enum([
   "fullName",
@@ -144,6 +179,7 @@ export const contactFilterFields = z.enum([
   "appliedJobs",
   "email",
   "phone",
+  "hasContactInfo",
   "tags",
   "completedWhatsAppFlows",
   "messengerList",
@@ -160,6 +196,7 @@ export const contactFilterFields = z.enum([
   "questionnaireStarted",
   "questionnaireInProgress",
   "questionnaireFinished",
+  "couponTopic",
   "votedOnPoll",
   "lastComment",
   "commentedOnPost",
@@ -197,5 +234,9 @@ export const contactFilterFields = z.enum([
   "lastUserInput",
   "lastUserInputType",
   "locale",
+  "language",
+  "fromCtwaAd",
+  "ctwaConversion",
+  "ctwaRetarget",
 ])
 export type ContactFilterField = z.infer<typeof contactFilterFields>

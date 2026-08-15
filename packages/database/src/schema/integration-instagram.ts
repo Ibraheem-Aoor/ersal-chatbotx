@@ -1,10 +1,24 @@
+import type { EncryptedData } from "@chatbotx.io/encryption"
 import { sql } from "drizzle-orm"
-import { index, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
 import type {
   InstagramConversationStarter,
   InstagramPersistentMenu,
+  IntegrationUserInfo,
 } from "../partials"
-import { bigintAsString, sharedColumns } from "../partials/shared"
+import {
+  bigintAsString,
+  sharedColumns,
+  timestampConfig,
+} from "../partials/shared"
 import { flowModel } from "./flow"
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
@@ -14,10 +28,17 @@ export const integrationInstagramModel = pgTable(
   {
     ...sharedColumns,
     auth: jsonb().notNull(),
+    userInfo: jsonb().$type<IntegrationUserInfo>(),
     igId: text().notNull(),
     pageId: text().notNull(),
     name: text().notNull(),
     username: text().notNull(),
+    coexistEnabled: boolean().notNull().default(false),
+    hasCapiScope: boolean().notNull().default(false),
+    capiScopeCheckedAt: timestamp(timestampConfig),
+    datasetId: text(),
+    capiAccessToken: jsonb().$type<EncryptedData>(),
+    capiDisconnectedAt: timestamp(timestampConfig),
     conversationStarters: jsonb()
       .$type<InstagramConversationStarter>()
       .array()
@@ -51,6 +72,7 @@ export const integrationInstagramModel = pgTable(
       .$type<"instagram" | "facebook">()
       .default("instagram")
       .notNull(),
+    tokenRefreshError: text(),
   },
   (table) => [
     index("IntegrationInstagram_workspaceId_idx").using(

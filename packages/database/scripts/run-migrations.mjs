@@ -6,14 +6,25 @@
  */
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { sql } from "drizzle-orm"
 import { readMigrationFiles } from "drizzle-orm/migrator"
+import { getMigrationsToRun } from "drizzle-orm/migrator.utils"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { migrate } from "drizzle-orm/node-postgres/migrator"
+import { upgradeIfNeeded } from "drizzle-orm/up-migrations/pg"
 import { Pool } from "pg"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const migrationsFolder = join(__dirname, "..", "drizzle")
 const migrationLockName = "chatbotx:database:migrations"
+
+// Drizzle's default migrator runs all pending migrations in one transaction.
+// PostgreSQL does not allow a newly created enum to be used before that
+// transaction commits, so migrations must run one at a time by default.
+// Set DATABASE_MIGRATIONS_SEQUENTIAL=false only when this constraint is not
+// relevant to the pending migrations.
+const useSequentialMigrations =
+  process.env.DATABASE_MIGRATIONS_SEQUENTIAL !== "false"
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) {
@@ -25,6 +36,61 @@ const pool = new Pool({
   connectionString: databaseUrl,
   max: 1,
 })
+
+const runMigrationsSequentially = async (db) => {
+  const migrationsTable = "__drizzle_migrations"
+  const migrationsSchema = "drizzle"
+
+  await db.execute(
+    sql`CREATE SCHEMA IF NOT EXISTS ${sql.identifier(migrationsSchema)}`,
+  )
+
+  const localMigrations = readMigrationFiles({ migrationsFolder })
+  const { newDb } = await upgradeIfNeeded(
+    migrationsSchema,
+    migrationsTable,
+    db,
+    localMigrations,
+  )
+
+  if (newDb) {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS ${sql.identifier(migrationsSchema)}.${sql.identifier(migrationsTable)} (
+        id SERIAL PRIMARY KEY,
+        hash text NOT NULL,
+        created_at bigint,
+        name text,
+        applied_at timestamp with time zone DEFAULT now()
+      )
+    `)
+  }
+
+  const dbMigrations = await db.session.all(
+    sql`select id, hash, created_at, name from ${sql.identifier(migrationsSchema)}.${sql.identifier(migrationsTable)}`,
+  )
+  const migrationsToRun = getMigrationsToRun({
+    localMigrations,
+    dbMigrations,
+  })
+
+  for (const migration of migrationsToRun) {
+    await db.transaction(async (tx) => {
+      for (const stmt of migration.sql) {
+        if (stmt.trim()) {
+          await tx.execute(sql.raw(stmt))
+        }
+      }
+
+      await tx.execute(sql`
+        insert into ${sql.identifier(migrationsSchema)}.${sql.identifier(migrationsTable)}
+          ("hash", "created_at", "name")
+        values(${migration.hash}, ${migration.folderMillis}, ${migration.name ?? null})
+      `)
+    })
+
+    console.log(`Applied migration: ${migration.name}`)
+  }
+}
 
 const reconcileRenamedMigrations = async (client) => {
   const migrationTableResult = await client.query(
@@ -79,6 +145,88 @@ const reconcileRenamedMigrations = async (client) => {
   }
 }
 
+const reconcileSquashedQuestionnaireMigration = async (client) => {
+  const legacyQuestionnaireMigrationNames = [
+    "20260714152243_create_questionnaires",
+    "20260716132848_update_questionnaires_status_image_retry_timeout",
+    "20260716140752_add_questionnaire_question_system_field_key",
+  ]
+  const squashedQuestionnaireMigrationName =
+    "20260719020251_create_questionnaires"
+
+  const migrationTableResult = await client.query(
+    "SELECT to_regclass('drizzle.__drizzle_migrations') IS NOT NULL AS exists",
+  )
+  if (!migrationTableResult.rows[0]?.exists) {
+    return
+  }
+
+  const localMigrations = readMigrationFiles({ migrationsFolder })
+  const squashedMigration = localMigrations.find(
+    ({ name }) => name === squashedQuestionnaireMigrationName,
+  )
+  if (!squashedMigration) {
+    return
+  }
+
+  const dbMigrationsResult = await client.query(
+    "SELECT name FROM drizzle.__drizzle_migrations",
+  )
+  const dbNames = new Set(dbMigrationsResult.rows.map(({ name }) => name))
+  if (dbNames.has(squashedQuestionnaireMigrationName)) {
+    return
+  }
+
+  const hasLegacyQuestionnaireMigrations =
+    legacyQuestionnaireMigrationNames.every((name) => dbNames.has(name))
+  if (!hasLegacyQuestionnaireMigrations) {
+    return
+  }
+
+  await client.query(`
+    ALTER TABLE "Questionnaire"
+      ADD COLUMN IF NOT EXISTS "deletedAt" timestamp(6) with time zone
+  `)
+  await client.query(
+    'DROP INDEX IF EXISTS "Questionnaire_workspaceId_name_key"',
+  )
+  await client.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "Questionnaire_workspaceId_name_key"
+      ON "Questionnaire" ("workspaceId","name")
+      WHERE ("deletedAt" is null)
+  `)
+  await client.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'QuestionnaireQuestion_customFieldId_systemFieldKey_exclusive'
+          AND conrelid = '"QuestionnaireQuestion"'::regclass
+      ) THEN
+        ALTER TABLE "QuestionnaireQuestion"
+          ADD CONSTRAINT "QuestionnaireQuestion_customFieldId_systemFieldKey_exclusive"
+          CHECK (("customFieldId" IS NULL) OR ("systemFieldKey" IS NULL));
+      END IF;
+    END $$;
+  `)
+  await client.query(
+    `INSERT INTO drizzle.__drizzle_migrations ("hash", "created_at", "name")
+     VALUES ($1, $2, $3)`,
+    [
+      squashedMigration.hash,
+      squashedMigration.folderMillis,
+      squashedMigration.name,
+    ],
+  )
+
+  console.log(
+    `Reconciled squashed migration: ${legacyQuestionnaireMigrationNames.join(
+      ", ",
+    )} -> ${squashedQuestionnaireMigrationName}`,
+  )
+}
+
 let client
 let migrationLockAcquired = false
 
@@ -90,8 +238,13 @@ try {
   migrationLockAcquired = true
 
   await reconcileRenamedMigrations(client)
+  await reconcileSquashedQuestionnaireMigration(client)
   const db = drizzle({ client })
-  await migrate(db, { migrationsFolder })
+  if (useSequentialMigrations) {
+    await runMigrationsSequentially(db)
+  } else {
+    await migrate(db, { migrationsFolder })
+  }
   console.log("Database migrations applied successfully.")
 } catch (error) {
   console.error("Database migration failed:", error)

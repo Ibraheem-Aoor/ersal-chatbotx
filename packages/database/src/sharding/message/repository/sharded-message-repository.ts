@@ -11,6 +11,7 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
   or,
   sql,
@@ -20,6 +21,7 @@ import {
   MessageShardUnavailableError,
 } from "../../../errors"
 import { logger } from "../../../logger"
+import { getSafeSinceTime } from "../../../repositories"
 import type {
   AttachmentLookupRow,
   BulkCreateAttachmentInput,
@@ -36,7 +38,10 @@ import type {
   FindMessageByIdParams,
   FindRichResponseByButtonParams,
   FindTriggerMessageOptions,
+  HardDeleteAllByContactInboxParams,
+  HardDeleteAllByContactInboxResult,
   IMessageRepository,
+  ListIncomingTextsByContactInboxParams,
   ListMessagesQuery,
   MessageSourceRow,
   MessageWithAttachments,
@@ -63,6 +68,25 @@ const SHARD_RANGE_CACHE_TAG = "message-shard-range"
 const SHARD_RANGE_CACHE_TTL_S = 30
 const ATTACHMENT_FALLBACK_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
 const RICH_RESPONSE_FALLBACK_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
+// Echo dedup lookback. An outbound message we save is echoed back by the channel
+// (Instagram/Messenger) seconds later carrying the same sourceId (mid). The dedup
+// guard read must look back past the echo's own createdAt to find the already-saved
+// row; a day comfortably covers channel echo latency plus webhook redelivery.
+const ECHO_DEDUP_LOOKBACK_MS = 24 * 60 * 60 * 1000
+const LIST_INCOMING_TEXTS_BATCH_SIZE = 1000
+
+function dedupeShardsByPhysicalId<T extends { shard: { id: string } }>(
+  shards: T[],
+): T[] {
+  const seen = new Set<string>()
+  return shards.filter((shard) => {
+    if (seen.has(shard.shard.id)) {
+      return false
+    }
+    seen.add(shard.shard.id)
+    return true
+  })
+}
 
 function compareMessageDesc(
   a: { id: string; createdAt: Date },
@@ -125,7 +149,7 @@ export class ShardedMessageRepository implements IMessageRepository {
       },
     )
 
-    return rehydrateTimeRangeDates(cached)
+    return dedupeShardsByPhysicalId(rehydrateTimeRangeDates(cached))
   }
 
   /**
@@ -229,6 +253,20 @@ export class ShardedMessageRepository implements IMessageRepository {
     )
   }
 
+  private mapMessagesToWithAttachmentCounts(
+    messages: MessageModel[],
+    attachmentCountByMessageId: Record<string, number>,
+  ): MessageWithAttachments[] {
+    return messages.map(
+      (message) =>
+        ({
+          ...message,
+          attachmentCount: attachmentCountByMessageId[message.id] ?? 0,
+          attachments: [],
+        }) as MessageWithAttachments,
+    )
+  }
+
   private async queryAttachmentsForMessages(
     db: MessageShardDatabaseClient,
     messageIds: string[],
@@ -260,6 +298,64 @@ export class ShardedMessageRepository implements IMessageRepository {
     return attachments as AttachmentModel[]
   }
 
+  private groupAttachmentCountsByMessageId(
+    rows: { messageId: string; count: number }[],
+  ): Record<string, number> {
+    return rows.reduce(
+      (acc, row) => {
+        acc[row.messageId] = Number(row.count)
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+  }
+
+  private async fetchAttachmentCounts(
+    shardClient: MessageShardDatabaseClient,
+    messages: { id: string; createdAt: Date }[],
+  ): Promise<Record<string, number>> {
+    const messageIds = messages.map((m) => m.id)
+    const messageCreatedAts = messages.map((m) => m.createdAt)
+    const rows = await this.queryAttachmentCountsForMessages(
+      shardClient,
+      messageIds,
+      messageCreatedAts,
+    )
+    return this.groupAttachmentCountsByMessageId(rows)
+  }
+
+  private async queryAttachmentCountsForMessages(
+    db: MessageShardDatabaseClient,
+    messageIds: string[],
+    messageCreatedAts?: Date[],
+  ): Promise<{ messageId: string; count: number }[]> {
+    if (messageIds.length === 0) {
+      return []
+    }
+
+    const countColumn = sql<number>`count(*)`.as("count")
+
+    if (messageCreatedAts && messageCreatedAts.length === messageIds.length) {
+      const perMessageConditions = messageIds.map((id, i) =>
+        and(
+          eq(attachmentModel.messageId, id),
+          eq(attachmentModel.messageCreatedAt, messageCreatedAts[i]),
+        ),
+      )
+      return await db
+        .select({ messageId: attachmentModel.messageId, count: countColumn })
+        .from(attachmentModel)
+        .where(or(...perMessageConditions))
+        .groupBy(attachmentModel.messageId)
+    }
+
+    return await db
+      .select({ messageId: attachmentModel.messageId, count: countColumn })
+      .from(attachmentModel)
+      .where(inArray(attachmentModel.messageId, messageIds))
+      .groupBy(attachmentModel.messageId)
+  }
+
   create(message: CreateMessageInput): Promise<MessageModel> {
     return withShardRetry(async () => {
       const db = await this.shardManager.getShardForWrite(message.workspaceId)
@@ -269,6 +365,105 @@ export class ShardedMessageRepository implements IMessageRepository {
         .returning()
       return result as MessageModel
     })
+  }
+
+  /**
+   * Idempotent insert used by the create-or-update paths. Mirrors {@link create}
+   * but tolerates a concurrent/duplicate write: the Messenger echo webhook (and
+   * its retries) can deliver the same message twice, and the dedup unique index
+   * `Message_source_dedup_idx` (contactInboxId, sourceId, createdAt) would
+   * otherwise make the second INSERT throw. On conflict this returns `null`
+   * instead of throwing so the caller can re-fetch the existing row.
+   */
+  private insertIgnoringConflict(
+    message: CreateMessageInput,
+  ): Promise<MessageModel | null> {
+    return withShardRetry(async () => {
+      const db = await this.shardManager.getShardForWrite(message.workspaceId)
+      const [result] = await db
+        .insert(messageModel)
+        .values(message as typeof messageModel.$inferInsert)
+        .onConflictDoNothing({
+          target: [
+            messageModel.contactInboxId,
+            messageModel.sourceId,
+            messageModel.createdAt,
+          ],
+        })
+        .returning()
+      return (result as MessageModel) ?? null
+    })
+  }
+
+  /**
+   * Log a message-save failure with the underlying Postgres cause surfaced.
+   * Drizzle wraps the driver error ("Failed query: insert into Message ...") and
+   * hides the real reason in `error.cause`; extracting `code`/`constraint`/
+   * `detail` here distinguishes a unique-violation (23505, handled by the dedup
+   * safety net) from a TimescaleDB decompression failure (needs a config fix).
+   */
+  private logSaveFailure(
+    action: string,
+    message: CreateMessageInput,
+    error: unknown,
+  ): void {
+    const rawCause =
+      error instanceof Error && error.cause instanceof Error
+        ? (error.cause as Error & {
+            code?: unknown
+            constraint?: unknown
+            detail?: unknown
+            table?: unknown
+          })
+        : undefined
+    const cause = rawCause
+      ? {
+          message: rawCause.message,
+          code: rawCause.code,
+          constraint: rawCause.constraint,
+          detail: rawCause.detail,
+          table: rawCause.table,
+        }
+      : undefined
+    logger.error(
+      {
+        err: error,
+        cause,
+        action,
+        conversationId: message.conversationId,
+        sourceId: message.sourceId,
+        workspaceId: message.workspaceId,
+      },
+      `Failed to save incoming message via ${action}`,
+    )
+  }
+
+  /**
+   * Read the row a dedup conflict proved exists directly from the write shard
+   * (primary). findBySourceId reads replicas, which can still lag right after a
+   * concurrent insert; the write shard is authoritative. Scoped to the same
+   * (contactInboxId, sourceId, createdAt) the unique index rejected — createdAt
+   * is always set on the conflict path (a conflict on that key requires it).
+   */
+  private async findOnWriteShardBySource(
+    message: CreateMessageInput,
+  ): Promise<MessageModel | null> {
+    if (!(message.sourceId && message.createdAt)) {
+      return null
+    }
+    const db = await this.shardManager.getShardForWrite(message.workspaceId)
+    const [row] = await db
+      .select()
+      .from(messageModel)
+      .where(
+        and(
+          eq(messageModel.contactInboxId, message.contactInboxId),
+          eq(messageModel.sourceId, message.sourceId),
+          eq(messageModel.createdAt, message.createdAt),
+        ),
+      )
+      .limit(1)
+    return (row as MessageModel) ?? null
   }
 
   async bulkCreate(
@@ -460,6 +655,21 @@ export class ShardedMessageRepository implements IMessageRepository {
     )
   }
 
+  updateSendError(
+    id: string,
+    sendError: string | null,
+    workspaceId: string,
+    createdAt: Date,
+  ): Promise<{ id: string } | null> {
+    return this.updateAcrossShards(
+      id,
+      workspaceId,
+      { sendError },
+      "updateSendError",
+      createdAt,
+    )
+  }
+
   updateSourceId(
     id: string,
     sourceId: string,
@@ -600,6 +810,192 @@ export class ShardedMessageRepository implements IMessageRepository {
     return []
   }
 
+  async listIncomingTextsByContactInbox({
+    contactInboxId,
+    limit,
+    sinceTime,
+    workspaceId,
+  }: ListIncomingTextsByContactInboxParams): Promise<string[]> {
+    const writeShard = await this.shardManager.getWriteShardInfo(workspaceId)
+    const timeRangeShards = await this.getShardsForRange(sinceTime, new Date())
+
+    const shards = this.mergeWriteShard(timeRangeShards, writeShard)
+    if (shards.length === 0) {
+      return []
+    }
+
+    const messages: string[] = []
+    const newestShardsFirst = [...shards].reverse()
+
+    for (const shardInfo of newestShardsFirst) {
+      if (limit !== undefined && messages.length >= limit) {
+        break
+      }
+
+      try {
+        await this.shardManager.withShardClientForRead(
+          shardInfo.shard,
+          async (shardClient) => {
+            let cursor: { createdAt: Date; id: string } | null = null
+
+            while (true) {
+              if (limit !== undefined && messages.length >= limit) {
+                break
+              }
+
+              let remainingLimit = LIST_INCOMING_TEXTS_BATCH_SIZE
+              if (limit !== undefined) {
+                remainingLimit = Math.min(
+                  LIST_INCOMING_TEXTS_BATCH_SIZE,
+                  limit - messages.length,
+                )
+              }
+
+              const whereConditions = [
+                eq(messageModel.workspaceId, workspaceId),
+                eq(messageModel.contactInboxId, contactInboxId),
+                eq(messageModel.messageType, "incoming"),
+                isNotNull(messageModel.text),
+                isNull(messageModel.deletedAt),
+                gte(messageModel.createdAt, sinceTime),
+              ]
+
+              if (cursor !== null) {
+                const cursorCondition = or(
+                  lt(messageModel.createdAt, cursor.createdAt),
+                  and(
+                    eq(messageModel.createdAt, cursor.createdAt),
+                    lt(messageModel.id, cursor.id),
+                  ),
+                )
+                if (cursorCondition) {
+                  whereConditions.push(cursorCondition)
+                }
+              }
+
+              const rows = await shardClient
+                .select({
+                  createdAt: messageModel.createdAt,
+                  id: messageModel.id,
+                  text: messageModel.text,
+                })
+                .from(messageModel)
+                .where(and(...whereConditions))
+                .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
+                .limit(remainingLimit)
+
+              for (const row of rows) {
+                if (row.text !== null) {
+                  messages.push(row.text)
+                }
+              }
+
+              if (rows.length < remainingLimit) {
+                break
+              }
+
+              const lastRow = rows.at(-1)
+              if (!lastRow) {
+                break
+              }
+              cursor = { createdAt: lastRow.createdAt, id: lastRow.id }
+            }
+          },
+        )
+      } catch (error) {
+        logger.warn(
+          { err: error, shardId: shardInfo.shard.id, contactInboxId },
+          "Shard query failed in listIncomingTextsByContactInbox",
+        )
+      }
+    }
+
+    return messages
+  }
+
+  async hardDeleteAllByContactInbox({
+    contactInboxId,
+    sinceTime,
+    workspaceId,
+  }: HardDeleteAllByContactInboxParams): Promise<HardDeleteAllByContactInboxResult> {
+    const shards = await this.getConversationReadShards(sinceTime, workspaceId)
+    if (shards.length === 0) {
+      return { attachmentPaths: [] }
+    }
+
+    const results = await Promise.allSettled(
+      shards.map(async (shardInfo): Promise<string[]> => {
+        const client = await this.shardManager.getShardClient(shardInfo.shard)
+        const messageWhereConditions = [
+          eq(messageModel.workspaceId, workspaceId),
+          eq(messageModel.contactInboxId, contactInboxId),
+          gte(messageModel.createdAt, sinceTime),
+        ]
+
+        const attachmentMessageExists = sql`EXISTS (
+          SELECT 1
+          FROM ${messageModel}
+          WHERE ${messageModel.workspaceId} = ${workspaceId}
+            AND ${messageModel.createdAt} >= ${sinceTime}
+            AND ${messageModel.id} = ${attachmentModel.messageId}
+            AND ${messageModel.createdAt} = ${attachmentModel.messageCreatedAt}
+            AND ${messageModel.contactInboxId} = ${contactInboxId}
+        )`
+        const attachmentWhereConditions = [
+          eq(attachmentModel.workspaceId, workspaceId),
+          attachmentMessageExists,
+        ]
+
+        const attachments = await client
+          .select({
+            originPath: attachmentModel.originPath,
+            thumbnailPath: attachmentModel.thumbnailPath,
+          })
+          .from(attachmentModel)
+          .where(and(...attachmentWhereConditions))
+
+        await client
+          .delete(attachmentModel)
+          .where(and(...attachmentWhereConditions))
+
+        await client.delete(messageModel).where(and(...messageWhereConditions))
+
+        return attachments.flatMap((attachment) =>
+          [attachment.originPath, attachment.thumbnailPath].filter(
+            (path): path is string => Boolean(path),
+          ),
+        )
+      }),
+    )
+
+    const attachmentPaths = new Set<string>()
+    let firstError: unknown = null
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        for (const path of result.value) {
+          attachmentPaths.add(path)
+        }
+        continue
+      }
+      if (firstError === null) {
+        firstError = result.reason
+      }
+      logger.warn(
+        { err: result.reason, contactInboxId },
+        "Shard delete failed in hardDeleteAllByContactInbox",
+      )
+    }
+
+    if (firstError) {
+      throw this.toStorageError(
+        "hard delete messages by contact inbox",
+        firstError,
+      )
+    }
+
+    return { attachmentPaths: [...attachmentPaths] }
+  }
+
   async bulkCreateAttachments(
     attachments: BulkCreateAttachmentInput[],
   ): Promise<{ id: string }[]> {
@@ -648,13 +1044,60 @@ export class ShardedMessageRepository implements IMessageRepository {
           message.sourceId as string,
           message.conversationId,
           message.workspaceId,
-          message.createdAt,
+          getSafeSinceTime(message.createdAt, ECHO_DEDUP_LOOKBACK_MS),
         )
         if (existing) {
           return { message: existing, isNew: false }
         }
-        const created = await this.create(message)
-        return { message: created, isNew: true }
+
+        // Only a genuine DB error (e.g. TimescaleDB decompression, connection
+        // loss) should throw here; a dedup conflict is a normal, expected
+        // outcome handled below — not an error.
+        let created: MessageModel | null
+        try {
+          created = await this.insertIgnoringConflict(message)
+        } catch (error) {
+          this.logSaveFailure("createOrUpdate", message, error)
+          throw error
+        }
+        if (created) {
+          return { message: created, isNew: true }
+        }
+
+        // Conflict: the dedup index already holds this message (echo redelivery,
+        // or read-replica lag on the guard read above). Idempotent no-op — log
+        // at info and return the existing row instead of throwing. Try a replica
+        // read first; if it still lags, read the write shard (primary), which is
+        // guaranteed to see the row the conflict proved exists.
+        const raced =
+          (await this.findBySourceId(
+            message.sourceId as string,
+            message.conversationId,
+            message.workspaceId,
+            getSafeSinceTime(message.createdAt, ECHO_DEDUP_LOOKBACK_MS),
+          )) ?? (await this.findOnWriteShardBySource(message))
+        logger.info(
+          {
+            conversationId: message.conversationId,
+            sourceId: message.sourceId,
+            workspaceId: message.workspaceId,
+          },
+          "Duplicate message skipped (dedup conflict)",
+        )
+        if (raced) {
+          return { message: raced, isNew: false }
+        }
+        // Unreachable in practice (the primary must see a committed conflicting
+        // row). Non-throwing best-effort so the flow still advances in order.
+        logger.warn(
+          {
+            conversationId: message.conversationId,
+            sourceId: message.sourceId,
+            workspaceId: message.workspaceId,
+          },
+          "Dedup conflict but row unreadable even on the write shard",
+        )
+        return { message: message as unknown as MessageModel, isNew: false }
       }
 
       return this.executeWithLock(lockKey, doCreateOrUpdate)
@@ -670,9 +1113,20 @@ export class ShardedMessageRepository implements IMessageRepository {
       "messageId" | "messageCreatedAt"
     >[],
   ): Promise<MessageWithAttachments> {
-    return withShardRetry(() =>
-      this.createWithAttachmentsInternal(message, attachments),
-    )
+    return withShardRetry(async () => {
+      // Plain create path: no ignoreConflict, so a real duplicate throws rather
+      // than returning null. A null here would be unexpected.
+      const created = await this.createWithAttachmentsInternal(
+        message,
+        attachments,
+      )
+      if (!created) {
+        throw new MessageShardUnavailableError(
+          "createWithAttachments: insert returned no row",
+        )
+      }
+      return created
+    })
   }
 
   private async createWithAttachmentsInternal(
@@ -681,14 +1135,38 @@ export class ShardedMessageRepository implements IMessageRepository {
       CreateAttachmentInput,
       "messageId" | "messageCreatedAt"
     >[],
-  ): Promise<MessageWithAttachments> {
+    options?: { ignoreConflict?: boolean },
+  ): Promise<MessageWithAttachments | null> {
     const db = await this.shardManager.getShardForWrite(message.workspaceId)
 
     return db.transaction(async (tx) => {
-      const [newMessage] = await tx
-        .insert(messageModel)
-        .values(message as typeof messageModel.$inferInsert)
-        .returning()
+      // When ignoreConflict is set (create-or-update path), a duplicate row must
+      // not throw — the dedup index rejects it and we return null so the caller
+      // re-fetches. Without it (plain create path), a duplicate throws as before.
+      const rows = options?.ignoreConflict
+        ? await tx
+            .insert(messageModel)
+            .values(message as typeof messageModel.$inferInsert)
+            .onConflictDoNothing({
+              target: [
+                messageModel.contactInboxId,
+                messageModel.sourceId,
+                messageModel.createdAt,
+              ],
+            })
+            .returning()
+        : await tx
+            .insert(messageModel)
+            .values(message as typeof messageModel.$inferInsert)
+            .returning()
+      const [newMessage] = rows
+
+      if (!newMessage) {
+        // Conflict under ignoreConflict: an equivalent message already exists.
+        // Skip attachment inserts (they would reference a nonexistent message id)
+        // and signal the conflict to the caller.
+        return null
+      }
 
       let messageAttachments: AttachmentModel[] = []
 
@@ -724,38 +1202,113 @@ export class ShardedMessageRepository implements IMessageRepository {
         message.sourceId,
       )
 
-      const doCreateOrUpdate = async (): Promise<{
+      const buildExistingResult = async (
+        existing: MessageModel,
+      ): Promise<{ result: MessageWithAttachments; isNew: false }> => {
+        const existingWithAttachments = await this.findById({
+          id: existing.id,
+          createdAt: existing.createdAt,
+          workspaceId: message.workspaceId,
+        })
+        return {
+          result: existingWithAttachments ?? { ...existing, attachments: [] },
+          isNew: false,
+        }
+      }
+
+      const resolveExisting = async (): Promise<{
         result: MessageWithAttachments
         isNew: boolean
-      }> => {
+      } | null> => {
         const existing = await this.findBySourceId(
           message.sourceId as string,
           message.conversationId,
           message.workspaceId,
-          message.createdAt,
+          getSafeSinceTime(message.createdAt, ECHO_DEDUP_LOOKBACK_MS),
         )
+        return existing ? await buildExistingResult(existing) : null
+      }
+
+      const doCreateOrUpdate = async (): Promise<{
+        result: MessageWithAttachments
+        isNew: boolean
+      }> => {
+        const existing = await resolveExisting()
         if (existing) {
-          const existingWithAttachments = await this.findById({
-            id: existing.id,
-            createdAt: existing.createdAt,
-            workspaceId: message.workspaceId,
-          })
-          return {
-            result: existingWithAttachments ?? { ...existing, attachments: [] },
-            isNew: false,
-          }
+          return existing
         }
-        const created = await withShardRetry(() =>
-          this.createWithAttachmentsInternal(message, attachments),
+
+        // Only a genuine DB error should throw; a dedup conflict is expected and
+        // handled below as an idempotent no-op.
+        let created: MessageWithAttachments | null
+        try {
+          created = await withShardRetry(() =>
+            this.createWithAttachmentsInternal(message, attachments, {
+              ignoreConflict: true,
+            }),
+          )
+        } catch (error) {
+          this.logSaveFailure("createOrUpdateWithAttachments", message, error)
+          throw error
+        }
+        if (created) {
+          return { result: created, isNew: true }
+        }
+
+        // Conflict: idempotent no-op. Re-read via replica, then the write shard
+        // (primary) which is guaranteed to see the conflicting row.
+        const racedBase =
+          (await this.findBySourceId(
+            message.sourceId as string,
+            message.conversationId,
+            message.workspaceId,
+            getSafeSinceTime(message.createdAt, ECHO_DEDUP_LOOKBACK_MS),
+          )) ?? (await this.findOnWriteShardBySource(message))
+        logger.info(
+          {
+            conversationId: message.conversationId,
+            sourceId: message.sourceId,
+            workspaceId: message.workspaceId,
+          },
+          "Duplicate message skipped (dedup conflict)",
         )
-        return { result: created, isNew: true }
+        if (racedBase) {
+          return await buildExistingResult(racedBase)
+        }
+        // Unreachable in practice. Non-throwing best-effort.
+        logger.warn(
+          {
+            conversationId: message.conversationId,
+            sourceId: message.sourceId,
+            workspaceId: message.workspaceId,
+          },
+          "Dedup conflict but row unreadable even on the write shard",
+        )
+        return {
+          result: {
+            ...(message as unknown as MessageModel),
+            attachments: [],
+          } as MessageWithAttachments,
+          isNew: false,
+        }
       }
 
       return this.executeWithLock(lockKey, doCreateOrUpdate)
     }
-    const created = await withShardRetry(() =>
-      this.createWithAttachmentsInternal(message, attachments),
-    )
+    // No sourceId to dedup on: plain create path, no ignoreConflict, so a real
+    // duplicate throws rather than returning null.
+    const created = await withShardRetry(async () => {
+      const result = await this.createWithAttachmentsInternal(
+        message,
+        attachments,
+      )
+      if (!result) {
+        throw new MessageShardUnavailableError(
+          "createOrUpdateWithAttachments: insert returned no row",
+        )
+      }
+      return result
+    })
     return { result: created, isNew: true }
   }
 
@@ -1484,17 +2037,27 @@ export class ShardedMessageRepository implements IMessageRepository {
                 return []
               }
 
-              let attachmentsByMessageId: Record<string, AttachmentModel[]> = {}
               if (options?.withAttachments) {
-                attachmentsByMessageId = await this.fetchAndGroupAttachments(
-                  shardClient,
-                  messages,
+                const attachmentsByMessageId =
+                  await this.fetchAndGroupAttachments(shardClient, messages)
+                return this.mapMessagesToWithAttachments(
+                  messages as MessageModel[],
+                  attachmentsByMessageId,
+                )
+              }
+
+              if (options?.attachmentCountOnly) {
+                const attachmentCountByMessageId =
+                  await this.fetchAttachmentCounts(shardClient, messages)
+                return this.mapMessagesToWithAttachmentCounts(
+                  messages as MessageModel[],
+                  attachmentCountByMessageId,
                 )
               }
 
               return this.mapMessagesToWithAttachments(
                 messages as MessageModel[],
-                attachmentsByMessageId,
+                {},
               )
             },
           )
@@ -1789,7 +2352,7 @@ export class ShardedMessageRepository implements IMessageRepository {
     limit: number,
     cursor?: PaginationCursor,
   ): Promise<PaginatedMessages> {
-    const { workspaceId, conversationId } = query
+    const { workspaceId, conversationId, contactInboxId } = query
     return this.shardManager.withShardClientForRead(
       shardInfo.shard,
       async (shardClient) => {
@@ -1797,6 +2360,10 @@ export class ShardedMessageRepository implements IMessageRepository {
 
         if (conversationId) {
           whereConditions.push(eq(messageModel.conversationId, conversationId))
+        }
+
+        if (contactInboxId) {
+          whereConditions.push(eq(messageModel.contactInboxId, contactInboxId))
         }
 
         if (cursor) {

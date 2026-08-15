@@ -1,3 +1,5 @@
+import { adsConversionEventRelations } from "./ads-conversion-event"
+import { adsConversionRuleRelations } from "./ads-conversion-rule"
 import { aiAgentRelations } from "./ai-agent"
 import { aiAssistantRelations } from "./ai-assistant"
 import { aiConversationSourceRelations } from "./ai-conversation-source"
@@ -15,6 +17,9 @@ import {
   analyticsSequenceEventRelations,
 } from "./analytics"
 import { analyticsEmailTopicRelations } from "./analytics-email-topic"
+import { appointmentRelations } from "./appointment"
+import { appointmentCalendarRelations } from "./appointment-calendar"
+import { appointmentReminderDispatchRelations } from "./appointment-reminder-dispatch"
 import { attachmentRelations } from "./attachment"
 import { accountRelations } from "./auth-account"
 import { invitationRelations } from "./auth-invitation"
@@ -36,6 +41,7 @@ import { contactsToTagsRelations } from "./contact-to-tag"
 import { contactToTagChannelRelations } from "./contact-to-tag-channel"
 import { conversationRelations } from "./conversation"
 import { conversationParticipantRelations } from "./conversation-participant"
+import { couponRelations } from "./coupon"
 import { platformCredentialRelations } from "./credential"
 import { customFieldRelations } from "./custom-field"
 import { emailTopicRelations } from "./email-topic"
@@ -44,7 +50,11 @@ import { customDomainRelations } from "./enterprise/custom-domain"
 import { tenantRelations } from "./enterprise/tenant"
 import { tenantHelpItemRelations } from "./enterprise/tenant-help-item"
 import { userQuotaRelations } from "./enterprise/user-quota"
+import { workspaceUsageRelations } from "./enterprise/workspace-usage"
 import { errorLogRelations } from "./error-log"
+import { externalWebhookRelations } from "./external-webhook"
+import { facebookLeadAdsAutomationRelations } from "./facebook-lead-ads-automation"
+import { facebookLeadAdsLeadRelations } from "./facebook-lead-ads-lead"
 import { fbCommentAutomationRelations } from "./fb-comment-automation"
 import { fbCommentAutomationReplyRelations } from "./fb-comment-automation-reply"
 import { fileRelations } from "./file"
@@ -54,6 +64,7 @@ import { flowNodeStatRelations } from "./flow-node-stat"
 import { flowRunRelations } from "./flow-run"
 import { flowVersionRelations } from "./flow-version"
 import { folderRelations } from "./folder"
+import { igStoryAutomationRelations } from "./ig-story-automation"
 import { importRelations } from "./import"
 import { inboxRelations } from "./inbox"
 import { inboxContactStatsRelations } from "./inbox-contact-stats"
@@ -64,8 +75,10 @@ import { integrationActiveCampaignRelations } from "./integration-active-campaig
 import { integrationClaudeRelations } from "./integration-claude"
 import { integrationDeepseekRelations } from "./integration-deepseek"
 import { integrationDripRelations } from "./integration-drip"
+import { integrationFacebookAdsRelations } from "./integration-facebook-ads"
 import { integrationGeminiRelations } from "./integration-gemini"
 import { integrationGetResponseRelations } from "./integration-get-response"
+import { integrationGoogleCalendarRelations } from "./integration-google-calendar"
 import { integrationGoogleSheetsRelations } from "./integration-google-sheets"
 import { integrationInstagramRelations } from "./integration-instagram"
 import { integrationKlaviyoRelations } from "./integration-klaviyo"
@@ -76,6 +89,7 @@ import { integrationMoosendRelations } from "./integration-moosend"
 import { integrationOpenaiRelations } from "./integration-openai"
 import { integrationOpenaiCompatibleRelations } from "./integration-openai-compatible"
 import { integrationOpenrouterRelations } from "./integration-openrouter"
+import { integrationOutlookCalendarRelations } from "./integration-outlook-calendar"
 import { integrationSendGridRelations } from "./integration-sendgrid"
 import { integrationSmtpRelations } from "./integration-smtp"
 import { integrationTelegramRelations } from "./integration-telegram"
@@ -86,8 +100,12 @@ import { integrationZaloRelations } from "./integration-zalo"
 import { magicLinkRelations } from "./magic-link"
 import { messageRelations } from "./message"
 import { messengerMessageTemplateRelations } from "./messenger-message-template"
+import { metaCapiEventRelations } from "./meta-capi-event"
+import { metaCatalogRelations } from "./meta-catalog"
 import { paymentHistoryRelations } from "./payment-history"
 import { productRelations } from "./product"
+import { productCategoryRelations } from "./product-category"
+import { questionnaireRelations } from "./questionnaire"
 import { reflinkRelations } from "./reflink"
 import { savedReplyRelations } from "./save-reply"
 import { sequenceRelations } from "./sequence"
@@ -105,13 +123,18 @@ import { triggerStatsRelations } from "./trigger-stats"
 import { userRelations } from "./user"
 import { userPersistentMenuRelations } from "./user-persistent-menu"
 import { webhookRelations } from "./webhook"
+import { webhookExecutionRelations } from "./webhook-execution"
 import { whatsappFlowRelations } from "./whatsapp-flow"
 import { whatsappMessageTemplateRelations } from "./whatsapp-message-template"
+import { whatsappSignupSessionRelations } from "./whatsapp-signup-session"
 import { workspaceRelations } from "./workspace"
 import { workspaceMemberRelations } from "./workspace-member"
 
 export const relations = {
   ...aiTriggerRelations,
+  ...adsConversionEventRelations,
+  ...metaCapiEventRelations,
+  ...adsConversionRuleRelations,
   ...integrationOpenaiRelations,
   ...contactRelations,
   ...tagRelations,
@@ -128,6 +151,7 @@ export const relations = {
   ...billingPlanRelations,
   ...attachmentRelations,
   ...conversationRelations,
+  ...couponRelations,
   ...messageRelations,
   ...automatedResponseRelations,
   ...customDomainRelations,
@@ -135,6 +159,7 @@ export const relations = {
   ...tenantHelpItemRelations,
   ...platformCredentialRelations,
   ...userQuotaRelations,
+  ...workspaceUsageRelations,
   ...contactCustomFieldRelations,
   ...customFieldRelations,
   ...broadcastRelations,
@@ -142,6 +167,7 @@ export const relations = {
   ...inboxRelations,
   ...conversationParticipantRelations,
   ...folderRelations,
+  ...igStoryAutomationRelations,
   ...importRelations,
   ...fileRelations,
   ...flowRunRelations,
@@ -155,7 +181,12 @@ export const relations = {
   ...invitationRelations,
   ...emailTopicRelations,
   ...analyticsEmailTopicRelations,
+  ...appointmentRelations,
+  ...appointmentCalendarRelations,
+  ...appointmentReminderDispatchRelations,
   ...errorLogRelations,
+  ...facebookLeadAdsAutomationRelations,
+  ...facebookLeadAdsLeadRelations,
   ...fbCommentAutomationRelations,
   ...fbCommentAutomationReplyRelations,
   ...auditLogRelations,
@@ -167,12 +198,15 @@ export const relations = {
   ...workspaceMemberRelations,
   ...contactNoteRelations,
   ...aiEmbeddingRelations,
+  ...integrationGoogleCalendarRelations,
   ...integrationGoogleSheetsRelations,
+  ...integrationFacebookAdsRelations,
   ...integrationSmtpRelations,
   ...integrationClaudeRelations,
   ...integrationDeepseekRelations,
   ...integrationGeminiRelations,
   ...integrationOpenrouterRelations,
+  ...integrationOutlookCalendarRelations,
   ...integrationOpenaiCompatibleRelations,
   ...contactsOnBroadcastsRelations,
   ...contactsToTagsRelations,
@@ -188,6 +222,8 @@ export const relations = {
   ...inboxContactStatsRelations,
   ...triggerRelations,
   ...webhookRelations,
+  ...webhookExecutionRelations,
+  ...externalWebhookRelations,
   ...conditionRelations,
   ...triggerStatsRelations,
   ...triggerContactHistoryRelations,
@@ -218,6 +254,10 @@ export const relations = {
   ...analyticsFlowNodeEventRelations,
   ...paymentHistoryRelations,
   ...productRelations,
+  ...productCategoryRelations,
+  ...metaCatalogRelations,
+  ...questionnaireRelations,
   ...coexistSyncRunRelations,
   ...userPersistentMenuRelations,
+  ...whatsappSignupSessionRelations,
 }

@@ -119,6 +119,12 @@ export const sequenceDispatchModel = pgTable(
       table.enrollmentId,
       table.workspaceId,
     ),
+    index("SequenceDispatch_workspace_sequence_step_id_idx").on(
+      table.workspaceId,
+      table.sequenceId,
+      table.stepId,
+      table.id,
+    ),
     index("SequenceDispatch_bucket_status_runAtMs_idx").on(
       table.bucket,
       table.status,
@@ -127,5 +133,6 @@ export const sequenceDispatchModel = pgTable(
     index("SequenceDispatch_terminal_updatedAt_idx")
       .on(table.updatedAt)
       .where(sql`"status" in ('completed', 'failed', 'canceled')`),
+    index("SequenceDispatch_contactId_idx").on(table.contactId),
   ],
 )

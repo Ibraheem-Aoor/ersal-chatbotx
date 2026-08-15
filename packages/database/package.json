@@ -4,10 +4,14 @@
   "type": "module",
   "dependencies": {
     "@chatbotx.io/encryption": "workspace:*",
+    "@chatbotx.io/flow-config": "workspace:*",
     "@chatbotx.io/logger": "workspace:*",
     "@chatbotx.io/redis": "workspace:*",
     "@chatbotx.io/utils": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
+    "countries-list": "^3.3.0",
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
     "drizzle-orm": "1.0.0-beta.22",
     "pg": "^8.20.0",
     "zod": "^4.3.6"
@@ -25,6 +29,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "db:check": "dotenv -e ../../.env -- drizzle-kit check",
+    "db:check-drift": "dotenv -e ../../.env -- node ./scripts/check-schema-drift.mjs",
     "db:fix-chain": "node ./scripts/fix-migration-chain.mjs",
     "db:migrate": "dotenv -e ../../.env -- node ./scripts/run-migrations.mjs",
     "db:bootstrap-message-shard": "dotenv -e ../../.env -- tsx scripts/bootstrap-message-shard.ts",
@@ -35,6 +40,7 @@
     "make:migration": "dotenv -e ../../.env -- ./scripts/make-migration.sh",
     "make:sharding_migration": "./scripts/make-sharding-migration.sh",
     "db:migrate-shards": "dotenv -e ../../.env -- tsx scripts/migrate-shards.ts",
+    "backfill:spreadsheet-step-version": "dotenv -e ../../.env -- tsx scripts/backfill-spreadsheet-step-version.ts",
     "rotate:encryption-key": "dotenv -e ../../.env -- tsx scripts/rotate-encryption-key.ts",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest"
@@ -50,6 +56,9 @@
     "./utils": "./src/utils.ts",
     "./partials": "./src/partials/index.ts",
     "./queries": "./src/queries/index.ts",
+    "./queries/contact-filter": "./src/queries/contact-filter/index.ts",
+    "./queries/contact-filter/permission": "./src/queries/contact-filter/permission.ts",
+    "./queries/contact-filter/value-format": "./src/queries/contact-filter/value-format.ts",
     "./repositories": "./src/repositories/index.ts"
   }
 }

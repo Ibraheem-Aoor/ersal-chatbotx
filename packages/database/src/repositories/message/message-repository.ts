@@ -42,6 +42,7 @@ export interface CreateAttachmentInput {
 export type BulkCreateAttachmentInput = CreateAttachmentInput & { id: string }
 
 export interface MessageWithAttachments extends MessageModel {
+  attachmentCount?: number
   attachments: AttachmentModel[]
 }
 
@@ -63,6 +64,7 @@ export interface PaginatedMessages {
 }
 
 export interface ListMessagesQuery {
+  contactInboxId?: string
   conversationId?: string
   pagination: Pagination
   sinceTime?: Date
@@ -70,6 +72,7 @@ export interface ListMessagesQuery {
 }
 
 export interface FindLastByConversationOptions {
+  attachmentCountOnly?: boolean
   limit?: number
   messageTypes?: ("incoming" | "outgoing" | "activity")[]
   requireCompleteResults?: boolean
@@ -124,6 +127,23 @@ export interface FindManyBySourceIdsParams {
   contactInboxIds: string[]
   sinceTime?: Date
   sourceIds: string[]
+  workspaceId: string
+}
+
+export interface HardDeleteAllByContactInboxParams {
+  contactInboxId: string
+  sinceTime: Date
+  workspaceId: string
+}
+
+export interface HardDeleteAllByContactInboxResult {
+  attachmentPaths: string[]
+}
+
+export interface ListIncomingTextsByContactInboxParams {
+  contactInboxId: string
+  limit?: number
+  sinceTime: Date
   workspaceId: string
 }
 
@@ -273,7 +293,15 @@ export interface IMessageRepository {
     options: FindTriggerMessageOptions,
   ): Promise<MessageWithAttachments | null>
 
+  hardDeleteAllByContactInbox(
+    params: HardDeleteAllByContactInboxParams,
+  ): Promise<HardDeleteAllByContactInboxResult>
+
   listByConversation(query: ListMessagesQuery): Promise<PaginatedMessages>
+
+  listIncomingTextsByContactInbox(
+    params: ListIncomingTextsByContactInboxParams,
+  ): Promise<string[]>
 
   updateAttachment(params: UpdateAttachmentParams): Promise<void>
 
@@ -288,6 +316,13 @@ export interface IMessageRepository {
     messageId: string,
     workspaceId: string,
     newText: string,
+    createdAt: Date,
+  ): Promise<{ id: string } | null>
+
+  updateSendError(
+    id: string,
+    sendError: string | null,
+    workspaceId: string,
     createdAt: Date,
   ): Promise<{ id: string } | null>
 

@@ -1,8 +1,16 @@
-import { boolean, index, pgTable, text } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core"
 import {
   bigintAsString,
   ROOT_TENANT_ID,
   sharedColumns,
+  timestampConfig,
 } from "../partials/shared"
 import { userModel } from "./auth-user"
 import { tenantModel } from "./enterprise/tenant"
@@ -18,10 +26,12 @@ export const workspaceModel = pgTable(
     timezone: text().notNull().default("UTC"),
     brandColor: text().notNull().default("#016DFF"),
     developmentMode: boolean().default(false).notNull(),
+    smartResponseDelaySeconds: integer(),
     isActive: boolean().notNull().default(true),
     startTime: text(),
     endTime: text(),
     logo: text(),
+    scheduledDeletionAt: timestamp(timestampConfig),
     ownerId: bigintAsString()
       .notNull()
       .references(() => userModel.id, {
@@ -40,5 +50,8 @@ export const workspaceModel = pgTable(
       }),
     token: text(),
   },
-  (table) => [index("Workspace_tenantId_idx").on(table.tenantId)],
+  (table) => [
+    index("Workspace_tenantId_idx").on(table.tenantId),
+    index("Workspace_scheduledDeletionAt_idx").on(table.scheduledDeletionAt),
+  ],
 )
