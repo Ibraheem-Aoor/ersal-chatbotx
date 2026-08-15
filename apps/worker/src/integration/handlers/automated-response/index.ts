@@ -5,8 +5,7 @@ import {
 } from "@chatbotx.io/ai"
 import { aiContextService } from "@chatbotx.io/ai/server"
 import { automatedResponseService } from "@chatbotx.io/automated-response"
-import { workspaceService } from "@chatbotx.io/business"
-import { db } from "@chatbotx.io/database/client"
+import { aiAgentService, workspaceService } from "@chatbotx.io/business"
 import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import {
   aiAgentProviderModels,
@@ -29,6 +28,7 @@ import { normalizeError } from "universal-error-normalizer"
 import { sendTypingToChannel } from "../../../chat/handlers/send-message"
 import { detectConversationAndContactInbox } from "../../../lib/db"
 import { logger } from "../../../lib/logger"
+import { triggerDefaultReplyFlow } from "./default-reply"
 import { replyByAI } from "./replies"
 
 const TRIGGER_MESSAGE_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
@@ -115,15 +115,27 @@ export async function processAutomatedResponse(
   }
 
   try {
-    const aiAgent = await db.query.aiAgentModel.findFirst({
-      where: {
-        workspaceId: conversation.workspaceId,
-        isDefault: true,
-      },
-    })
+    const aiAgent = await aiAgentService.findDefault(conversation.workspaceId)
 
     if (!aiAgent) {
-      if (messageId) {
+      const triggeredDefaultReplyFlow = await triggerDefaultReplyFlow({
+        workspaceId: conversation.workspaceId,
+        defaultReplyFlowId: workspace.defaultReply,
+        conversation,
+        contactInbox,
+        trackingContext: messageId
+          ? {
+              aiProvider: "none",
+              conversationId: conversation.id,
+              messageId,
+              responseType: "flow",
+              startTime: Date.now(),
+              triggerType: "bot_response_default_reply_flow_no_ai_agent",
+              workspaceId: conversation.workspaceId,
+            }
+          : undefined,
+      })
+      if (!triggeredDefaultReplyFlow && messageId) {
         await emit("analytics:dashboard", {
           eventType: "message:bot_received",
           workspaceId: conversation.workspaceId,
@@ -280,6 +292,7 @@ export async function processAutomatedResponse(
             })
           : undefined,
         summary,
+        defaultReplyFlowId: workspace.defaultReply,
       })
     } finally {
       clearInterval(typingIntervalId)
@@ -291,35 +304,56 @@ export async function processAutomatedResponse(
       return
     }
 
-    if (aiResult?.usedFallbackText && messageId) {
-      // AI used the canned fallback help text → fallback flow.
-      await emit("analytics:dashboard", {
-        eventType: "message:bot_received",
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
-        messageId,
-        occurredAt: new Date(),
-        hasResponse: true,
-        responseType: "ai_agent",
-        routeType: "agent",
-        result: "fallback",
-        aiProvider: aiResult.provider,
-        metadata: {
-          latency: Date.now() - startTime,
-          fallbackReason: "no_intent_match",
-          toolStats: aiResult.toolStats,
-          triggerContext: {
-            triggerSource: "worker",
-            triggerHandler: "triggerAutomatedResponse",
-            triggerType: "bot_response_ai_agent_fallback_text",
+    if (aiResult?.usedFallbackText) {
+      // The tool-call fallback branch inside runAIReply already resolved
+      // this — either by sending the default reply flow or the canned
+      // fallback text — so don't trigger the default reply flow again here.
+      if (messageId) {
+        await emit("analytics:dashboard", {
+          eventType: "message:bot_received",
+          workspaceId: conversation.workspaceId,
+          conversationId: conversation.id,
+          messageId,
+          occurredAt: new Date(),
+          hasResponse: true,
+          responseType: "ai_agent",
+          routeType: "agent",
+          result: "fallback",
+          aiProvider: aiResult.provider,
+          metadata: {
+            latency: Date.now() - startTime,
+            fallbackReason: "no_intent_match",
+            toolStats: aiResult.toolStats,
+            triggerContext: {
+              triggerSource: "worker",
+              triggerHandler: "triggerAutomatedResponse",
+              triggerType: "bot_response_ai_agent_fallback_text",
+            },
           },
-        },
-      })
+        })
+      }
       return
     }
 
-    // AI agent exists but failed to produce a response → fallback flow.
-    if (messageId) {
+    // AI agent exists but failed to produce any response at all → fallback flow.
+    const triggeredDefaultReplyFlow = await triggerDefaultReplyFlow({
+      workspaceId: conversation.workspaceId,
+      defaultReplyFlowId: workspace.defaultReply,
+      conversation,
+      contactInbox,
+      trackingContext: messageId
+        ? {
+            aiProvider: "none",
+            conversationId: conversation.id,
+            messageId,
+            responseType: "flow",
+            startTime,
+            triggerType: "bot_response_default_reply_flow_ai_failed",
+            workspaceId: conversation.workspaceId,
+          }
+        : undefined,
+    })
+    if (!triggeredDefaultReplyFlow && messageId) {
       await emit("analytics:dashboard", {
         eventType: "message:bot_received",
         workspaceId: conversation.workspaceId,

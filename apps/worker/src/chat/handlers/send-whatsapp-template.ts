@@ -1,8 +1,10 @@
-import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
+import {
+  broadcastToWorkspaceParty,
+  contactInboxService,
+} from "@chatbotx.io/business"
 import { db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
-  contactInboxModel,
   conversationModel,
   type messageModel,
 } from "@chatbotx.io/database/schema"
@@ -28,12 +30,58 @@ import type {
   ChatJobSendWhatsappTemplateMessage,
 } from "@chatbotx.io/worker-config"
 import {
+  enqueueIntegrationJob,
+  IntegrationJobAction,
+} from "@chatbotx.io/worker-config"
+import {
   replaceWhatsappTemplateVariables,
   validateWhatsappTemplate,
 } from "../../integration/handlers/wa-template-handler"
 import { logger } from "../../lib/logger"
+import { shouldSuppressRetryableChannelError } from "../utils/retry"
 import { convertButtonsToTemplate } from "./send-flow-step"
 import { sendFlowStepToChannel } from "./send-message"
+
+type EnqueueTemplateSentEvaluationInput = {
+  workspaceId: string
+  integrationWhatsappId: string
+  contactInboxId: string
+  templateId: string
+  messageId: string
+}
+
+async function enqueueTemplateSentEvaluation(
+  input: EnqueueTemplateSentEvaluationInput,
+): Promise<void> {
+  try {
+    await enqueueIntegrationJob(
+      {
+        type: IntegrationJobAction.evaluateTemplateSent,
+        data: {
+          workspaceId: input.workspaceId,
+          integrationWhatsappId: input.integrationWhatsappId,
+          contactInboxId: input.contactInboxId,
+          templateId: input.templateId,
+        },
+      },
+      {
+        jobId: `ads-conversion-evaluate-template-${input.messageId}`,
+      },
+    )
+  } catch (err) {
+    logger.warn(
+      {
+        err,
+        workspaceId: input.workspaceId,
+        integrationWhatsappId: input.integrationWhatsappId,
+        contactInboxId: input.contactInboxId,
+        templateId: input.templateId,
+        messageId: input.messageId,
+      },
+      "Failed to enqueue ads conversion template-sent evaluation",
+    )
+  }
+}
 
 export interface ProcessWhatsappTemplateParams {
   broadcastId?: string
@@ -106,10 +154,14 @@ export async function processWhatsappTemplate(
     const variables = await contactVariableService.getAll({
       contactId: conversation.contactId,
       contactInbox,
+      conversation,
     })
     const replacedParams = await replaceWhatsappTemplateVariables({
       templateParams: template.params,
       variables,
+      // Authoritative source for NAMED vs POSITIONAL placeholders, so the send
+      // works even for broadcasts/flows saved before named-parameter support.
+      components: (validated.template.components as TemplateComponent[]) || [],
     })
 
     const contentAttributes = {
@@ -161,17 +213,26 @@ export async function processWhatsappTemplate(
     }
     const createdMessage = newMessage
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(contactInboxModel)
-        .set({ lastMessageAt: createdMessage.createdAt })
-        .where(eq(contactInboxModel.id, contactInbox.id))
+    const trackingInvalidation = await db.transaction(async (tx) => {
+      const invalidation =
+        await contactInboxService.recordOutboundMessageCreated({
+          tx,
+          contactInboxId: contactInbox.id,
+          contactId: contactInbox.contactId,
+          workspaceId: conversation.workspaceId,
+          at: createdMessage.createdAt,
+        })
 
       await tx
         .update(conversationModel)
         .set({ lastActivityAt: createdMessage.createdAt })
         .where(eq(conversationModel.id, conversation.id))
+
+      return invalidation
     })
+    if (trackingInvalidation) {
+      await contactInboxService.invalidateTracking(trackingInvalidation)
+    }
 
     broadcastToWorkspaceParty(conversation.workspaceId, {
       eventType: RealtimeEventType.messageCreated,
@@ -188,9 +249,21 @@ export async function processWhatsappTemplate(
         nodeId: step?.nodeId ?? createId(),
         stepType: stepTypes.enum.sendWaTemplateMessage,
         buttons: [],
-        template,
+        // Send the variable-resolved params to the channel. The raw
+        // `template.params` still holds unresolved tokens like {{first_name}};
+        // the integration builds the Graph API payload verbatim and cannot
+        // resolve them, so the recipient would otherwise receive literal tokens.
+        template: { ...template, params: replacedParams },
       },
       metadata,
+      messageId: newMessage.id,
+    })
+
+    await enqueueTemplateSentEvaluation({
+      workspaceId: conversation.workspaceId,
+      integrationWhatsappId: validated.inbox.integrationWhatsapp.id,
+      contactInboxId: contactInbox.id,
+      templateId: template.id,
       messageId: newMessage.id,
     })
 
@@ -198,6 +271,29 @@ export async function processWhatsappTemplate(
       ...eventLogData,
       action: { messageId: "", flowId: flow?.id || "" },
       occurredAt: new Date(),
+    })
+
+    // Bot-message quota accounting: `chat/worker.ts`'s pre-send gate blocks
+    // `sendWhatsappTemplateMessage` jobs, but nothing previously counted a
+    // successful send here — the quota gate and the quota meter must stay
+    // structurally paired or the gate is enforced against a counter that
+    // never moves.
+    emit("analytics:dashboard", {
+      eventType: "message:bot_sent",
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      senderType: "bot",
+      occurredAt: new Date(),
+      source: contactInbox.source,
+      sourceId: contactInbox.sourceId,
+      channel: contactInbox.channel,
+      metadata: {
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "processWhatsappTemplate",
+          triggerType: "message_bot_sent_whatsapp_template",
+        },
+      },
     })
 
     const providerMessageId = result?.messageIds?.[0]
@@ -224,6 +320,8 @@ export async function processWhatsappTemplate(
       message: { ...newMessage, sourceId: providerMessageId || null },
     }
   } catch (error) {
+    const errorData = await parseSdkError(error)
+
     logger.error(
       {
         error,
@@ -239,7 +337,7 @@ export async function processWhatsappTemplate(
         messageId: newMessage?.id || "",
         flowId: flow?.id || "",
       },
-      errorData: await parseSdkError(error),
+      errorData,
       occurredAt: new Date(),
     })
 
@@ -249,7 +347,7 @@ export async function processWhatsappTemplate(
 
 export async function sendWhatsappTemplateMessage(
   data: ChatJobSendWhatsappTemplateMessage["data"],
-) {
+): Promise<ProcessWhatsappTemplateResult | undefined> {
   const {
     conversation,
     templateId,
@@ -266,6 +364,7 @@ export async function sendWhatsappTemplateMessage(
       conversationId: conversation.id,
       channel: contactInbox.channel,
       contactInboxId: contactInbox.id,
+      inboxId: contactInbox.inboxId,
     },
     action: {
       flowId: "",
@@ -314,7 +413,6 @@ export async function sendWhatsappTemplateMessage(
 
     return result
   } catch (error) {
-    console.error(error)
     logger.error(
       {
         error,
@@ -324,6 +422,9 @@ export async function sendWhatsappTemplateMessage(
       },
       "Error sending WhatsApp template message for broadcast",
     )
+    if (shouldSuppressRetryableChannelError(error, contactInbox.channel)) {
+      return
+    }
     throw error
   }
 }

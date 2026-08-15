@@ -33,6 +33,7 @@ import type {
   ContactInboxModel,
   ConversationModel,
 } from "@chatbotx.io/database/types"
+import { webhookChannelOrigin } from "@chatbotx.io/events/context"
 import { contactVariableService } from "@chatbotx.io/variables"
 import {
   IntegrationJobAction,
@@ -49,6 +50,7 @@ import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../../lib/logger"
 import { handoffExecutorService } from "../../../trigger/services/handoff-executor.service"
 import { sendMessageAndWait, sendMessageWithRender } from "../../utils/message"
+import { triggerDefaultReplyFlow } from "./default-reply"
 import { handleRichAIReply } from "./rich-reply"
 import { createDocumentReaderExecutor } from "./system-tools/document-reader"
 import { createImageReaderExecutor } from "./system-tools/image-reader"
@@ -64,6 +66,7 @@ export type ReplyByAIProps = {
   fileOnlyTrigger: boolean
   allowedSystemFunctionIds?: string[]
   summary?: string
+  defaultReplyFlowId?: string | null
 }
 
 export type ReplyByAIExecutionResult = {
@@ -108,6 +111,113 @@ export async function replyByAI(
   }
 
   return null
+}
+
+export type GenerateAIReplyProps = {
+  conversation: ConversationModel
+  contactInbox: ContactInboxModel
+  messages: ModelMessage[]
+  aiAgent: AIAgentModel
+}
+
+export type GeneratedAIReply = {
+  text: string
+  provider: ReplyAIProvider
+  modelId: string
+}
+
+/**
+ * Generate an AI agent reply as plain text WITHOUT sending it anywhere.
+ *
+ * Unlike `replyByAI`, this runs the provider-fallback loop with tools and rich
+ * mode disabled and returns the accumulated text, so the caller controls the
+ * delivery channel (e.g. a public Facebook comment reply vs a private DM). Tools
+ * are off so nothing can send out-of-band (the `sendMessage`/`triggerFlow`/
+ * handoff system tools all send DMs on their own). It mirrors the DM policy by
+ * only using auto-reply-enabled provider integrations.
+ */
+export async function generateAIReplyText(
+  props: GenerateAIReplyProps,
+): Promise<GeneratedAIReply | null> {
+  const { conversation, contactInbox, messages, aiAgent } = props
+  const providers = aiAgent.models as AIAgentProviderModels
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
+
+  try {
+    const variables = await contactVariableService.getAll({
+      contactId: conversation.contactId,
+      contactInbox,
+      conversation,
+    })
+    const systemPrompt = aiAgent.prompt
+      ? await contactVariableService.replaceAll({
+          text: aiAgent.prompt,
+          variables,
+        })
+      : ""
+
+    for (const providerInfo of providers) {
+      const modelConfig = await createReplyModel({
+        workspaceId: conversation.workspaceId,
+        providerInfo,
+      })
+      if (!modelConfig) {
+        continue
+      }
+      const provider = getProviderName(providerInfo)
+
+      const result = await streamText({
+        model: modelConfig.model,
+        system: systemPrompt,
+        messages,
+        maxOutputTokens: aiAgent.maxOutputTokens,
+        temperature: aiAgent.temperature,
+        tools: {},
+        toolChoice: "none",
+        stopWhen: stepCountIs(1),
+        timeout: {
+          totalMs: aiTimeouts.aiTotal,
+          stepMs: aiTimeouts.aiStep,
+          chunkMs: aiTimeouts.aiChunk,
+        },
+        abortSignal: controller.signal,
+      })
+
+      const { fullText } = await processStreamingText(
+        result.textStream,
+        async () => {
+          // generate-only: never send
+        },
+        { sendParts: false },
+      ).catch((streamError) => {
+        logger.error(
+          {
+            provider,
+            modelId: providerInfo.model,
+            conversationId: conversation.id,
+            error: normalizeError(streamError),
+          },
+          "[comment-ai-reply] processStreamingText threw error",
+        )
+        return { fullText: "" }
+      })
+
+      const text = fullText.trim()
+      if (text) {
+        return {
+          text,
+          provider,
+          modelId: providerInfo.model,
+        }
+      }
+    }
+
+    return null
+  } finally {
+    clearTimeout(timeoutId)
+  }
 }
 
 function createReplyToolset(options: {
@@ -173,6 +283,7 @@ function createReplyToolset(options: {
             conversationId: conversation.id,
             contactInboxId: options.props.contactInbox.id,
             flowId,
+            origin: webhookChannelOrigin(),
           },
         })
       },
@@ -536,6 +647,7 @@ async function runAIReply(
     const variables = await contactVariableService.getAll({
       contactId: conversation.contactId,
       contactInbox: props.contactInbox,
+      conversation,
     })
     const promptBase = aiAgent.prompt
       ? await contactVariableService.replaceAll({
@@ -749,9 +861,29 @@ async function runAIReply(
     }
 
     // Last-resort fallback: loop finished but no assistant text was produced.
-    // Do NOT leak raw tool outputs; ask a clarifying question instead.
+    // Do NOT leak raw tool outputs; prefer the workspace's configured default
+    // reply flow, and only fall back to a clarifying question if none is set.
     if (toolCallsCount > 0 || toolResultsCount > 0) {
-      await sendMessageWithRender(conversation.id, helpTexts.fallbackLookup)
+      const triggeredDefaultReplyFlow = await triggerDefaultReplyFlow({
+        workspaceId: conversation.workspaceId,
+        defaultReplyFlowId: props.defaultReplyFlowId,
+        conversation,
+        contactInbox: props.contactInbox,
+        trackingContext: props.triggerMessageId
+          ? {
+              aiProvider: provider,
+              conversationId: conversation.id,
+              messageId: props.triggerMessageId,
+              responseType: "flow",
+              startTime,
+              triggerType: "bot_response_ai_agent_default_reply_flow",
+              workspaceId: conversation.workspaceId,
+            }
+          : undefined,
+      })
+      if (!triggeredDefaultReplyFlow) {
+        await sendMessageWithRender(conversation.id, helpTexts.fallbackLookup)
+      }
       return {
         responded: true,
         provider,

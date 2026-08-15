@@ -1,3 +1,4 @@
+import type { TriggerEventType } from "@chatbotx.io/database/partials"
 import type {
   ConditionModel,
   TriggerModel,
@@ -12,10 +13,11 @@ export type TriggerWithConditions = TriggerModel & {
 export type TriggerEventData = {
   workspaceId: string
   contactId: string
-  eventType: string
+  eventType: TriggerEventType
   eventData: Record<string, unknown>
   timestamp: Date
   source?: string
+  channelOriginated?: boolean
 }
 
 export type ConditionEvaluationContext = {
@@ -29,5 +31,6 @@ export type ConditionEvaluationContext = {
 export type ActionExecutionContext = {
   action: Record<string, unknown>
   contactId: string
+  triggerId: string
   workspaceId: string
 }

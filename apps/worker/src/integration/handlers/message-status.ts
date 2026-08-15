@@ -1,14 +1,10 @@
-import { buildContext } from "@chatbotx.io/business"
-import { db, eq } from "@chatbotx.io/database/client"
+import { buildContext, conversationService } from "@chatbotx.io/business"
+import { db } from "@chatbotx.io/database/client"
 import type { IntegrationType } from "@chatbotx.io/database/partials"
 import {
   createMessageRepository,
   getSafeSinceTime,
 } from "@chatbotx.io/database/repositories"
-import {
-  contactInboxModel,
-  conversationModel,
-} from "@chatbotx.io/database/schema"
 import { emit } from "@chatbotx.io/event-bus"
 import {
   type MetadataPayload,
@@ -140,16 +136,12 @@ export const handleMessageStatus = async (
     }
 
     if (eventStatus === "read") {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(conversationModel)
-          .set({ contactLastReadAt: seenAt })
-          .where(eq(conversationModel.id, contactInbox.conversation.id))
-
-        await tx
-          .update(contactInboxModel)
-          .set({ contactLastReadAt: seenAt })
-          .where(eq(contactInboxModel.id, contactInbox.id))
+      await conversationService.markReadByContact({
+        workspaceId: contactInbox.conversation.workspaceId,
+        conversationId: contactInbox.conversation.id,
+        contactInboxId: contactInbox.id,
+        contactId: contactInbox.contactId,
+        seenAt,
       })
 
       await emit(messageEventTypeSchema.enum["message:seen"], eventLog)

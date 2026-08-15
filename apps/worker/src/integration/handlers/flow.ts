@@ -8,6 +8,7 @@ import type {
   FlowVersionModel,
 } from "@chatbotx.io/database/types"
 import { emit } from "@chatbotx.io/event-bus"
+import { webhookChannelOrigin } from "@chatbotx.io/events/context"
 import {
   type BaseStepSchema,
   BROADCAST_PAYLOAD_TYPE,
@@ -15,15 +16,22 @@ import {
   type ButtonStepProps,
   decodeButtonPayload,
   type EdgeSchema,
+  type FlowActionTargetType,
   type FlowNode,
+  flowActionTargetTypes,
   flowEventTypeSchema,
-  getNodeFromButton,
   isQuickReplyCarrierStep,
   type MetadataPayload,
+  resolveFlowActionTarget,
   type StepType,
   stepTypes,
 } from "@chatbotx.io/flow-config"
-import { initVariables, SdkException, type Variables } from "@chatbotx.io/sdk"
+import {
+  type CommentAnchor,
+  initVariables,
+  SdkException,
+  type Variables,
+} from "@chatbotx.io/sdk"
 import {
   type BotResponseTrackingContext,
   IntegrationJobAction,
@@ -38,7 +46,11 @@ import {
   detectFlowVersion,
 } from "../../lib/db"
 import { logger } from "../../lib/logger"
-import { type ExecuteMultipleStepsProps, seekConnectedNode } from "./flow-utils"
+import {
+  type ExecuteMultipleStepsProps,
+  MESSAGE_PRODUCING_STEP_TYPES,
+  seekConnectedNode,
+} from "./flow-utils"
 import { executeRichActions } from "./rich-response/action-executor"
 import { richButtonPayloadSchema } from "./rich-response/button-payload"
 import {
@@ -104,7 +116,29 @@ type ExecuteStepsAndQuickRepliesProps = {
   metadata?: MetadataPayload
   sendFrom?: "inbox"
   nodeVisits?: NodeVisits
+  triggerMessageId?: string
+  triggerMessageCreatedAt?: Date
+  commentAnchor?: CommentAnchor
+  appointmentId?: string
 }
+
+/** A job carries either an entity ID or the already-loaded entity. */
+type FlowJobEntityRef =
+  | string
+  | Pick<ConversationModel | ContactInboxModel, "id">
+
+const getFlowJobEntityId = (value: FlowJobEntityRef): string =>
+  typeof value === "string" ? value : value.id
+
+const createFlowActionWarningContext = (data: {
+  conversationId: FlowJobEntityRef
+  contactInboxId: FlowJobEntityRef
+  action: string
+}) => ({
+  conversationId: getFlowJobEntityId(data.conversationId),
+  contactInboxId: getFlowJobEntityId(data.contactInboxId),
+  action: data.action,
+})
 
 export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
   if (!props.flowId) {
@@ -112,7 +146,7 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
     return
   }
 
-  const { trackingContext, metadata, sendFrom } = props
+  const { trackingContext, metadata, sendFrom, commentAnchor } = props
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId: props.conversationId,
@@ -124,19 +158,46 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
     workspaceId: conversation.workspaceId,
   })
 
-  // Process to find start node. Try to find by nodeId first, if not found, try to find by isStartNode.
-  let targetNode: FlowNode | null | undefined = null
-  if (props.nodeId) {
-    targetNode = (flowVersion.nodes as unknown as FlowNode[]).find(
-      (n) => n.id === props.nodeId,
-    )
+  const nodes = flowVersion.nodes as unknown as FlowNode[]
+
+  // A re-dispatched job continuing a button/quickReply's own multi-step chain
+  // (executeMultipleStepsGenerator's one-step-per-job loop) carries its target
+  // explicitly. Resolving by nodeId alone would land on the containing node's
+  // details instead of the button/quickReply's, and startFromStepId would
+  // never match one of the node's own step ids.
+  let details: ExecuteStepsAndQuickRepliesProps["details"]
+  let targetType: ExecuteStepsAndQuickRepliesProps["targetType"]
+  let targetId: string
+  let targetNodeId: string
+
+  if (
+    props.targetType === flowActionTargetTypes.button ||
+    props.targetType === flowActionTargetTypes.quickReply
+  ) {
+    const resolved = props.targetId
+      ? resolveFlowActionTarget(nodes, props.targetId)
+      : null
+    if (!resolved) {
+      throw new SdkException(
+        "FlowVersion does not contain the button/quickReply target",
+      )
+    }
+    details = resolved.details
+    targetType = resolved.targetType
+    targetId = resolved.details.id
+    targetNodeId = resolved.nodeId ?? props.nodeId ?? ""
   } else {
-    targetNode = (flowVersion.nodes as unknown as FlowNode[]).find(
-      (n) => n.data.isStartNode,
-    )
-  }
-  if (!targetNode) {
-    throw new SdkException("FlowVersion does not contain start node")
+    // Process to find start node. Try to find by nodeId first, if not found, try to find by isStartNode.
+    const targetNode = props.nodeId
+      ? nodes.find((n) => n.id === props.nodeId)
+      : nodes.find((n) => n.data.isStartNode)
+    if (!targetNode) {
+      throw new SdkException("FlowVersion does not contain start node")
+    }
+    details = targetNode.data.details
+    targetType = "node"
+    targetId = targetNode.id
+    targetNodeId = targetNode.id
   }
 
   try {
@@ -145,10 +206,10 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
       contactInbox,
       flowVersion,
       useLatestFlowVersion,
-      details: targetNode.data.details,
-      targetType: "node",
-      targetId: targetNode.id,
-      targetNodeId: targetNode.id,
+      details,
+      targetType,
+      targetId,
+      targetNodeId,
       startFromStepId: props.startFromStepId,
       ctx: {
         variables: initVariables(),
@@ -157,6 +218,8 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
       metadata,
       sendFrom,
       nodeVisits: props.nodeVisits,
+      commentAnchor,
+      appointmentId: props.appointmentId,
     })
   } catch (error) {
     if (props.metadata?.type === BROADCAST_PAYLOAD_TYPE) {
@@ -255,12 +318,20 @@ export async function runStepsAndQuickReplies(
     (targetType === "button" || targetType === "quickReply") &&
     details.beforeStep?.stepType === stepTypes.enum.startAnotherNode
 
+  // Tracks whether the comment-anchored private-reply send is still available
+  // to be claimed by the first message-producing step. Forwarded across every
+  // re-enqueued sendFlow job below until a step consumes it (see
+  // `executeMultipleStepsGenerator`'s `MESSAGE_PRODUCING_STEP_TYPES` check).
+  let remainingAnchor = props.commentAnchor
+
   if (details.beforeStep && !props.startFromStepId && !skipBeforeStep) {
-    await executeMultipleSteps({
+    const beforeResult = await executeMultipleSteps({
       ...props,
       nodeVisits,
+      commentAnchor: remainingAnchor,
       steps: [details.beforeStep],
     })
+    remainingAnchor = beforeResult?.commentAnchor
   }
 
   // run steps — one per BullMQ job, re-dispatching for subsequent steps
@@ -284,10 +355,12 @@ export async function runStepsAndQuickReplies(
     const result = await executeMultipleSteps({
       ...props,
       nodeVisits,
+      commentAnchor: remainingAnchor,
       quickReplies:
         quickReplyCarrier?.id === currentStep.id ? quickReplies : undefined,
       steps: [currentStep],
     })
+    remainingAnchor = result?.commentAnchor
 
     if (result?.status === "wait" || result?.status === "retry") {
       return result
@@ -310,11 +383,22 @@ export async function runStepsAndQuickReplies(
             ? undefined
             : flowVersion.id,
           nodeId: props.targetNodeId,
+          targetType:
+            targetType === "button" || targetType === "quickReply"
+              ? targetType
+              : undefined,
+          targetId:
+            targetType === "button" || targetType === "quickReply"
+              ? targetId
+              : undefined,
           startFromStepId: nextStep.id,
           metadata: props.metadata,
+          appointmentId: props.appointmentId,
           trackingContext: props.trackingContext,
           sendFrom: props.sendFrom,
           nodeVisits,
+          commentAnchor: remainingAnchor,
+          origin: webhookChannelOrigin(),
         },
       })
       return
@@ -327,12 +411,29 @@ export async function runStepsAndQuickReplies(
   }
 
   // send next node if exists
-  let relatedEdge: EdgeSchema | null | undefined = null
-  if (
-    targetType === "button" ||
+  //
+  // A tapped button/quickReply resolves its next node through its edge only
+  // when its own action is a node jump — or when it has no action at all
+  // (`buttonType: null`, `whatsappOptionList`), where the edge is the only
+  // routing it has. The canvas keeps type and edge in lockstep: dragging an
+  // edge from a button handle rewrites that button to `startAnotherNode`, and
+  // deleting the edge clears it back to `null` (`updateButtonRoute` /
+  // `createRouteFields` in `flow-config/src/routable-handle.ts`). So a button
+  // carrying an `openWebsite` / `startExternalFlow` / `startExternalNode`
+  // action can never have been wired to a node on purpose — such an edge is
+  // always left over from a config this button has since moved away from, and
+  // following it would fire a node the button no longer targets on top of the
+  // action it actually has.
+  //
+  // `targetType === "step"` keeps never following an edge, as before.
+  const followsEdgeToNextNode =
     targetType === "node" ||
-    targetType === "quickReply"
-  ) {
+    ((targetType === "button" || targetType === "quickReply") &&
+      (details.beforeStep == null ||
+        details.beforeStep.stepType === stepTypes.enum.startAnotherNode))
+
+  let relatedEdge: EdgeSchema | null | undefined = null
+  if (followsEdgeToNextNode) {
     relatedEdge = (flowVersion.edges as EdgeSchema[]).find(
       (edge) => edge.sourceHandle === targetId,
     )
@@ -354,9 +455,12 @@ export async function runStepsAndQuickReplies(
         flowVersionId: props.useLatestFlowVersion ? undefined : flowVersion.id,
         nodeId: nextNode.id,
         metadata: props.metadata,
+        appointmentId: props.appointmentId,
         trackingContext: props.trackingContext,
         sendFrom: props.sendFrom,
         nodeVisits,
+        commentAnchor: remainingAnchor,
+        origin: webhookChannelOrigin(),
       },
     })
   }
@@ -364,7 +468,12 @@ export async function runStepsAndQuickReplies(
 
 export async function executeMultipleSteps(props: ExecuteMultipleStepsProps) {
   const gen = executeMultipleStepsGenerator(props)
-  let lastResult: (ExecuteStepResult & { branched: boolean }) | undefined
+  let lastResult:
+    | (ExecuteStepResult & {
+        branched: boolean
+        commentAnchor?: CommentAnchor
+      })
+    | undefined
 
   for await (const result of gen) {
     logger.debug({ result }, "execute multiple steps result")
@@ -379,7 +488,10 @@ export async function executeMultipleSteps(props: ExecuteMultipleStepsProps) {
 async function* executeMultipleStepsGenerator(
   props: ExecuteMultipleStepsProps,
 ) {
-  const { steps, ...rest } = props
+  const { steps, commentAnchor, ...rest } = props
+  // Consumed by the first message-producing step in this run (however many
+  // jobs/nodes it takes to reach one) — see MESSAGE_PRODUCING_STEP_TYPES.
+  let anchorAvailable = commentAnchor
 
   for (const step of steps) {
     // `nodeId` is overloaded: startAnotherNode/startExternalNode store their own jump
@@ -392,8 +504,17 @@ async function* executeMultipleStepsGenerator(
       nodeId: step.nodeId ?? props.targetNodeId ?? "",
     }
 
+    const isMessageProducingStep = MESSAGE_PRODUCING_STEP_TYPES.has(
+      step.stepType as StepType,
+    )
+    const stepAnchor = isMessageProducingStep ? anchorAvailable : undefined
+    if (isMessageProducingStep) {
+      anchorAvailable = undefined
+    }
+
     const rawResult = await flowStepHandlers[step.stepType as StepType]?.({
       ...rest,
+      commentAnchor: stepAnchor,
       step: stepWithNodeId,
     })
 
@@ -427,9 +548,12 @@ async function* executeMultipleStepsGenerator(
                 : props.flowVersion.id,
               nodeId: connectedNodeId,
               metadata: props.metadata,
+              appointmentId: props.appointmentId,
               trackingContext: props.trackingContext,
               sendFrom: props.sendFrom,
               nodeVisits: props.nodeVisits,
+              commentAnchor: anchorAvailable,
+              origin: webhookChannelOrigin(),
             },
           })
           branched = true
@@ -437,7 +561,7 @@ async function* executeMultipleStepsGenerator(
       }
     }
 
-    yield { ...result, branched }
+    yield { ...result, branched, commentAnchor: anchorAvailable }
   }
 }
 
@@ -527,6 +651,7 @@ async function tryRunRichButtonFallback(props: {
       conversationId: conversation.id,
       contactId: conversation.contactId,
       contactInboxId: contactInbox.id,
+      inboxId: contactInbox.inboxId,
       channel: contactInbox.channel,
       executionId: richResponse.executionId,
       flowContextId,
@@ -535,15 +660,79 @@ async function tryRunRichButtonFallback(props: {
   return { handled: true, shouldEnqueueAutomatedResponse: false }
 }
 
-export async function runFlowPostback(
+/**
+ * A tapped reply is dispatched to one of two jobs depending on how the channel
+ * reported it, but from there the work is identical — only the wording of the
+ * logs and analytics differs.
+ */
+const flowActionHandlers = {
+  postback: {
+    name: "runFlowPostback",
+    triggerType: "contact_postback",
+    failedTriggerType: "contact_postback_failed",
+  },
+  quickReply: {
+    name: "runFlowQuickReply",
+    triggerType: "contact_quick_reply",
+    failedTriggerType: "contact_quick_reply_failed",
+  },
+} as const
+
+type FlowActionHandler =
+  (typeof flowActionHandlers)[keyof typeof flowActionHandlers]
+
+/** `flow:clicked` reports the reply that was tapped, not the job that ran. */
+const flowActionClickTypes = {
+  [flowActionTargetTypes.button]: "button",
+  [flowActionTargetTypes.quickReply]: "quick_reply",
+} as const satisfies Record<FlowActionTargetType, string>
+
+async function runFlowAction(
   data: IntegrationJobSendFlowPostback["data"],
+  handler: FlowActionHandler,
 ) {
-  const parsedAction = decodeButtonPayload(data.action)
+  const { conversation, contactInbox } =
+    await detectConversationAndContactInbox({
+      conversationId: data.conversationId,
+      contactInboxId: data.contactInboxId,
+    })
+
+  // Bare flow IDs (Messenger ad payloads) are only honored for Messenger
+  // conversations. The channel is read from the persisted contactInbox, not
+  // from the enqueuer, so no other channel (e.g. webchat) can trigger an
+  // arbitrary flow by posting a bare numeric ID.
+  const parsedAction = decodeButtonPayload(data.action, {
+    allowBareFlowId: contactInbox.channel === "messenger",
+  })
   if (!parsedAction) {
-    throw new SdkException("Invalid postback action")
+    logger.warn(
+      createFlowActionWarningContext(data),
+      `${handler.name}: could not decode action payload, skipping`,
+    )
+    return
   }
 
-  if (!parsedAction.buttonId) {
+  const { buttonId } = parsedAction
+  if (!buttonId) {
+    // A bare flow-ID payload (Messenger ad) can point at a since-deleted or
+    // unpublished flow. Resolve it first so a missing flow is a graceful skip
+    // rather than a thrown job that retries and dead-letters to no effect.
+    try {
+      await detectFlowVersion({
+        flowId: parsedAction.flowId,
+        flowVersionId: parsedAction.flowVersionId,
+        workspaceId: conversation.workspaceId,
+      })
+    } catch (error) {
+      if (error instanceof SdkException) {
+        logger.warn(
+          createFlowActionWarningContext(data),
+          `${handler.name}: bare flow ID could not be resolved, skipping`,
+        )
+        return
+      }
+      throw error
+    }
     await runFlowNode({
       conversationId: data.conversationId,
       contactInboxId: data.contactInboxId,
@@ -553,59 +742,78 @@ export async function runFlowPostback(
     return
   }
 
-  const { conversation, contactInbox } =
-    await detectConversationAndContactInbox({
-      conversationId: data.conversationId,
-      contactInboxId: data.contactInboxId,
-    })
-
-  if (parsedAction.buttonId) {
-    const richButtonResult = await tryRunRichButtonFallback({
-      buttonId: parsedAction.buttonId,
-      contactInbox,
-      conversation,
-      flowContextId: parsedAction.flowId,
-      messageId: data.messageId,
-    })
-    if (richButtonResult.handled) {
-      if (richButtonResult.shouldEnqueueAutomatedResponse && data.messageId) {
-        await automatedResponseService.enqueue({
-          conversationId: conversation.id,
-          contactInboxId: contactInbox.id,
-          messageId: data.messageId,
-        })
-      }
-      return
-    }
-  }
-
-  const { flowVersion } = await detectFlowVersion({
-    flowId: parsedAction.flowId,
-    flowVersionId: parsedAction.flowVersionId,
-    workspaceId: conversation.workspaceId,
+  const richButtonResult = await tryRunRichButtonFallback({
+    buttonId,
+    contactInbox,
+    conversation,
+    flowContextId: parsedAction.flowId,
+    messageId: data.messageId,
   })
-
-  const nodes = flowVersion.nodes as unknown as FlowNode[]
-
-  const { button: foundedButton, nodeId: foundedNodeId } = getNodeFromButton(
-    nodes,
-    parsedAction.buttonId,
-  )
-
-  if (!foundedButton) {
+  if (richButtonResult.handled) {
+    if (richButtonResult.shouldEnqueueAutomatedResponse && data.messageId) {
+      await automatedResponseService.enqueue({
+        conversationId: conversation.id,
+        contactInboxId: contactInbox.id,
+        messageId: data.messageId,
+        workspaceId: conversation.workspaceId,
+      })
+    }
     return
   }
 
-  const waFlowResponse = data.payload?.waFlowResponse
-  if (
-    waFlowResponse &&
-    typeof waFlowResponse === "object" &&
-    parsedAction.buttonId
-  ) {
-    const whatsappFlowStep = findWhatsappFlowStepByButtonId(
-      nodes,
-      parsedAction.buttonId,
+  // A payload pins a version only when the run that sent it was pinned, so most
+  // taps resolve the flow's *published* version — which a paused, unpublished or
+  // deleted flow no longer has. Skip those the way the bare-flow-ID branch above
+  // does: a thrown job would only retry and dead-letter, and the tap is already
+  // in the past. Anything that is not a resolution failure still propagates so
+  // the job can retry.
+  let flowVersion: FlowVersionModel
+  try {
+    const resolved = await detectFlowVersion({
+      flowId: parsedAction.flowId,
+      flowVersionId: parsedAction.flowVersionId,
+      workspaceId: conversation.workspaceId,
+    })
+    flowVersion = resolved.flowVersion
+  } catch (error) {
+    if (error instanceof SdkException) {
+      logger.warn(
+        {
+          ...createFlowActionWarningContext(data),
+          buttonId,
+          flowId: parsedAction.flowId,
+          flowVersionId: parsedAction.flowVersionId,
+        },
+        `${handler.name}: flow version could not be resolved, skipping`,
+      )
+      return
+    }
+    throw error
+  }
+
+  const nodes = flowVersion.nodes as unknown as FlowNode[]
+
+  // The channel cannot say whether the tap was a step button or a node quick
+  // reply, so the flow decides — and drives the target type from here on.
+  const target = resolveFlowActionTarget(nodes, buttonId)
+  if (!target) {
+    logger.warn(
+      {
+        ...createFlowActionWarningContext(data),
+        buttonId,
+        flowId: parsedAction.flowId,
+        flowVersionId: flowVersion.id,
+      },
+      `${handler.name}: action matches no button or quick reply, skipping`,
     )
+    return
+  }
+
+  const targetNodeId = target.nodeId ?? ""
+
+  const waFlowResponse = data.payload?.waFlowResponse
+  if (waFlowResponse && typeof waFlowResponse === "object") {
+    const whatsappFlowStep = findWhatsappFlowStepByButtonId(nodes, buttonId)
     if (whatsappFlowStep) {
       await applyWhatsappFlowResponseSideEffects({
         workspaceId: conversation.workspaceId,
@@ -619,7 +827,7 @@ export async function runFlowPostback(
 
   if (data.webhookType !== IntegrationJobAction.messageStatus) {
     await emit(flowEventTypeSchema.enum["flow:clicked"], {
-      nodeId: foundedNodeId ?? "",
+      nodeId: targetNodeId,
       context: {
         workspaceId: conversation.workspaceId,
         contactId: conversation.contactId,
@@ -629,10 +837,10 @@ export async function runFlowPostback(
       },
       action: {
         flowId: parsedAction.flowId,
-        buttonId: parsedAction.buttonId,
+        buttonId,
         broadcastId: parsedAction.broadcastId,
         sequenceStepId: parsedAction.sequenceStepId ?? "",
-        clickType: "button",
+        clickType: flowActionClickTypes[target.targetType],
       },
       occurredAt: new Date(),
     })
@@ -645,10 +853,10 @@ export async function runFlowPostback(
       contactInbox,
       flowVersion,
       useLatestFlowVersion: true,
-      details: foundedButton,
-      targetType: "button",
-      targetId: foundedButton.id,
-      targetNodeId: foundedNodeId ?? "",
+      details: target.details,
+      targetType: target.targetType,
+      targetId: target.details.id,
+      targetNodeId,
       ctx: {
         variables: initVariables(),
       },
@@ -670,8 +878,8 @@ export async function runFlowPostback(
           flowId: parsedAction.flowId,
           triggerContext: {
             triggerSource: "worker",
-            triggerHandler: "runFlowPostback",
-            triggerType: "contact_postback",
+            triggerHandler: handler.name,
+            triggerType: handler.triggerType,
           },
         },
       })
@@ -695,8 +903,8 @@ export async function runFlowPostback(
           fallbackReason: "handler_error_to_fallback",
           triggerContext: {
             triggerSource: "worker",
-            triggerHandler: "runFlowPostback",
-            triggerType: "contact_postback_failed",
+            triggerHandler: handler.name,
+            triggerType: handler.failedTriggerType,
           },
         },
       })
@@ -705,154 +913,12 @@ export async function runFlowPostback(
   }
 }
 
-export async function runFlowQuickReply(
+export function runFlowPostback(data: IntegrationJobSendFlowPostback["data"]) {
+  return runFlowAction(data, flowActionHandlers.postback)
+}
+
+export function runFlowQuickReply(
   data: IntegrationJobSendFlowQuickReply["data"],
 ) {
-  const parsedAction = decodeButtonPayload(data.action)
-  if (!parsedAction) {
-    throw new SdkException("Invalid quick reply action")
-  }
-
-  const { conversation, contactInbox } =
-    await detectConversationAndContactInbox({
-      conversationId: data.conversationId,
-      contactInboxId: data.contactInboxId,
-    })
-
-  if (parsedAction.buttonId) {
-    const richButtonResult = await tryRunRichButtonFallback({
-      buttonId: parsedAction.buttonId,
-      contactInbox,
-      conversation,
-      flowContextId: parsedAction.flowId,
-      messageId: data.messageId,
-    })
-    if (richButtonResult.handled) {
-      if (richButtonResult.shouldEnqueueAutomatedResponse && data.messageId) {
-        await automatedResponseService.enqueue({
-          conversationId: conversation.id,
-          contactInboxId: contactInbox.id,
-          messageId: data.messageId,
-        })
-      }
-      return
-    }
-  }
-
-  const { flowVersion } = await detectFlowVersion({
-    flowId: parsedAction.flowId,
-    flowVersionId: parsedAction.flowVersionId,
-    workspaceId: conversation.workspaceId,
-  })
-
-  const nodes = flowVersion.nodes as unknown as FlowNode[]
-
-  let found: ButtonStepProps | null = null
-  let foundedNodeId: string | null = null
-  for (const node of nodes) {
-    if (
-      !("quickReplies" in node.data.details && node.data.details.quickReplies)
-    ) {
-      continue
-    }
-    const quickReply = node.data.details.quickReplies.find(
-      (qr) => qr.id === parsedAction.buttonId,
-    )
-    if (quickReply) {
-      found = quickReply
-      foundedNodeId = node.id
-      break
-    }
-  }
-
-  if (!found) {
-    return
-  }
-
-  if (data.webhookType !== IntegrationJobAction.messageStatus) {
-    await emit(flowEventTypeSchema.enum["flow:clicked"], {
-      nodeId: foundedNodeId ?? "",
-      context: {
-        workspaceId: conversation.workspaceId,
-        contactId: conversation.contactId,
-        conversationId: conversation.id,
-        channel: contactInbox.channel,
-        contactInboxId: contactInbox.id,
-      },
-      action: {
-        flowId: parsedAction.flowId,
-        buttonId: parsedAction.buttonId,
-        broadcastId: parsedAction.broadcastId,
-        sequenceStepId: parsedAction.sequenceStepId ?? "",
-        clickType: "quick_reply",
-      },
-      occurredAt: new Date(),
-    })
-  }
-
-  const startTime = Date.now()
-  try {
-    await runStepsAndQuickReplies({
-      conversation,
-      contactInbox,
-      flowVersion,
-      useLatestFlowVersion: true,
-      details: found,
-      targetType: "quickReply",
-      targetId: found.id,
-      targetNodeId: foundedNodeId ?? "",
-      ctx: {
-        variables: initVariables(),
-      },
-    })
-    if (data.messageId) {
-      emit("analytics:dashboard", {
-        eventType: "message:bot_received",
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
-        messageId: data.messageId,
-        occurredAt: new Date(),
-        hasResponse: true,
-        responseType: "flow",
-        routeType: "flow",
-        result: "success",
-        aiProvider: "none",
-        metadata: {
-          latency: Date.now() - startTime,
-          flowId: parsedAction.flowId,
-          triggerContext: {
-            triggerSource: "worker",
-            triggerHandler: "runFlowQuickReply",
-            triggerType: "contact_quick_reply",
-          },
-        },
-      })
-    }
-  } catch (error) {
-    if (data.messageId) {
-      emit("analytics:dashboard", {
-        eventType: "message:bot_received",
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
-        messageId: data.messageId,
-        occurredAt: new Date(),
-        hasResponse: false,
-        responseType: "flow",
-        routeType: "flow",
-        result: "fallback",
-        aiProvider: "none",
-        metadata: {
-          latency: Date.now() - startTime,
-          flowId: parsedAction.flowId,
-          fallbackReason: "handler_error_to_fallback",
-          triggerContext: {
-            triggerSource: "worker",
-            triggerHandler: "runFlowQuickReply",
-            triggerType: "contact_quick_reply_failed",
-          },
-        },
-      })
-    }
-    throw error
-  }
+  return runFlowAction(data, flowActionHandlers.quickReply)
 }

@@ -10,6 +10,8 @@ import {
 } from "@chatbotx.io/worker-config"
 import { createConsumer } from "@chatbotx.io/worker-config/message-queue/factory"
 import pLimit, { type LimitFunction } from "p-limit"
+import { ensureBootstrapped } from "../lib/bootstrap"
+import { isBlockedWorkspace } from "../lib/is-blocked-workspace"
 import { logger } from "../lib/logger"
 import { revertDispatchToPending } from "./revert-dispatch"
 import { MAX_PROCESS } from "./services/constants"
@@ -95,6 +97,10 @@ class DispatchConsumer {
 
   private async processDispatch(payload: DispatchMessage) {
     try {
+      if (await isBlockedWorkspace(payload.workspaceId)) {
+        return
+      }
+
       await this.scheduler.withLock(
         payload.bucket,
         payload.dispatchId,
@@ -230,6 +236,7 @@ async function startDispatchConsumer() {
   logger.info("Starting dispatch consumer")
 
   try {
+    await ensureBootstrapped()
     await consumer.start()
   } catch (error) {
     logger.error(error, "Error starting dispatch consumer")

@@ -6,6 +6,7 @@ import {
   isRichSystemContactField,
   workspaceMemberService,
 } from "@chatbotx.io/business"
+import { webhookChannelOrigin } from "@chatbotx.io/events/context"
 import {
   IntegrationJobAction,
   integrationQueue,
@@ -65,9 +66,20 @@ async function executeRichAction(
 ): Promise<void> {
   switch (action.action) {
     case "add_tag":
-      await attachTagsByNames(context.workspaceId, context.contactId, [
-        action.tag_name,
-      ])
+      // Mirrors the flow-step addContactTag path (contact.ts): pass the
+      // contactInbox already in scope so attachTagsByNames also fires the
+      // ads-conversion tagApplied evaluation for this conversation instead
+      // of silently skipping it (MEDIUM-a).
+      await attachTagsByNames(
+        context.workspaceId,
+        context.contactId,
+        [action.tag_name],
+        {
+          id: context.contactInboxId,
+          inboxId: context.inboxId,
+          channel: context.channel ?? null,
+        },
+      )
       return
     case "remove_tag":
       await detachTagsByNames(context.workspaceId, context.contactId, [
@@ -122,6 +134,7 @@ async function executeRichAction(
             conversationId: context.conversationId,
             contactInboxId: context.contactInboxId,
             flowId: action.flow_id,
+            origin: webhookChannelOrigin(),
           },
         },
         {

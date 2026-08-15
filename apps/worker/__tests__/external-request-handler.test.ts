@@ -22,9 +22,15 @@ vi.mock("@chatbotx.io/variables", () => ({
     async (_contactId: string, value: unknown, _source: unknown) => value,
   ),
   extractVariables: vi.fn((text: string) => {
-    const matches = [...text.matchAll(/\{\{(\w+)\}\}/g)]
+    const matches = [...text.matchAll(/\{\{([\w.]+)\}\}/g)]
     return [...new Set(matches.map((match) => match[1]))]
   }),
+  interpolate: vi.fn((text: string, mapping: Record<string, string>) =>
+    text.replace(
+      /\{\{([\w.]+)\}\}/g,
+      (match, variable) => mapping[variable] ?? match,
+    ),
+  ),
   getSystemFieldValue: vi.fn(async () => null),
   contactVariableService: {
     getAll: vi.fn(async () => ({
@@ -164,6 +170,8 @@ describe("externalRequest step handler", () => {
     expect(contactVariableService.getAll).toHaveBeenCalledWith({
       contactId: "contact-1",
       contactInbox: expect.objectContaining({ id: "contact-inbox-1" }),
+      // Conversation context is what lets {{me}} scope its privacy link.
+      conversation: expect.objectContaining({ id: "conversation-1" }),
     })
   })
 })

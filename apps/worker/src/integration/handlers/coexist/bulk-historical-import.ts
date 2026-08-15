@@ -1,6 +1,18 @@
 // biome-ignore-all lint/suspicious/noBitwiseOperators: bit-packing 63-bit snowflake IDs
 
-import { db, inArray, sql } from "@chatbotx.io/database/client"
+import {
+  contactInboxService,
+  messageCleanupService,
+  workspaceUsageService,
+} from "@chatbotx.io/business"
+import {
+  and,
+  db,
+  describeDatabaseError,
+  eq,
+  inArray,
+  sql,
+} from "@chatbotx.io/database/client"
 import { contactSources } from "@chatbotx.io/database/partials"
 import type {
   BulkCreateAttachmentInput,
@@ -30,15 +42,17 @@ import { logger } from "../../../lib/logger"
 // `ORDER BY createdAt` for historically-imported rows.
 //
 // The low 14 bits disambiguate messages that share the same createdAt-second.
-// They are derived from a stable hash of the message `sourceId` — NOT from the
-// run — so the id is a pure function of (createdAt, sourceId). This is the key
-// difference from the old [run-partition][per-run-seq] scheme, which re-minted
-// ids every run: two DISTINCT messages at the same second in two runs sharing
-// `runId mod 1024` produced the SAME id (different sourceId → bypassed the
-// (contactInboxId, sourceId, createdAt) arbiter → hit the PK). Hashing sourceId
-// makes ids idempotent and collision-free across runs; two distinct messages
-// only clash on a rare 14-bit hash collision, resolved by the per-import probe
-// below and the bulkCreate PK retry.
+// They are derived from a stable hash of `(contactInboxId, sourceId)` — NOT the
+// run — so the id is a pure function of (createdAt, contactInboxId, sourceId).
+// Including `contactInboxId` is essential: the DB PK is (id, createdAt) but the
+// upsert arbiter is (contactInboxId, sourceId, createdAt). If the id ignored
+// contactInboxId, importing the SAME message into a DIFFERENT ContactInbox
+// (e.g. after a disconnect/reconnect mints a new ContactInbox) would re-mint
+// the old id, which the arbiter can't catch (different contactInboxId) → PK
+// collision. Keying the disambiguator on contactInboxId too keeps ids
+// idempotent per (contactInboxId, sourceId, createdAt) AND unique across
+// ContactInboxes. Two distinct messages only clash on a rare 14-bit hash
+// collision, resolved by the per-import probe below and the bulkCreate PK retry.
 
 const COEXIST_EPOCH_MS = new Date("2004-02-01").getTime()
 const COEXIST_TS_BITS = 53n
@@ -48,14 +62,18 @@ const COEXIST_DISAMBIG_MASK = (1n << COEXIST_DISAMBIG_BITS) - 1n
 const COEXIST_MAX_TS = 1n << COEXIST_TS_BITS
 const COEXIST_DISAMBIG_SPACE = 1n << COEXIST_DISAMBIG_BITS
 
-export type HistoricalIdFactory = (date: Date, sourceId: string) => string
+export type HistoricalIdFactory = (
+  date: Date,
+  sourceId: string,
+  contactInboxId: string,
+) => string
 
-// FNV-1a over `sourceId`, folded into the 14-bit disambiguator space. Pure and
-// deterministic: the same message always maps to the same starting slot.
-const hashSourceId = (sourceId: string): bigint => {
+// FNV-1a over the disambiguator key, folded into the 14-bit space. Pure and
+// deterministic: the same key always maps to the same starting slot.
+const hashKey = (key: string): bigint => {
   let hash = 2_166_136_261
-  for (let i = 0; i < sourceId.length; i++) {
-    hash ^= sourceId.charCodeAt(i)
+  for (let i = 0; i < key.length; i++) {
+    hash ^= key.charCodeAt(i)
     hash = Math.imul(hash, 16_777_619)
   }
   return BigInt(hash >>> 0) & COEXIST_DISAMBIG_MASK
@@ -68,14 +86,16 @@ export const createHistoricalIdFactory = (): HistoricalIdFactory => {
   // (re-calling for the same message) advance past the colliding slot.
   const used = new Set<bigint>()
 
-  return (date: Date, sourceId: string): string => {
+  return (date: Date, sourceId: string, contactInboxId: string): string => {
     const baseTs = BigInt(date.getTime() - COEXIST_EPOCH_MS)
     if (baseTs < 0n || baseTs >= COEXIST_MAX_TS) {
       throw new Error(
         `createHistoricalIdFactory: ${date.toISOString()} out of range`,
       )
     }
-    const start = hashSourceId(sourceId)
+    // Key on (contactInboxId, sourceId) so the same message in a different
+    // ContactInbox mints a different id — see the layout note above.
+    const start = hashKey(`${contactInboxId}:${sourceId}`)
     let ts = baseTs
     while (ts < COEXIST_MAX_TS) {
       for (let offset = 0n; offset < COEXIST_DISAMBIG_SPACE; offset++) {
@@ -158,6 +178,9 @@ export type BulkImportMessagesResult = {
    *  Conversation activity bumps and apply them in a single statement per table
    *  for the whole bulk. */
   newestMessageAt: Date | null
+  /** Oldest API-provided message createdAt in this call (null when none).
+   *  Used only for ContactInbox.firstInteractionAt. */
+  oldestMessageAt: Date | null
   /** Newest API-provided incoming message createdAt in this call (null when
    *  none). Used only for ContactInbox.lastIncomingMessageAt. */
   newestIncomingMessageAt: Date | null
@@ -166,8 +189,11 @@ export type BulkImportMessagesResult = {
 /** One contact's activity-timestamp bump, collected by a batching caller. */
 export type CoexistActivityUpdate = {
   contactInboxId: string
+  contactId: string
+  workspaceId: string
   conversationId: string
   newestMessageAt: Date
+  oldestMessageAt: Date
   newestIncomingMessageAt: Date | null
 }
 
@@ -176,6 +202,7 @@ export type CoexistActivityUpdate = {
  * queries per contact in the import loop). In coexist these columns must mirror
  * the newest API-provided message time, not the sync worker's wall clock:
  *
+ *   - ContactInbox.firstInteractionAt: set once from the oldest message.
  *   - ContactInbox.lastMessageAt: set from the newest message.
  *   - ContactInbox.lastIncomingMessageAt: advance from the newest incoming
  *     message only; outgoing history must not move this field.
@@ -200,7 +227,10 @@ export const applyCoexistActivityUpdates = async (
     string,
     {
       newestMessageAt: Date
+      oldestMessageAt: Date
       newestIncomingMessageAt: Date | null
+      contactId: string
+      workspaceId: string
     }
   >()
   const newestByConversation = new Map<string, Date>()
@@ -209,6 +239,9 @@ export const applyCoexistActivityUpdates = async (
     if (ci) {
       if (ci.newestMessageAt < u.newestMessageAt) {
         ci.newestMessageAt = u.newestMessageAt
+      }
+      if (ci.oldestMessageAt > u.oldestMessageAt) {
+        ci.oldestMessageAt = u.oldestMessageAt
       }
       if (
         u.newestIncomingMessageAt &&
@@ -219,7 +252,10 @@ export const applyCoexistActivityUpdates = async (
       }
     } else {
       newestByContactInbox.set(u.contactInboxId, {
+        contactId: u.contactId,
+        workspaceId: u.workspaceId,
         newestMessageAt: u.newestMessageAt,
+        oldestMessageAt: u.oldestMessageAt,
         newestIncomingMessageAt: u.newestIncomingMessageAt,
       })
     }
@@ -230,36 +266,16 @@ export const applyCoexistActivityUpdates = async (
   }
 
   if (newestByContactInbox.size > 0) {
-    const contactInboxRows = [...newestByContactInbox.entries()].map(
-      ([id, u]) => sql`(
-        ${id}::int8,
-        ${u.newestMessageAt}::timestamptz,
-        ${u.newestIncomingMessageAt}::timestamptz
-      )`,
-    )
-
-    await db.execute(sql`
-      UPDATE "ContactInbox" AS t
-      SET
-        "lastMessageAt" = CASE
-          WHEN t."lastMessageAt" IS NULL OR t."lastMessageAt" < u.message_ts
-            THEN u.message_ts
-          ELSE t."lastMessageAt"
-        END,
-        "lastIncomingMessageAt" = CASE
-          WHEN
-            u.incoming_ts IS NOT NULL
-            AND (
-              t."lastIncomingMessageAt" IS NULL
-              OR t."lastIncomingMessageAt" < u.incoming_ts
-            )
-            THEN u.incoming_ts
-          ELSE t."lastIncomingMessageAt"
-        END
-      FROM (VALUES ${sql.join(contactInboxRows, sql`, `)})
-        AS u(id, message_ts, incoming_ts)
-      WHERE t."id" = u.id
-    `)
+    await contactInboxService.bulkUpdateTracking({
+      rows: [...newestByContactInbox.entries()].map(([id, update]) => ({
+        contactInboxId: id,
+        contactId: update.contactId,
+        workspaceId: update.workspaceId,
+        firstInteractionAt: update.oldestMessageAt,
+        lastMessageAt: update.newestMessageAt,
+        lastIncomingMessageAt: update.newestIncomingMessageAt,
+      })),
+    })
   }
 
   if (newestByConversation.size > 0) {
@@ -392,7 +408,10 @@ export const bulkImportContacts = async (props: {
       })
       .from(contactInboxModel)
       .where(
-        sql`${contactInboxModel.inboxId} = ${inbox.id} AND ${contactInboxModel.sourceId} IN ${sourceIds}`,
+        and(
+          eq(contactInboxModel.inboxId, inbox.id),
+          inArray(contactInboxModel.sourceId, sourceIds),
+        ),
       )
 
     const resolved = new Map<string, ContactImportLink>()
@@ -459,7 +478,6 @@ export const bulkImportContacts = async (props: {
     const newEntries = [...dedup.entries()].filter(
       ([sourceId]) => !resolved.has(sourceId),
     )
-
     const acceptedNew = newEntries
 
     // 2. Insert Contact + ContactInbox + Conversation for acceptedNew.
@@ -523,7 +541,10 @@ export const bulkImportContacts = async (props: {
           })
           .from(contactInboxModel)
           .where(
-            sql`${contactInboxModel.inboxId} = ${inbox.id} AND ${contactInboxModel.sourceId} IN ${racedSourceIds}`,
+            and(
+              eq(contactInboxModel.inboxId, inbox.id),
+              inArray(contactInboxModel.sourceId, racedSourceIds),
+            ),
           )
         for (const w of winners) {
           insertedInboxes.push(w)
@@ -545,6 +566,14 @@ export const bulkImportContacts = async (props: {
             .where(inArray(contactModel.id, orphanIds))
         }
       }
+
+      // Re-created contacts keep their history: cancel any pending message
+      // cleanup recorded when contacts with these inbox identities were deleted.
+      await messageCleanupService.cancelByInboxSource({
+        inboxId: inbox.id,
+        sourceIds: insertedInboxes.map((r) => r.sourceId),
+        tx,
+      })
 
       const trulyNew = acceptedNew.length - racedSourceIds.length
       importedContacts = trulyNew
@@ -639,6 +668,19 @@ export const bulkImportContacts = async (props: {
     })
   }
 
+  // Info-only workspace usage for newly-created contacts. Coexist is a passive
+  // historical backfill and does not consume billing quota.
+  if (importedContacts > 0) {
+    await workspaceUsageService
+      .increment(workspaceId, "contacts", importedContacts)
+      .catch((err) => {
+        logger.warn(
+          { err, workspaceId },
+          "workspace usage contact increment failed",
+        )
+      })
+  }
+
   return {
     importedContacts,
     skippedContacts,
@@ -693,6 +735,7 @@ export const bulkImportMessages = async (props: {
     skippedMessages: 0,
     insertedAttachmentIds: [],
     newestMessageAt: null,
+    oldestMessageAt: null,
     newestIncomingMessageAt: null,
   }
 
@@ -732,7 +775,7 @@ export const bulkImportMessages = async (props: {
       ? msg.createdAt
       : fallbackCreatedAt
     return {
-      id: makeMessageId(createdAt, msg.sourceId),
+      id: makeMessageId(createdAt, msg.sourceId, contactInboxId),
       conversationId,
       contactInboxId,
       senderType: isOutgoing ? "user" : "contact",
@@ -764,19 +807,54 @@ export const bulkImportMessages = async (props: {
     try {
       insertedRows = await repository.bulkCreate(messageInputs)
     } catch (err) {
+      // A non-PK failure is a real error — surface the exact constraint/detail
+      // and rethrow.
       if (!isUniqueMessagePkViolation(err)) {
+        logger.error(
+          {
+            runId,
+            total: messageInputs.length,
+            dbCause: describeDatabaseError(err),
+            sampleIds: messageInputs.slice(0, 5).map((m) => m.id),
+          },
+          "[coexist] Message bulkCreate failed",
+        )
         throw err
       }
+      // A PK collision is an anticipated, self-healing condition (rare 14-bit
+      // disambiguator clash with an existing row) — warn, then retry with
+      // re-minted ids. Only escalate to error if the retry also fails (below).
       logger.warn(
-        { runId, total: messageInputs.length },
+        {
+          runId,
+          total: messageInputs.length,
+          dbCause: describeDatabaseError(err),
+        },
         "[coexist] Message PK collision — regenerating IDs and retrying",
       )
       const retried = messageInputs.map((input) => ({
         ...input,
         // Re-call advances past the colliding slot via the factory's used-set.
-        id: makeMessageId(input.createdAt as Date, input.sourceId ?? ""),
+        id: makeMessageId(
+          input.createdAt as Date,
+          input.sourceId ?? "",
+          contactInboxId,
+        ),
       }))
-      insertedRows = await repository.bulkCreate(retried)
+      try {
+        insertedRows = await repository.bulkCreate(retried)
+      } catch (retryErr) {
+        logger.error(
+          {
+            runId,
+            total: retried.length,
+            dbCause: describeDatabaseError(retryErr),
+            sampleIds: retried.slice(0, 5).map((m) => m.id),
+          },
+          "[coexist] Message bulkCreate retry ALSO failed after re-minting IDs",
+        )
+        throw retryErr
+      }
     }
   }
 
@@ -863,6 +941,10 @@ export const bulkImportMessages = async (props: {
     (max, m) => (!max || m.createdAt > max ? m.createdAt : max),
     null,
   )
+  const oldestMessageAt = messagesWithApiTime.reduce<Date | null>(
+    (min, m) => (!min || m.createdAt < min ? m.createdAt : min),
+    null,
+  )
   const newestIncomingMessageAt = messagesWithApiTime.reduce<Date | null>(
     (max, m) =>
       m.messageType === "incoming" && (!max || m.createdAt > max)
@@ -876,6 +958,7 @@ export const bulkImportMessages = async (props: {
     skippedMessages,
     insertedAttachmentIds,
     newestMessageAt,
+    oldestMessageAt,
     newestIncomingMessageAt,
   }
 }
@@ -945,10 +1028,17 @@ export const bulkImportHistorical = async (props: {
             insertedAttachmentIds.push(id)
           }
           if (res.newestMessageAt) {
+            let oldestMessageAt = res.oldestMessageAt
+            if (!oldestMessageAt) {
+              oldestMessageAt = res.newestMessageAt
+            }
             activityUpdates.push({
               contactInboxId: link.contactInboxId,
+              contactId: link.contactId,
+              workspaceId,
               conversationId: link.conversationId,
               newestMessageAt: res.newestMessageAt,
+              oldestMessageAt,
               newestIncomingMessageAt: res.newestIncomingMessageAt,
             })
           }

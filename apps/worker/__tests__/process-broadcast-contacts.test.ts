@@ -21,6 +21,13 @@ const scheduleAddSpy = vi.fn()
 const loggerErrorSpy = vi.fn()
 
 // ── mocks ─────────────────────────────────────────────────────────────────────
+vi.mock("@chatbotx.io/business", () => ({
+  withBlockedOwnerGuard: async (
+    _workspaceId: unknown,
+    fn: () => Promise<unknown>,
+  ) => fn(),
+}))
+
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     query: {
@@ -67,6 +74,9 @@ vi.mock("@chatbotx.io/database/partials", () => ({
       omnichannel: "omnichannel",
       whatsapp: "whatsapp",
       messenger: "messenger",
+      instagram: "instagram",
+      telegram: "telegram",
+      tiktok: "tiktok",
     },
   },
 }))
@@ -219,6 +229,32 @@ describe("processBroadcastContacts", () => {
 
       await processBroadcastContacts(BROADCAST_ID)
 
+      expect(chatAddSpy).not.toHaveBeenCalled()
+    })
+
+    test.each([
+      "instagram",
+      "telegram",
+      "tiktok",
+    ] as const)("enqueues %s flow broadcasts through the integration queue only", async (channel) => {
+      findManyBroadcast.mockResolvedValue([
+        makeBroadcast({ flowId: "flow-1", channel }),
+      ])
+      findManyContactsOnBroadcasts.mockResolvedValue([makeContactOnBroadcast()])
+
+      await processBroadcastContacts(BROADCAST_ID)
+
+      expect(integrationAddSpy).toHaveBeenCalledWith(
+        "sendFlow",
+        expect.objectContaining({
+          type: "sendFlow",
+          data: expect.objectContaining({
+            flowId: "flow-1",
+            contactInboxId: "ci-1",
+          }),
+        }),
+        expect.any(Object),
+      )
       expect(chatAddSpy).not.toHaveBeenCalled()
     })
   })

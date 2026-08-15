@@ -1,9 +1,10 @@
-import { db, eq } from "@chatbotx.io/database/client"
+import { importService } from "@chatbotx.io/business"
 import type { ImportFormat, ImportType } from "@chatbotx.io/database/partials"
-import { type fileModel, importModel } from "@chatbotx.io/database/schema"
+import type { fileModel, importModel } from "@chatbotx.io/database/schema"
 import { uploader } from "@chatbotx.io/filesystem"
 import { getImportEntry } from "@chatbotx.io/imports"
 import { createImportRowParser } from "@chatbotx.io/imports/parsers"
+import { createByteLimitedStream } from "@chatbotx.io/imports/stream-guard"
 import { logger } from "../../../lib/logger"
 
 const BYTES_PER_MB = 1024 * 1024
@@ -27,13 +28,14 @@ type Counters = {
 export type BatchResult = {
   success: number
   failed: number
+  errors?: Array<{ row: number; reason: string }>
 }
 
 export type ImportPrepareResult<TDeps> =
   | { ok: true; deps: TDeps }
   | { ok: false; reason: string }
 
-export type ImportTypeHandler<TMeta, TDeps, TRow> = {
+export type ImportTypeHandler<TMeta, TDeps, TRow extends object> = {
   type: ImportType
   parseMeta: (raw: unknown) => TMeta
   prepare: (ctx: {
@@ -45,7 +47,8 @@ export type ImportTypeHandler<TMeta, TDeps, TRow> = {
     deps: TDeps,
     rawRow: Record<string, unknown>,
     meta: TMeta,
-  ) => TRow | null
+    context: { rowNumber: number },
+  ) => TRow | null | { error: string }
   // Bulk DB write for a chunk of up to IMPORT_BATCH_SIZE transformed rows.
   processBatch: (
     deps: TDeps,
@@ -54,7 +57,7 @@ export type ImportTypeHandler<TMeta, TDeps, TRow> = {
   ) => Promise<BatchResult>
 }
 
-export const runImportPipeline = async <TMeta, TDeps, TRow>(
+export const runImportPipeline = async <TMeta, TDeps, TRow extends object>(
   row: ImportRow,
   handler: ImportTypeHandler<TMeta, TDeps, TRow>,
 ): Promise<void> => {
@@ -67,10 +70,16 @@ export const runImportPipeline = async <TMeta, TDeps, TRow>(
     return
   }
 
-  await db
-    .update(importModel)
-    .set({ status: "processing" })
-    .where(eq(importModel.id, row.id))
+  const config = getImportEntry(handler.type).config
+  if (!config.acceptedFormats.includes(row.format)) {
+    await failImport(
+      row.id,
+      `${row.format} is not supported for ${handler.type} imports`,
+    )
+    return
+  }
+
+  await importService.markProcessing(row.id)
 
   const prepared = await handler.prepare({ row, meta })
   if (!prepared.ok) {
@@ -78,22 +87,26 @@ export const runImportPipeline = async <TMeta, TDeps, TRow>(
     return
   }
 
-  const config = getImportEntry(handler.type).config
   const maxRows = config.maxRows
   const maxBytes = config.maxFileSizeMB * BYTES_PER_MB
 
   const counters: Counters = { processed: 0, success: 0, failed: 0 }
+  const errorSample: Array<{ row: number; reason: string }> = []
+  const captureErrors = (
+    errors: Array<{ row: number; reason: string }>,
+  ): void => {
+    const remaining = 50 - errorSample.length
+    if (remaining > 0) {
+      errorSample.push(...errors.slice(0, remaining))
+    }
+  }
   let parser: AsyncIterable<Record<string, unknown>>
   try {
-    // M-4: Use HeadObject for a reliable size check. GetObject ContentLength
-    // may be absent for multipart-uploaded objects on some S3-compatible stores.
-    const head = await uploader.headObject(row.file.path)
-    const objectSize = head.ContentLength ?? 0
-    if (objectSize > maxBytes) {
-      await failImport(row.id, `File exceeds ${config.maxFileSizeMB}MB limit`)
-      return
-    }
-    const { stream } = await uploader.getObjectStream(row.file.path)
+    const { stream } = await loadImportObject({
+      importId: row.id,
+      path: row.file.path,
+      maxBytes,
+    })
     parser = createImportRowParser(row.format, stream)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Parser error"
@@ -116,6 +129,7 @@ export const runImportPipeline = async <TMeta, TDeps, TRow>(
     })
     counters.success += result.success
     counters.failed += result.failed
+    captureErrors(result.errors ?? [])
   }
 
   let lastFlushAt = 0
@@ -126,76 +140,85 @@ export const runImportPipeline = async <TMeta, TDeps, TRow>(
       }
       counters.processed += 1
 
-      const mapped = handler.processRow(prepared.deps, rawRow, meta)
-      if (mapped) {
+      const mapped = handler.processRow(prepared.deps, rawRow, meta, {
+        rowNumber: counters.processed + 1,
+      })
+      if (mapped && !("error" in mapped)) {
         buffer.push(mapped)
         if (buffer.length >= IMPORT_BATCH_SIZE) {
           await flushBatch()
         }
       } else {
         counters.failed += 1
+        captureErrors([
+          {
+            row: counters.processed + 1,
+            reason: mapped && "error" in mapped ? mapped.error : "Invalid row",
+          },
+        ])
       }
 
       if (counters.processed - lastFlushAt >= COUNTER_FLUSH_EVERY) {
         lastFlushAt = counters.processed
-        await flushCounters(row.id, counters).catch((error) =>
-          logger.error(error, "Counter flush failed"),
-        )
+        await importService
+          .flushProgress({
+            importId: row.id,
+            counters,
+            errorSample,
+          })
+          .catch((error) =>
+            logger.error({ err: error }, "Counter flush failed"),
+          )
       }
     }
     await flushBatch()
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
     logger.error({ err: error }, `Import ${row.id} stream error`)
-    await db
-      .update(importModel)
-      .set({
-        status: "failed",
-        errorMessage: message,
-        completedAt: new Date(),
-        totalCount: counters.processed,
-        processedCount: counters.processed,
-        successCount: counters.success,
-        failedCount: counters.failed,
-      })
-      .where(eq(importModel.id, row.id))
+    await importService.fail(row.id, error, counters, errorSample)
     return
   }
 
-  await db
-    .update(importModel)
-    .set({
-      status: "completed",
-      completedAt: new Date(),
-      totalCount: counters.processed,
-      processedCount: counters.processed,
-      successCount: counters.success,
-      failedCount: counters.failed,
-    })
-    .where(eq(importModel.id, row.id))
+  await importService.complete({
+    importId: row.id,
+    counters,
+    errorSample,
+  })
 }
 
 const failImport = async (importId: string, message: string): Promise<void> => {
-  await db
-    .update(importModel)
-    .set({
-      status: "failed",
-      errorMessage: message,
-      completedAt: new Date(),
-    })
-    .where(eq(importModel.id, importId))
+  await importService.fail(importId, message)
 }
 
-const flushCounters = async (
-  importId: string,
-  counters: Counters,
-): Promise<void> => {
-  await db
-    .update(importModel)
-    .set({
-      processedCount: counters.processed,
-      successCount: counters.success,
-      failedCount: counters.failed,
-    })
-    .where(eq(importModel.id, importId))
+const loadImportObject = async (input: {
+  importId: string
+  path: string
+  maxBytes: number
+}): Promise<{ stream: import("node:stream").Readable }> => {
+  let headSize: number | null = null
+  try {
+    const head = await uploader.headObject(input.path)
+    headSize = head.ContentLength ?? null
+  } catch (error) {
+    logger.warn(
+      { err: error },
+      `Import ${input.importId} headObject failed, falling back to stream`,
+    )
+  }
+
+  if (headSize != null && headSize > input.maxBytes) {
+    throw new Error(`File exceeds ${input.maxBytes / BYTES_PER_MB}MB limit`)
+  }
+
+  const object = await uploader.getObjectStream(input.path)
+  const objectSize = object.contentLength ?? null
+  if (objectSize != null && objectSize > input.maxBytes) {
+    throw new Error(`File exceeds ${input.maxBytes / BYTES_PER_MB}MB limit`)
+  }
+
+  return {
+    stream: createByteLimitedStream(object.stream, {
+      maxBytes: input.maxBytes,
+      errorMessage: `File exceeds ${input.maxBytes / BYTES_PER_MB}MB limit`,
+    }),
+  }
 }

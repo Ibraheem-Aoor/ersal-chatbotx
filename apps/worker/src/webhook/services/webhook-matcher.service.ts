@@ -1,11 +1,32 @@
 import { workspaceService } from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
-import { triggerEventTypes } from "@chatbotx.io/database/partials"
+import type { TriggerEventType } from "@chatbotx.io/database/partials"
 import type { WorkspaceModel } from "@chatbotx.io/database/types"
+import {
+  isMatchableEventType,
+  matchableConditionTypesFor,
+  SCANNER_VERIFIED_EVENT_TYPES,
+} from "@chatbotx.io/events"
 import { logger } from "../../lib/logger"
 import { ConditionEvaluator } from "../../trigger/services/condition-evaluator"
-import type { WebhookEventData, WebhookWithConditions } from "../types"
+import type {
+  MatchableWebhookEventData,
+  WebhookEventData,
+  WebhookWithConditions,
+} from "../types"
 import { WebhookExecutor } from "./webhook-executor.service"
+import { buildWebhookPayload } from "./webhook-payload.builder"
+
+const SCANNER_VERIFIED_EVENT_TYPE_SET: ReadonlySet<string> = new Set(
+  SCANNER_VERIFIED_EVENT_TYPES,
+)
+
+function hasConditionType(
+  conditionTypes: readonly TriggerEventType[],
+  conditionType: string,
+): boolean {
+  return conditionTypes.some((type) => type === conditionType)
+}
 
 export class WebhookMatcherService {
   private readonly conditionEvaluator: ConditionEvaluator
@@ -19,9 +40,16 @@ export class WebhookMatcherService {
   async findAndExecuteWebhooks(eventData: WebhookEventData): Promise<void> {
     const { workspaceId, eventType, eventData: metadata } = eventData
 
-    const conditionTypes = this.mapEventTypeToConditionTypes(eventType)
+    const conditionTypes = matchableConditionTypesFor(eventType)
     if (conditionTypes.length === 0) {
       return
+    }
+    if (!isMatchableEventType(eventType)) {
+      return
+    }
+    const matchableEventData: MatchableWebhookEventData = {
+      ...eventData,
+      eventType,
     }
 
     const sourceId = metadata.sourceId as string | undefined
@@ -40,7 +68,7 @@ export class WebhookMatcherService {
     const filteredWebhooks = webhooks.filter((webhook) =>
       webhook.conditions.some(
         (c) =>
-          conditionTypes.includes(c.type) &&
+          hasConditionType(conditionTypes, c.type) &&
           (sourceId ? c.sourceId === sourceId : true),
       ),
     )
@@ -57,32 +85,76 @@ export class WebhookMatcherService {
       return
     }
 
-    for (const webhook of filteredWebhooks) {
-      const isMatch = await this.evaluateWebhookConditions(
-        webhook,
-        eventData,
-        workspace,
-      )
+    const matchedWebhooks = await this.selectMatchingWebhooks(
+      filteredWebhooks,
+      matchableEventData,
+      workspace,
+    )
 
-      if (isMatch) {
+    if (matchedWebhooks.length === 0) {
+      return
+    }
+
+    // Built once for the whole fan-out, and deliberately before the first
+    // delivery. A failure here is allowed to fail the job so the queue retries
+    // the event: nothing has been sent yet, so the retry cannot duplicate a
+    // delivery. Swallowing it instead would drop every webhook at once.
+    const payload = await buildWebhookPayload(matchableEventData)
+
+    await Promise.allSettled(
+      matchedWebhooks.map(async (webhook) => {
         try {
-          await this.webhookExecutor.execute({
-            webhook,
-            eventData,
-          })
+          await this.webhookExecutor.execute({ webhook, payload })
         } catch (error) {
+          // Past this point deliveries are in flight, so one bad endpoint must
+          // not fail the job and trigger a retry that re-sends the others.
           logger.error(
             error,
             `Failed to execute webhook ${webhook.id} for workspace ${workspaceId}`,
           )
         }
-      }
-    }
+      }),
+    )
+  }
+
+  /**
+   * Evaluates every candidate concurrently and keeps the matches. A webhook
+   * whose conditions cannot be evaluated is skipped and logged rather than
+   * thrown: the matched webhooks are delivered after this step, so failing the
+   * job here would re-send them on the queue retry.
+   */
+  private async selectMatchingWebhooks(
+    webhooks: WebhookWithConditions[],
+    eventData: MatchableWebhookEventData,
+    workspace: WorkspaceModel,
+  ): Promise<WebhookWithConditions[]> {
+    const evaluated = await Promise.all(
+      webhooks.map(async (webhook) => {
+        try {
+          const isMatch = await this.evaluateWebhookConditions(
+            webhook,
+            eventData,
+            workspace,
+          )
+
+          return isMatch ? [webhook] : []
+        } catch (error) {
+          logger.error(
+            error,
+            `Failed to evaluate conditions for webhook ${webhook.id} in workspace ${eventData.workspaceId}`,
+          )
+
+          return []
+        }
+      }),
+    )
+
+    return evaluated.flat()
   }
 
   private async evaluateWebhookConditions(
     webhook: WebhookWithConditions,
-    eventData: WebhookEventData,
+    eventData: MatchableWebhookEventData,
     workspace: WorkspaceModel,
   ): Promise<boolean> {
     const { conditions } = webhook
@@ -92,6 +164,18 @@ export class WebhookMatcherService {
     }
 
     for (const condition of conditions) {
+      if (SCANNER_VERIFIED_EVENT_TYPE_SET.has(eventData.eventType)) {
+        // Scanner-driven events were already temporally verified before enqueue.
+        // Re-evaluating them here can swallow one-shot datetime webhooks forever.
+        if (
+          condition.type === eventData.eventType &&
+          condition.sourceId === (eventData.eventData.sourceId as string)
+        ) {
+          return true
+        }
+        continue
+      }
+
       const isMatch = await this.conditionEvaluator.evaluate({
         condition,
         eventData: {
@@ -112,41 +196,5 @@ export class WebhookMatcherService {
     }
 
     return false
-  }
-
-  private mapEventTypeToConditionTypes(eventType: string): string[] {
-    const mapping: Record<string, string[]> = {
-      [triggerEventTypes.enum.tagApplied]: [triggerEventTypes.enum.tagApplied],
-      [triggerEventTypes.enum.tagRemoved]: [triggerEventTypes.enum.tagRemoved],
-      [triggerEventTypes.enum.customFieldValueChanged]: [
-        triggerEventTypes.enum.customFieldValueChanged,
-      ],
-      [triggerEventTypes.enum.conversationTransferredToHuman]: [
-        triggerEventTypes.enum.conversationTransferredToHuman,
-      ],
-      [triggerEventTypes.enum.conversationTransferredToBot]: [
-        triggerEventTypes.enum.conversationTransferredToBot,
-      ],
-      [triggerEventTypes.enum.newContact]: [triggerEventTypes.enum.newContact],
-      [triggerEventTypes.enum.contactUnsubscribedFormBroadcast]: [
-        triggerEventTypes.enum.contactUnsubscribedFormBroadcast,
-      ],
-      [triggerEventTypes.enum.archived]: [triggerEventTypes.enum.archived],
-      [triggerEventTypes.enum.followUp]: [triggerEventTypes.enum.followUp],
-      [triggerEventTypes.enum.conversationAssigned]: [
-        triggerEventTypes.enum.conversationAssigned,
-      ],
-      [triggerEventTypes.enum.conversationUnassigned]: [
-        triggerEventTypes.enum.conversationUnassigned,
-      ],
-      [triggerEventTypes.enum.subscribedToSequence]: [
-        triggerEventTypes.enum.subscribedToSequence,
-      ],
-      [triggerEventTypes.enum.unsubscribedFromSequence]: [
-        triggerEventTypes.enum.unsubscribedFromSequence,
-      ],
-    }
-
-    return mapping[eventType] || []
   }
 }

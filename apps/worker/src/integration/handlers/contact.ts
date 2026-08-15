@@ -1,23 +1,27 @@
-import { tagSyncService } from "@chatbotx.io/business"
+import {
+  adsConversionService,
+  contactCustomFieldService,
+  contactService,
+  tagSyncService,
+} from "@chatbotx.io/business"
 import { contactSequenceService } from "@chatbotx.io/business/contact-sequence"
 import { and, db, eq, inArray, isNull } from "@chatbotx.io/database/client"
 import {
-  contactCustomFieldModel,
   contactModel,
   contactNoteModel,
   contactsToTagsModel,
-  conversationModel,
   tagModel,
 } from "@chatbotx.io/database/schema"
 import { emit } from "@chatbotx.io/event-bus"
 import {
-  emitCustomFieldChanged,
+  emitContactUnsubscribed,
+  emitSequenceSubscribed,
   emitTagApplied,
   emitTagRemoved,
 } from "@chatbotx.io/events"
 import type {
+  AddContactNotesStepSchema,
   AddContactTagStepSchema,
-  AddNotesStepSchema,
   ClearCustomFieldStepSchema,
   DeleteContactStepSchema,
   MarkEmailVerifiedStepSchema,
@@ -31,98 +35,62 @@ import type {
 } from "@chatbotx.io/flow-config"
 import { enrollContactInSequence } from "@chatbotx.io/sequence-scheduler"
 import { createId } from "@chatbotx.io/utils"
+import { TemporalInputParsing } from "@chatbotx.io/utils/datetime"
+import { contactVariableService } from "@chatbotx.io/variables"
 import type { ExecuteStepProps } from "./flow"
 
 export async function setContactCustomField({
   conversation,
+  contactInbox,
   step,
 }: ExecuteStepProps<SetCustomFieldStepSchema>) {
-  // Get old value before update
-  const existingField = await db.query.contactCustomFieldModel.findFirst({
-    where: {
-      contactId: conversation.contactId,
-      customFieldId: step.inputFieldId,
-    },
+  // The value can contain {{variable}} tokens inserted via the editor (contact
+  // fields, coupons, etc.); resolve them against this contact before persisting.
+  // Unresolvable tokens are left as-is, and a value that resolves to empty still
+  // falls through to the temporal "now" handling below.
+  const variables = await contactVariableService.getAll({
+    contactId: conversation.contactId,
+    contactInbox,
+    conversation,
   })
-  const oldValue = existingField?.value ?? null
-
-  await db
-    .insert(contactCustomFieldModel)
-    .values({
-      contactId: conversation.contactId,
-      customFieldId: step.inputFieldId,
-      value: step.value,
-      id: createId(),
-    })
-    .onConflictDoUpdate({
-      target: [
-        contactCustomFieldModel.contactId,
-        contactCustomFieldModel.customFieldId,
-      ],
-      set: {
-        value: step.value,
-      },
-    })
-
-  const customField = await db.query.customFieldModel.findFirst({
-    where: { id: step.inputFieldId },
+  const resolvedValue = await contactVariableService.replaceAll({
+    text: step.value,
+    variables,
   })
-  if (customField) {
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      step.inputFieldId,
-      customField.name,
-      oldValue,
-      step.value,
-    )
-  }
+
+  await contactCustomFieldService.setValueByKey({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    keyword: step.inputFieldId,
+    value: resolvedValue,
+    // The editor captured its browser zone at save time; anchor naive
+    // date/datetime values to it (worker has no browser context). Lenient
+    // parsing accepts flexible user input (unix ts, "23/07/2026", ...), and a
+    // blank value stamps "now" in that zone.
+    sourceTimezoneOverride: step.timezone,
+    temporalInputParsing: TemporalInputParsing.Lenient,
+    fillEmptyTemporalWithNow: true,
+  })
 }
 
 export async function clearContactCustomField({
   conversation,
   step,
 }: ExecuteStepProps<ClearCustomFieldStepSchema>) {
-  // Get old value before delete
-  const existingField = await db.query.contactCustomFieldModel.findFirst({
-    where: {
-      contactId: conversation.contactId,
-      customFieldId: step.inputFieldId,
-    },
+  await contactCustomFieldService.deleteByKey({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    keyword: step.inputFieldId,
   })
-  const oldValue = existingField?.value ?? null
-
-  await db
-    .delete(contactCustomFieldModel)
-    .where(
-      and(
-        eq(contactCustomFieldModel.contactId, conversation.contactId),
-        eq(contactCustomFieldModel.customFieldId, step.inputFieldId),
-      ),
-    )
-
-  const customField = await db.query.customFieldModel.findFirst({
-    where: { id: step.inputFieldId },
-  })
-  if (customField) {
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      step.inputFieldId,
-      customField.name,
-      oldValue,
-      null,
-    )
-  }
 }
 
 export async function addContactNotes({
   conversation,
   step,
-}: ExecuteStepProps<AddNotesStepSchema>) {
+}: ExecuteStepProps<AddContactNotesStepSchema>) {
   await db.insert(contactNoteModel).values({
     contactId: conversation.contactId,
-    text: step.text,
+    text: step.content,
     id: createId(),
   })
 }
@@ -162,19 +130,36 @@ export async function optOutEmail({
 
 export async function addContactTag({
   conversation,
+  contactInbox,
   step,
 }: ExecuteStepProps<AddContactTagStepSchema>) {
   await attachTagsByNames(
     conversation.workspaceId,
     conversation.contactId,
     step.tags,
+    contactInbox,
   )
+}
+
+/**
+ * Minimal contact-inbox shape `attachTagsByNames` needs to resolve+enqueue
+ * the `tagApplied` conversion-trigger evaluation for one specific inbox. A
+ * full `ContactInboxModel` satisfies this structurally, so the flow-step
+ * `addContactTag` path (which has the full row) needs no change; the
+ * rich-response `add_tag` action (MEDIUM-a) only has these three fields in
+ * scope and can pass a minimal object instead.
+ */
+export type TagAttachContactInbox = {
+  id: string
+  inboxId: string
+  channel: string | null
 }
 
 export async function attachTagsByNames(
   workspaceId: string,
   contactId: string,
   tagNames: string[],
+  contactInbox?: TagAttachContactInbox,
 ): Promise<void> {
   if (tagNames.length === 0) {
     return
@@ -237,6 +222,23 @@ export async function attachTagsByNames(
       emitTagApplied(workspaceId, contactId, tagId),
     ),
   )
+
+  // Ads conversion `tagApplied` trigger: only when the caller already has a
+  // specific WhatsApp conversation in scope (the flow-step path) — resolves
+  // and enqueues for that one contactInbox rather than fanning out to every
+  // other WhatsApp-CTWA inbox the contact might have.
+  if (
+    contactInbox &&
+    newlyLinkedTagIds.length > 0 &&
+    adsConversionService.isEligibleChannel(contactInbox.channel)
+  ) {
+    await adsConversionService.enqueueTagAppliedEvaluationsForInbox({
+      workspaceId,
+      inboxId: contactInbox.inboxId,
+      contactInboxId: contactInbox.id,
+      tagIds: newlyLinkedTagIds,
+    })
+  }
 }
 
 export async function removeContactTag({
@@ -302,24 +304,17 @@ export async function detachTagsByNames(
 export async function deleteContact({
   conversation,
 }: ExecuteStepProps<DeleteContactStepSchema>) {
-  const contactInboxes = await db.query.contactInboxModel.findMany({
-    where: {
-      contactId: conversation.contactId,
-    },
-  })
   const occurredAt = new Date()
 
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(conversationModel)
-      .where(eq(conversationModel.id, conversation.id))
-
-    await tx
-      .delete(contactModel)
-      .where(eq(contactModel.id, conversation.contactId))
+  // Delete through the service so this path shares the tombstone bookkeeping
+  // (MessageCleanup) and cache invalidation with the builder bulk delete —
+  // Message/Attachment no longer cascade from Contact.
+  const [deletedContact] = await contactService.delete({
+    workspaceId: conversation.workspaceId,
+    ids: [conversation.contactId],
   })
 
-  for (const contactInbox of contactInboxes) {
+  for (const contactInbox of deletedContact?.contactInboxes ?? []) {
     if (contactInbox.sourceId) {
       emit("analytics:dashboard", {
         eventType: "contact:deleted",
@@ -393,6 +388,18 @@ export async function addContactSequence({
     nextStepId: firstStep?.id ?? null,
     enrolledAt: now,
   })
+
+  const sequence = await db.query.sequenceModel.findFirst({
+    where: { id: step.sequenceId },
+    columns: { name: true },
+  })
+
+  await emitSequenceSubscribed(
+    conversation.workspaceId,
+    conversation.contactId,
+    step.sequenceId,
+    sequence?.name ?? "",
+  )
 }
 
 export async function removeContactSequence({
@@ -438,4 +445,9 @@ export async function unsubscribeBroadcast({
         eq(contactModel.workspaceId, conversation.workspaceId),
       ),
     )
+
+  await emitContactUnsubscribed(
+    conversation.workspaceId,
+    conversation.contactId,
+  )
 }

@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const findFirstBroadcast = vi.fn()
 const findFirstMessengerTemplate = vi.fn()
-const findManyConversation = vi.fn()
+const findDMByContactIds = vi.fn()
 const forEachAudienceChunk = vi.fn()
 const scheduleAddSpy = vi.fn()
+const loggerInfoSpy = vi.fn()
+const loggerWarnSpy = vi.fn()
+const blockedWorkspaceIds = new Set<string>()
 
 type UpdateCall = {
   table: unknown
@@ -19,8 +22,15 @@ const insertCalls: InsertCall[] = []
 const onConflictSpy = vi.fn()
 
 vi.mock("@chatbotx.io/business", () => ({
+  withBlockedOwnerGuard: async (
+    workspaceId: unknown,
+    fn: () => Promise<unknown>,
+  ) => (blockedWorkspaceIds.has(String(workspaceId)) ? undefined : fn()),
   broadcastService: {
     forEachAudienceChunk: (...args: unknown[]) => forEachAudienceChunk(...args),
+  },
+  conversationService: {
+    findDMByContactIds: (...args: unknown[]) => findDMByContactIds(...args),
   },
 }))
 
@@ -41,9 +51,6 @@ vi.mock("@chatbotx.io/database/client", () => ({
       },
       messengerMessageTemplateModel: {
         findFirst: (...args: unknown[]) => findFirstMessengerTemplate(...args),
-      },
-      conversationModel: {
-        findMany: (...args: unknown[]) => findManyConversation(...args),
       },
     },
     update: (table: unknown) => ({
@@ -67,6 +74,13 @@ vi.mock("@chatbotx.io/database/client", () => ({
     }),
   },
   eq: (left: unknown, right: unknown) => ({ __eq: [left, right] }),
+}))
+
+vi.mock("../src/lib/logger", () => ({
+  logger: {
+    info: (...args: unknown[]) => loggerInfoSpy(...args),
+    warn: (...args: unknown[]) => loggerWarnSpy(...args),
+  },
 }))
 
 vi.mock("@chatbotx.io/worker-config", () => ({
@@ -93,6 +107,7 @@ const baseBroadcast = () => ({
   id: BROADCAST_ID,
   workspaceId: WORKSPACE_ID,
   integrationWhatsappId: null as string | null,
+  integrationMessengerId: null as string | null,
   channel: "messenger" as string | null,
   status: "scheduled",
   subaction: null as string | null,
@@ -105,15 +120,30 @@ beforeEach(() => {
   insertCalls.length = 0
   findFirstBroadcast.mockResolvedValue(undefined)
   findFirstMessengerTemplate.mockResolvedValue(undefined)
-  findManyConversation.mockResolvedValue([])
+  findDMByContactIds.mockResolvedValue([])
   forEachAudienceChunk.mockResolvedValue(undefined)
   scheduleAddSpy.mockReset()
+  loggerInfoSpy.mockReset()
+  loggerWarnSpy.mockReset()
   onConflictSpy.mockReset()
+  blockedWorkspaceIds.clear()
 })
 
 describe("prepareBroadcast", () => {
   test("returns without db writes or queue enqueues when the broadcast is missing", async () => {
     findFirstBroadcast.mockResolvedValue(undefined)
+
+    await prepareBroadcast(BROADCAST_ID)
+
+    expect(updateCalls).toHaveLength(0)
+    expect(insertCalls).toHaveLength(0)
+    expect(forEachAudienceChunk).not.toHaveBeenCalled()
+    expect(scheduleAddSpy).not.toHaveBeenCalled()
+  })
+
+  test("returns without db writes or queue enqueues when the workspace is frozen", async () => {
+    findFirstBroadcast.mockResolvedValue(baseBroadcast())
+    blockedWorkspaceIds.add(WORKSPACE_ID)
 
     await prepareBroadcast(BROADCAST_ID)
 
@@ -182,6 +212,48 @@ describe("prepareBroadcast", () => {
     )
   })
 
+  test("forwards the persisted Messenger integration id for flow broadcasts without a template", async () => {
+    findFirstBroadcast.mockResolvedValue({
+      ...baseBroadcast(),
+      channel: "messenger",
+      subaction: "messengerTemplateMessage",
+      integrationMessengerId: "messenger-int-1",
+      templateId: null,
+    })
+
+    await prepareBroadcast(BROADCAST_ID)
+
+    expect(findFirstMessengerTemplate).not.toHaveBeenCalled()
+    expect(forEachAudienceChunk).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: WORKSPACE_ID,
+        channels: ["messenger"],
+        integrationMessengerId: "messenger-int-1",
+      }),
+      expect.any(Function),
+    )
+  })
+
+  test("prefers the persisted Messenger integration id over template derivation", async () => {
+    findFirstBroadcast.mockResolvedValue({
+      ...baseBroadcast(),
+      channel: "messenger",
+      subaction: "messengerTemplateMessage",
+      integrationMessengerId: "messenger-int-1",
+      templateId: "template-1",
+    })
+
+    await prepareBroadcast(BROADCAST_ID)
+
+    expect(findFirstMessengerTemplate).not.toHaveBeenCalled()
+    expect(forEachAudienceChunk).toHaveBeenCalledWith(
+      expect.objectContaining({
+        integrationMessengerId: "messenger-int-1",
+      }),
+      expect.any(Function),
+    )
+  })
+
   test("fails closed for invalid persisted channel and subaction values", async () => {
     findFirstBroadcast.mockResolvedValue({
       ...baseBroadcast(),
@@ -204,9 +276,9 @@ describe("prepareBroadcast", () => {
     })
   })
 
-  test("inserts recipients, marks sending, and enqueues sendBroadcast when contacts are found", async () => {
+  test("inserts recipients with DM conversations, skips missing conversations, and enqueues sendBroadcast", async () => {
     findFirstBroadcast.mockResolvedValue(baseBroadcast())
-    findManyConversation.mockResolvedValue([
+    findDMByContactIds.mockResolvedValue([
       { id: "conv-1", contactId: "contact-1" },
     ])
     forEachAudienceChunk.mockImplementation(
@@ -225,11 +297,10 @@ describe("prepareBroadcast", () => {
 
     await prepareBroadcast(BROADCAST_ID)
 
-    expect(findManyConversation).toHaveBeenCalledWith({
-      where: {
-        contactId: { in: ["contact-1", "contact-2"] },
-        workspaceId: WORKSPACE_ID,
-      },
+    expect(findDMByContactIds).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      contactIds: ["contact-1", "contact-2"],
+      channel: "messenger",
     })
     expect(insertCalls).toHaveLength(1)
     expect(onConflictSpy).toHaveBeenCalledTimes(1)
@@ -240,17 +311,15 @@ describe("prepareBroadcast", () => {
         contactInboxId: "ci-1",
         conversationId: "conv-1",
       },
-      {
-        broadcastId: BROADCAST_ID,
-        contactId: "contact-2",
-        contactInboxId: "ci-2",
-        conversationId: "",
-      },
     ])
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      { broadcastId: BROADCAST_ID, skippedCount: 1 },
+      "Skipped broadcast contacts without a DM conversation",
+    )
     expect(updateCalls).toHaveLength(1)
     expect(updateCalls[0].values).toMatchObject({
       status: "sending",
-      contactCount: 2,
+      contactCount: 1,
     })
     expect(scheduleAddSpy).toHaveBeenCalledWith(
       "sendBroadcast",
@@ -264,6 +333,63 @@ describe("prepareBroadcast", () => {
         removeOnComplete: true,
         removeOnFail: true,
       },
+    )
+  })
+
+  test("passes the broadcast channel to the DM conversation lookup so TikTok resolves by sourceId", async () => {
+    findFirstBroadcast.mockResolvedValue({
+      ...baseBroadcast(),
+      channel: "tiktok",
+    })
+    findDMByContactIds.mockResolvedValue([
+      { id: "conv-tt", contactId: "contact-1" },
+    ])
+    forEachAudienceChunk.mockImplementation(
+      async (
+        _input: unknown,
+        onChunk: (
+          rows: Array<{ id: string; contactId: string }>,
+        ) => Promise<unknown>,
+      ) => {
+        await onChunk([{ id: "ci-1", contactId: "contact-1" }])
+      },
+    )
+
+    await prepareBroadcast(BROADCAST_ID)
+
+    expect(findDMByContactIds).toHaveBeenCalledWith({
+      workspaceId: WORKSPACE_ID,
+      contactIds: ["contact-1"],
+      channel: "tiktok",
+    })
+  })
+
+  test("does not insert or enqueue when all audience contacts lack a DM conversation", async () => {
+    findFirstBroadcast.mockResolvedValue(baseBroadcast())
+    findDMByContactIds.mockResolvedValue([])
+    forEachAudienceChunk.mockImplementation(
+      async (
+        _input: unknown,
+        onChunk: (
+          rows: Array<{ id: string; contactId: string }>,
+        ) => Promise<unknown>,
+      ) => {
+        await onChunk([{ id: "ci-1", contactId: "contact-1" }])
+      },
+    )
+
+    await prepareBroadcast(BROADCAST_ID)
+
+    expect(insertCalls).toHaveLength(0)
+    expect(updateCalls).toHaveLength(1)
+    expect(updateCalls[0].values).toMatchObject({
+      status: "sent",
+      contactCount: 0,
+    })
+    expect(scheduleAddSpy).not.toHaveBeenCalled()
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      { broadcastId: BROADCAST_ID, skippedCount: 1 },
+      "Skipped broadcast contacts without a DM conversation",
     )
   })
 

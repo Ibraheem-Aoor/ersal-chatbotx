@@ -1,14 +1,9 @@
-import { db, eq } from "@chatbotx.io/database/client"
+import { contactCustomFieldValueService } from "@chatbotx.io/business/contact-custom-field-value"
+import { smartDelayTypes } from "@chatbotx.io/database/partials"
+import { webhookChannelOrigin } from "@chatbotx.io/events/context"
 import {
-  smartDelayStatuses,
-  smartDelayTypes,
-} from "@chatbotx.io/database/partials"
-import { contactOnSmartDelayModel } from "@chatbotx.io/database/schema"
-import {
-  buildJobId,
   computeTriggerAt,
   type EdgeSchema,
-  ENQUEUE_DELAY_MS,
   type SplitTrafficStepSchema,
   type StartAnotherNodeStepSchema,
   type StartExternalFlowStepSchema,
@@ -17,18 +12,16 @@ import {
   stepTypes,
   type WaitStepSchema,
 } from "@chatbotx.io/flow-config"
-import { createId } from "@chatbotx.io/utils"
 import {
-  ChatJobAction,
   type ChatJobSendFlowStep,
-  chatQueue,
   IntegrationJobAction,
   integrationQueue,
 } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
-import { waitForChatJobCompletion } from "../utils/message"
 import { syncActiveCampaignContact } from "./active-campaign-handler"
 import { handleAIAnalyzeImage } from "./analyze-image"
+import { appointmentScheduling } from "./appointment-scheduling"
+import { handleCondition } from "./condition"
 import {
   addContactNotes,
   addContactSequence,
@@ -44,11 +37,18 @@ import {
   subscribeBroadcast,
   unsubscribeBroadcast,
 } from "./contact"
+import { markCouponUsed, setUpCoupon } from "./coupon"
 import { handleAIDeleteMessageHistory } from "./delete-message-history"
 import { subscribeDripSubscriber } from "./drip-handler"
 import { handleAIEditImage } from "./edit-image"
 import { handleAIExtractData } from "./extract-data/index"
-import { type ExecuteStepProps, seekConnectedNode } from "./flow-utils"
+import { handleFacebookCustomAudience } from "./facebook-custom-audience-handler"
+import {
+  type ExecuteStepProps,
+  enqueueFlowStepMessage,
+  seekConnectedNode,
+} from "./flow-utils"
+import { handleFollowUp } from "./follow-up"
 import { handleAIGenerateImage } from "./generate-image"
 import { handleAIGenerateText } from "./generate-text"
 import { handleAIGenerateTextAgent } from "./generate-text-agent"
@@ -57,15 +57,20 @@ import { getUserData } from "./get-user-data"
 import { syncKlaviyoProfile } from "./klaviyo-handler"
 import { addMailchimpMember } from "./mailchimp-handler"
 import { addMailerLiteSubscriber } from "./mailer-lite-handler"
+import { handleMakeStep } from "./make-handler"
+import { updateMessengerContactData } from "./messenger-contact-data"
 import {
   disableMessengerComposer,
   enableMessengerComposer,
   setMessengerPersona,
   setMessengerUserPersistentMenu,
 } from "./messenger-user-menu"
+import { handleSendMetaCapiEventStep } from "./meta-conversions/send-meta-capi-event-step-handler"
 import { addOrUpdateMoosendContact } from "./moosend-handler"
+import { questionnaires } from "./questionnaires"
 import { sendEmail } from "./send-email"
 import { addSendGridContact } from "./sendgrid-handler"
+import { scheduleSmartDelayResume } from "./smart-delay"
 import { handleAISpeechToText } from "./speech-to-text"
 
 import {
@@ -96,7 +101,9 @@ import {
   formatDate,
   generateCode,
   getDataFromJSON,
+  handleExecuteJavascript,
 } from "./tool-handler"
+import { handleTriggerN8nStep } from "./trigger-n8n-handler"
 
 export async function sendFlowMessage(
   props: ExecuteStepProps<ChatJobSendFlowStep["data"]["step"]>,
@@ -104,28 +111,28 @@ export async function sendFlowMessage(
   const {
     conversation,
     flowVersion,
+    useLatestFlowVersion,
     step,
     trackingContext,
     metadata,
     quickReplies,
     sendFrom,
+    commentAnchor,
+    appointmentId,
   } = props
-  const job = await chatQueue.add(ChatJobAction.sendFlowMessage, {
-    type: ChatJobAction.sendFlowMessage,
-    data: {
-      conversationId: conversation.id,
-      flowId: flowVersion.flowId,
-      flowVersionId: flowVersion.id,
-      step,
-      trackingContext,
-      metadata,
-      quickReplies,
-      sendFrom,
-    },
-  })
-  await waitForChatJobCompletion(job, {
+  await enqueueFlowStepMessage({
     conversationId: conversation.id,
-    stepId: step.id,
+    contactInboxId: props.contactInbox.id,
+    flowId: flowVersion.flowId,
+    flowVersionId: useLatestFlowVersion ? undefined : flowVersion.id,
+    executedFlowVersionId: flowVersion.id,
+    step,
+    trackingContext,
+    metadata,
+    quickReplies,
+    sendFrom,
+    commentAnchor,
+    appointmentId,
   })
 }
 
@@ -138,6 +145,8 @@ async function splitTraffic({
   useLatestFlowVersion,
   sendFrom,
   nodeVisits,
+  commentAnchor,
+  appointmentId,
 }: ExecuteStepProps<SplitTrafficStepSchema>) {
   if (!(targetId && step.cases.length)) {
     return
@@ -170,11 +179,22 @@ async function splitTraffic({
         nodeId: connectedEdge.target,
         sendFrom,
         nodeVisits,
+        commentAnchor,
+        appointmentId,
+        origin: webhookChannelOrigin(),
       },
     })
   }
 }
 
+// Known gap: `commentAnchor` (comment-triggered public/private-reply flows,
+// see `flow-utils.ts`) is not threaded into `scheduleSmartDelayResume` —
+// `ContactOnSmartDelay` has no column for it, and the resumed `sendFlow` job
+// is rebuilt from that DB row alone (`buildSendFlowResumeJob`). A public or
+// private reply flow with a "wait" step before its first message step loses
+// the anchor: private falls back to the normal (messaging-window-gated) DM
+// send, public falls back to a normal flow DM instead of a comment reply.
+// Fixing this needs a schema change; out of scope for now.
 async function handleWait({
   conversation,
   flowVersion,
@@ -182,7 +202,9 @@ async function handleWait({
   targetId,
   step,
   useLatestFlowVersion,
+  metadata,
   sendFrom,
+  appointmentId,
 }: ExecuteStepProps<WaitStepSchema>): Promise<ExecuteStepResult> {
   if (!(targetId && step)) {
     return { status: "skip", result: null }
@@ -196,16 +218,10 @@ async function handleWait({
 
   const triggerAt = await computeTriggerAt(step, async (customFieldId) => {
     try {
-      const customField = await db.query.contactCustomFieldModel.findFirst({
-        where: {
-          contactId: contactInbox.contactId,
-          customFieldId,
-        },
-        columns: {
-          value: true,
-        },
+      return await contactCustomFieldValueService.findValue({
+        contactId: contactInbox.contactId,
+        customFieldId,
       })
-      return customField?.value ?? null
     } catch (err) {
       logger.error(
         { err, customFieldId },
@@ -224,58 +240,25 @@ async function handleWait({
   }
 
   const connectedNodeId = seekConnectedNode(flowVersion, targetId)
-  const diffMs = triggerAt.getTime() - Date.now()
 
   if (!connectedNodeId) {
     return { status: "skip", result: null }
   }
 
-  const rowId = createId()
-  const data: typeof contactOnSmartDelayModel.$inferInsert = {
-    id: rowId,
+  await scheduleSmartDelayResume({
+    type: smartDelayTypes.enum.waitNode,
+    triggerAt,
     workspaceId: conversation.workspaceId,
     flowId: flowVersion.flowId,
     flowVersionId: useLatestFlowVersion ? null : flowVersion.id,
-    contactInboxId,
     conversationId: conversation.id,
-    nodeId: connectedNodeId,
+    contactInboxId,
+    connectedNodeId,
     stepId: step.id,
-    type: smartDelayTypes.enum.waitNode,
-    triggerAt,
-    status: smartDelayStatuses.enum.pending,
-  }
-
-  // Insert tracking record first so a crash during enqueue still has a recovery path via scanner
-  await db.insert(contactOnSmartDelayModel).values(data)
-
-  if (diffMs <= ENQUEUE_DELAY_MS) {
-    try {
-      await integrationQueue.add(
-        IntegrationJobAction.sendFlow,
-        {
-          type: IntegrationJobAction.sendFlow,
-          data: {
-            conversationId: conversation.id,
-            flowId: flowVersion.flowId,
-            flowVersionId: useLatestFlowVersion ? undefined : flowVersion.id,
-            nodeId: connectedNodeId,
-            contactInboxId,
-            sendFrom,
-          },
-        },
-        { delay: Math.max(0, diffMs), jobId: buildJobId(rowId) },
-      )
-      await db
-        .update(contactOnSmartDelayModel)
-        .set({ status: smartDelayStatuses.enum.completed })
-        .where(eq(contactOnSmartDelayModel.id, rowId))
-    } catch (err) {
-      logger.warn(
-        { err, rowId },
-        "Failed to immediately enqueue smart delay; scanner will pick it up",
-      )
-    }
-  }
+    metadata,
+    sendFrom,
+    appointmentId,
+  })
 
   return { status: "wait", result: null }
 }
@@ -292,8 +275,11 @@ async function startAnotherNode(
       flowVersionId: props.flowVersion.id,
       nodeId: props.step.nodeId,
       metadata: props.metadata,
+      appointmentId: props.appointmentId,
       sendFrom: props.sendFrom,
       nodeVisits: props.nodeVisits,
+      commentAnchor: props.commentAnchor,
+      origin: webhookChannelOrigin(),
     },
   })
 }
@@ -305,6 +291,8 @@ async function startExternalFlow({
   metadata,
   sendFrom,
   nodeVisits,
+  commentAnchor,
+  appointmentId,
 }: ExecuteStepProps<StartExternalFlowStepSchema>) {
   await integrationQueue.add(IntegrationJobAction.sendFlow, {
     type: IntegrationJobAction.sendFlow,
@@ -313,8 +301,11 @@ async function startExternalFlow({
       contactInboxId: contactInbox.id,
       flowId: step.flowId,
       metadata,
+      appointmentId,
       sendFrom,
       nodeVisits,
+      commentAnchor,
+      origin: webhookChannelOrigin(),
     },
   })
 }
@@ -326,6 +317,8 @@ async function startExternalNode({
   metadata,
   sendFrom,
   nodeVisits,
+  commentAnchor,
+  appointmentId,
 }: ExecuteStepProps<StartExternalNodeStepSchema>) {
   await integrationQueue.add(IntegrationJobAction.sendFlow, {
     type: IntegrationJobAction.sendFlow,
@@ -335,8 +328,11 @@ async function startExternalNode({
       flowId: step.flowId,
       nodeId: step.nodeId,
       metadata,
+      appointmentId,
       sendFrom,
       nodeVisits,
+      commentAnchor,
+      origin: webhookChannelOrigin(),
     },
   })
 }
@@ -374,6 +370,9 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.autoAssignConversation]: stepAutoAssignConversation,
   [stepTypes.enum.blockContact]: stepBlockContact,
   [stepTypes.enum.callApi]: externalRequest,
+  [stepTypes.enum.make]: handleMakeStep,
+  [stepTypes.enum.triggerN8n]: handleTriggerN8nStep,
+  [stepTypes.enum.executeJavascript]: handleExecuteJavascript,
   [stepTypes.enum.cancelContactInput]: undefined,
   [stepTypes.enum.clearCustomField]: clearContactCustomField,
   [stepTypes.enum.countCharacters]: countCharacters,
@@ -387,6 +386,8 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.landingPage]: undefined,
   [stepTypes.enum.markEmailVerified]: markEmailVerified,
   [stepTypes.enum.activeCampaignSyncContact]: syncActiveCampaignContact,
+  [stepTypes.enum.facebookCustomAudience]: handleFacebookCustomAudience,
+  [stepTypes.enum.sendMetaCapiEvent]: handleSendMetaCapiEventStep,
   [stepTypes.enum.getResponseAddContact]: addGetResponseContact,
   [stepTypes.enum.dripSubscribeSubscriber]: subscribeDripSubscriber,
   [stepTypes.enum.mailchimpAddMember]: addMailchimpMember,
@@ -425,9 +426,14 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.unfollowConversation]: stepUnfollowConversation,
   [stepTypes.enum.getUserData]: getUserData,
   [stepTypes.enum.wait]: handleWait,
+  [stepTypes.enum.followUp]: handleFollowUp,
   [stepTypes.enum.startExternalFlow]: startExternalFlow,
   [stepTypes.enum.chooseChannel]: undefined,
-  [stepTypes.enum.filterContact]: undefined,
+  [stepTypes.enum.appointmentScheduling]: appointmentScheduling,
+  [stepTypes.enum.questionnaires]: questionnaires,
+  [stepTypes.enum.setUpCoupon]: setUpCoupon,
+  [stepTypes.enum.markCouponUsed]: markCouponUsed,
+  [stepTypes.enum.condition]: handleCondition,
   [stepTypes.enum.subscribeBroadcast]: subscribeBroadcast,
   [stepTypes.enum.unsubscribeBroadcast]: unsubscribeBroadcast,
   [stepTypes.enum.splitTraffic]: splitTraffic,
@@ -454,4 +460,5 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.enableMessengerComposer]: enableMessengerComposer,
   [stepTypes.enum.disableMessengerComposer]: disableMessengerComposer,
   [stepTypes.enum.setMessengerPersona]: setMessengerPersona,
+  [stepTypes.enum.updateMessengerContactData]: updateMessengerContactData,
 }

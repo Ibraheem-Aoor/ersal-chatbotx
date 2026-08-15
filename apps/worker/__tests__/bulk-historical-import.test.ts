@@ -18,7 +18,10 @@ const {
   mockEmit,
   mockCreateId,
   mockBulkCreate,
+  mockBulkUpdateTracking,
   mockCreateMessageRepository,
+  mockWorkspaceFind,
+  mockWorkspaceUsageIncrement,
 } = vi.hoisted(() => {
   const mockBulkCreate = vi.fn().mockResolvedValue([])
   const mockBulkCreateAttachments = vi.fn().mockResolvedValue([])
@@ -38,7 +41,10 @@ const {
     mockEmit: vi.fn(() => Promise.resolve()),
     mockCreateId: vi.fn(),
     mockBulkCreate,
+    mockBulkUpdateTracking: vi.fn().mockResolvedValue(null),
     mockCreateMessageRepository,
+    mockWorkspaceFind: vi.fn(),
+    mockWorkspaceUsageIncrement: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -61,9 +67,11 @@ vi.mock("@chatbotx.io/database/client", () => {
   })
   return {
     db: {
+      execute: mockTxExecute,
       transaction: mockTransaction,
       update: mockDbUpdate,
     },
+    and: vi.fn((...args: unknown[]) => ({ __and: args })),
     eq: vi.fn((col: unknown, val: unknown) => ({ __eq: [col, val] })),
     inArray: vi.fn((col: unknown, vals: unknown) => ({
       __inArray: [col, vals],
@@ -102,11 +110,31 @@ vi.mock("@chatbotx.io/database/repositories", () => ({
   createMessageRepository: mockCreateMessageRepository,
 }))
 
+vi.mock("@chatbotx.io/business", () => ({
+  contactInboxService: {
+    bulkUpdateTracking: mockBulkUpdateTracking,
+  },
+  messageCleanupService: {
+    cancelByInboxSource: vi.fn().mockResolvedValue(undefined),
+  },
+  workspaceService: {
+    find: mockWorkspaceFind,
+  },
+  workspaceUsageService: {
+    increment: mockWorkspaceUsageIncrement,
+  },
+}))
+
 vi.mock("@chatbotx.io/event-bus", () => ({ emit: mockEmit }))
 vi.mock("@chatbotx.io/events", () => ({
   emitContactCreated: mockEmitContactCreated,
 }))
-vi.mock("@chatbotx.io/utils", () => ({ createId: mockCreateId }))
+// Partial: `@chatbotx.io/database/partials` calls `zodBigintAsString()` at
+// module scope, so replacing the whole module breaks the import chain.
+vi.mock("@chatbotx.io/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
+  return { ...actual, createId: mockCreateId }
+})
 
 // ---------------------------------------------------------------------------
 // Import after mocks
@@ -295,10 +323,16 @@ describe("bulkImportHistorical", () => {
     })
     // Re-wire repository mock after clearAllMocks.
     mockBulkCreate.mockResolvedValue([])
+    mockBulkUpdateTracking.mockResolvedValue(null)
     mockCreateMessageRepository.mockResolvedValue({
       bulkCreate: mockBulkCreate,
       bulkCreateAttachments: vi.fn().mockResolvedValue([]),
     })
+    mockWorkspaceFind.mockResolvedValue({
+      id: "workspace-1",
+      ownerId: "owner-1",
+    })
+    mockWorkspaceUsageIncrement.mockResolvedValue(undefined)
   })
 
   it("empty batch returns zero counts without opening a transaction", async () => {
@@ -346,6 +380,114 @@ describe("bulkImportHistorical", () => {
     expect(result.skippedContacts).toBe(0)
     expect(result.failedMessages).toBe(0)
     expect(result.contactInboxIds.get("src-1")).toBe("ci-1")
+  })
+
+  it("tracks workspace usage for newly-imported coexist contacts without consuming quota", async () => {
+    stubNewContactsTransaction([
+      {
+        sourceId: "src-1",
+        contactId: "id-1",
+        contactInboxId: "ci-1",
+        conversationId: "conv-1",
+      },
+    ])
+    mockBulkCreate.mockResolvedValueOnce([{ id: "m-1", sourceId: "m-src-1" }])
+
+    await bulkImportHistorical({
+      inbox,
+      workspaceId,
+      runId: "12345",
+      batch: [{ contact: contact("src-1"), messages: [msg("m-src-1")] }],
+    })
+
+    expect(mockWorkspaceFind).not.toHaveBeenCalled()
+    expect(mockWorkspaceUsageIncrement).toHaveBeenCalledWith(
+      workspaceId,
+      "contacts",
+      1,
+    )
+  })
+
+  it("does not touch the contacts quota when no new contact is imported", async () => {
+    // All contacts already exist — bulkImportContacts resolves them without
+    // any new insert, so importedContacts stays 0 (mirrors the idempotent
+    // re-run scenario below).
+    enqueueSelect({
+      rows: [{ id: "ci-existing", sourceId: "src-1", contactId: "c-existing" }],
+    })
+    enqueueSelect({
+      rows: [{ id: "conv-existing", contactId: "c-existing" }],
+    })
+    mockBulkCreate.mockResolvedValueOnce([])
+
+    const result = await bulkImportHistorical({
+      inbox,
+      workspaceId,
+      runId: "12345",
+      batch: [{ contact: contact("src-1"), messages: [] }],
+    })
+
+    expect(result.importedContacts).toBe(0)
+    expect(mockWorkspaceFind).not.toHaveBeenCalled()
+    expect(mockWorkspaceUsageIncrement).not.toHaveBeenCalled()
+  })
+
+  it("flushes contact-inbox activity in one bulk service call", async () => {
+    const firstMessageAt = new Date("2026-07-01T01:00:00.000Z")
+    const secondMessageAt = new Date("2026-07-02T02:00:00.000Z")
+    stubNewContactsTransaction([
+      {
+        sourceId: "src-1",
+        contactId: "contact-1",
+        contactInboxId: "ci-1",
+        conversationId: "conv-1",
+      },
+      {
+        sourceId: "src-2",
+        contactId: "contact-2",
+        contactInboxId: "ci-2",
+        conversationId: "conv-2",
+      },
+    ])
+    mockBulkCreate.mockResolvedValue([{ id: "m-1", sourceId: "m-src" }])
+
+    await bulkImportHistorical({
+      inbox,
+      workspaceId,
+      runId: "12345",
+      batch: [
+        {
+          contact: contact("src-1"),
+          messages: [msg("m-src-1", { createdAt: firstMessageAt })],
+        },
+        {
+          contact: contact("src-2"),
+          messages: [msg("m-src-2", { createdAt: secondMessageAt })],
+        },
+      ],
+    })
+
+    expect(mockBulkUpdateTracking).toHaveBeenCalledTimes(1)
+    expect(mockBulkUpdateTracking).toHaveBeenCalledWith({
+      rows: expect.arrayContaining([
+        {
+          contactInboxId: "ci-1",
+          contactId: "contact-1",
+          workspaceId: "ws-1",
+          firstInteractionAt: firstMessageAt,
+          lastMessageAt: firstMessageAt,
+          lastIncomingMessageAt: firstMessageAt,
+        },
+        {
+          contactInboxId: "ci-2",
+          contactId: "contact-2",
+          workspaceId: "ws-1",
+          firstInteractionAt: secondMessageAt,
+          lastMessageAt: secondMessageAt,
+          lastIncomingMessageAt: secondMessageAt,
+        },
+      ]),
+    })
   })
 
   it("counts duplicates as skippedMessages when message INSERT returns fewer rows than input", async () => {

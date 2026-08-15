@@ -1,20 +1,22 @@
 import { macRepository } from "@chatbotx.io/analytics"
 import {
-  liveKeyFor,
   parseLiveCount,
   tenantService,
-  USER_QUOTA_LABEL,
   userQuotaService,
+  WORKSPACE_USAGE_LABEL,
+  workspaceUsageService,
 } from "@chatbotx.io/business"
-import { and, count, db, eq, ne, sql } from "@chatbotx.io/database/client"
+import { count, db, eq, sql } from "@chatbotx.io/database/client"
 import {
   contactModel,
   inboxModel,
   userQuotaModel,
   workspaceMemberModel,
   workspaceModel,
+  workspaceUsageModel,
 } from "@chatbotx.io/database/schema"
 import { cacheConnections } from "@chatbotx.io/redis"
+import { liveKeyFor, USER_QUOTA_LABEL } from "@chatbotx.io/utils"
 import { logger } from "../../lib/logger"
 
 // Derived from the shared key builder so the reconcile walks exactly the keys
@@ -34,6 +36,8 @@ type CacheClient = Awaited<ReturnType<typeof cacheConnections.useExisting>>
 
 export const syncUserQuota = async (): Promise<void> => {
   const client = await cacheConnections.useExisting()
+
+  await reconcileWorkspaceUsage(client)
 
   // SCAN instead of KEYS to avoid blocking Redis on large key sets
   const userIds: string[] = []
@@ -79,6 +83,98 @@ export const syncUserQuota = async (): Promise<void> => {
   }
 }
 
+/**
+ * Re-ground the display-only WorkspaceUsage breakdown from its source tables.
+ * Bot messages intentionally remain untouched because their account-level
+ * counterpart is also write-through-only.
+ */
+export const reconcileWorkspaceUsage = async (
+  client: CacheClient,
+): Promise<void> => {
+  try {
+    const [workspaces, contactCounts, channelCounts, memberCounts, macCounts] =
+      await Promise.all([
+        db.select({ id: workspaceModel.id }).from(workspaceModel),
+        db
+          .select({ workspaceId: contactModel.workspaceId, used: count() })
+          .from(contactModel)
+          .groupBy(contactModel.workspaceId),
+        db
+          .select({ workspaceId: inboxModel.workspaceId, used: count() })
+          .from(inboxModel)
+          .groupBy(inboxModel.workspaceId),
+        db
+          .select({
+            workspaceId: workspaceMemberModel.workspaceId,
+            used: count(),
+          })
+          .from(workspaceMemberModel)
+          .groupBy(workspaceMemberModel.workspaceId),
+        macRepository.getActiveContactCountsByWorkspaceIds(),
+      ])
+
+    const contactsByWorkspace = new Map(
+      contactCounts.map((row) => [row.workspaceId, row.used]),
+    )
+    const channelsByWorkspace = new Map(
+      channelCounts.map((row) => [row.workspaceId, row.used]),
+    )
+    const membersByWorkspace = new Map(
+      memberCounts.map((row) => [row.workspaceId, row.used]),
+    )
+
+    const BATCH_SIZE = 50
+    for (let i = 0; i < workspaces.length; i += BATCH_SIZE) {
+      const batch = workspaces.slice(i, i + BATCH_SIZE)
+      await Promise.all(
+        batch.map(async ({ id: workspaceId }) => {
+          const contactsUsed = contactsByWorkspace.get(workspaceId) ?? 0
+          const channelsUsed = channelsByWorkspace.get(workspaceId) ?? 0
+          const teamMembersUsed = membersByWorkspace.get(workspaceId) ?? 0
+          const macUsed = macCounts.get(workspaceId) ?? 0
+
+          await db
+            .insert(workspaceUsageModel)
+            .values({
+              workspaceId,
+              contactsUsed,
+              channelsUsed,
+              teamMembersUsed,
+              macUsed,
+              syncedAt: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: workspaceUsageModel.workspaceId,
+              set: {
+                contactsUsed,
+                channelsUsed,
+                teamMembersUsed,
+                macUsed,
+                syncedAt: new Date(),
+                updatedAt: sql`CURRENT_TIMESTAMP`,
+              },
+            })
+
+          await client.hset(
+            liveKeyFor(WORKSPACE_USAGE_LABEL, workspaceId),
+            "contacts",
+            String(contactsUsed),
+            "channels",
+            String(channelsUsed),
+            "teamMembers",
+            String(teamMembersUsed),
+            "mac",
+            String(macUsed),
+          )
+          await workspaceUsageService.invalidate(workspaceId)
+        }),
+      )
+    }
+  } catch (err) {
+    logger.error({ err }, "workspace-usage: failed to reconcile usage")
+  }
+}
+
 export const reconcileUser = async (userId: string): Promise<void> => {
   try {
     // A reseller owner's `UserQuota` row IS the tenant pool: reconcile it from
@@ -96,7 +192,7 @@ export const reconcileUser = async (userId: string): Promise<void> => {
 
     const [
       [contactsResult],
-      [teamMembersResult],
+      teamMembersUsed,
       [workspacesResult],
       [channelsResult],
     ] = await Promise.all([
@@ -109,19 +205,7 @@ export const reconcileUser = async (userId: string): Promise<void> => {
         )
         .where(eq(workspaceModel.ownerId, userId)),
 
-      db
-        .select({ count: count() })
-        .from(workspaceMemberModel)
-        .innerJoin(
-          workspaceModel,
-          eq(workspaceMemberModel.workspaceId, workspaceModel.id),
-        )
-        .where(
-          and(
-            eq(workspaceModel.ownerId, userId),
-            ne(workspaceMemberModel.role, "owner"),
-          ),
-        ),
+      userQuotaService.countDistinctTeamMembersForOwner(userId),
 
       db
         .select({ count: count() })
@@ -139,7 +223,6 @@ export const reconcileUser = async (userId: string): Promise<void> => {
     ])
 
     const contactsUsed = contactsResult?.count ?? 0
-    const teamMembersUsed = teamMembersResult?.count ?? 0
     const workspacesUsed = workspacesResult?.count ?? 0
     const channelsUsed = channelsResult?.count ?? 0
 
@@ -188,15 +271,29 @@ export const reconcileUser = async (userId: string): Promise<void> => {
     // `periodEnd === null` marks a lifetime plan, which never resets.
     const stored = await db.query.userQuotaModel.findFirst({
       where: { userId },
-      columns: { macUsed: true, periodStart: true, periodEnd: true },
+      columns: {
+        macUsed: true,
+        periodStart: true,
+        periodEnd: true,
+        monthlyBotMessagesPeriodStart: true,
+      },
     })
+    const isLifetime = stored?.periodEnd == null
 
     await reconcileMac(
       userId,
       client,
       stored?.macUsed ?? 0,
       stored?.periodStart?.toISOString() ?? "",
-      stored?.periodEnd == null,
+      isLifetime,
+    )
+
+    await reconcileMonthlyBotMessages(
+      userId,
+      client,
+      stored?.monthlyBotMessagesPeriodStart ?? null,
+      stored?.periodStart ?? null,
+      isLifetime,
     )
 
     await userQuotaService.invalidate(userId)
@@ -306,6 +403,127 @@ const persistMacUsed = async (userId: string, value: number): Promise<void> => {
       target: userQuotaModel.userId,
       set: {
         macUsed: value,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      },
+    })
+}
+
+/** Live-counter hash field holding the running monthly-bot-messages count. */
+const MONTHLY_BOT_MESSAGES_FIELD = "monthlyBotMessages"
+
+/**
+ * Reconcile the monthly-bot-messages counter's billing-cycle reset. Unlike MAC
+ * (which is keyed off a Redis-only stamp, safe because a durable ledger
+ * backstops it), this metric has no reconcile ledger at all — losing the stamp
+ * would silently mis-fire or skip a reset on a value that (once top-up credits
+ * exist) also gates paid purchases. So the stamp is a real DB column,
+ * `UserQuota.monthlyBotMessagesPeriodStart`, not a Redis field.
+ *
+ * - Lifetime plan (`periodEnd` null) → never reset; `botMessages`/credits ride
+ *   the separate lifetime cap, and this metric simply isn't in play.
+ * - No billing anchor (`periodStart` null) → no-op.
+ * - Unstamped row (`monthlyBotMessagesPeriodStart` null; first run or a row
+ *   that predates this column) → stamp to the current `periodStart`, but do
+ *   NOT zero the counter — existing rows have accumulated an un-reset count
+ *   since forever, and zeroing on first sight would hand every existing
+ *   customer a free month. Adopt-into-current-period, mirroring the MAC
+ *   unstamped-counter rule (`resolveMacReconcileAction`).
+ * - Stamp older than `periodStart` → the billing cycle rolled over: zero the
+ *   counter and re-stamp.
+ * - Stamp equal to `periodStart` → no-op, already reconciled this period.
+ */
+export interface MonthlyBotMessagesResetAction {
+  /** Zero `UserQuota.monthlyBotMessagesUsed` and the live counter field. */
+  reset: boolean
+  /** (Re)stamp `monthlyBotMessagesPeriodStart` to `periodStart`. */
+  stamp: boolean
+}
+
+const NO_OP_MONTHLY_RESET: MonthlyBotMessagesResetAction = {
+  reset: false,
+  stamp: false,
+}
+
+export function resolveMonthlyBotMessagesReset(
+  storedPeriodStamp: Date | null,
+  periodStart: Date | null,
+  isLifetime: boolean,
+): MonthlyBotMessagesResetAction {
+  if (isLifetime || periodStart === null) {
+    return NO_OP_MONTHLY_RESET
+  }
+
+  if (storedPeriodStamp === null) {
+    return { reset: false, stamp: true }
+  }
+
+  if (storedPeriodStamp.getTime() < periodStart.getTime()) {
+    return { reset: true, stamp: true }
+  }
+
+  return NO_OP_MONTHLY_RESET
+}
+
+/**
+ * Apply {@link resolveMonthlyBotMessagesReset}'s decision. Ordering matters: the
+ * DB counter is zeroed BEFORE the live Redis field, so a crash between the two
+ * writes leaves the live count high — enforcement fails CLOSED (briefly
+ * over-blocks) rather than open (under-blocks past a paid-for cap).
+ */
+const reconcileMonthlyBotMessages = async (
+  userId: string,
+  client: CacheClient,
+  storedPeriodStamp: Date | null,
+  periodStart: Date | null,
+  isLifetime: boolean,
+): Promise<void> => {
+  const action = resolveMonthlyBotMessagesReset(
+    storedPeriodStamp,
+    periodStart,
+    isLifetime,
+  )
+
+  if (!action.stamp) {
+    return
+  }
+
+  if (action.reset) {
+    await db
+      .insert(userQuotaModel)
+      .values({
+        userId,
+        monthlyBotMessagesUsed: 0,
+        monthlyBotMessagesPeriodStart: periodStart,
+        syncedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userQuotaModel.userId,
+        set: {
+          monthlyBotMessagesUsed: 0,
+          monthlyBotMessagesPeriodStart: periodStart,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        },
+      })
+    await client.hset(
+      liveKeyFor(USER_QUOTA_LABEL, userId),
+      MONTHLY_BOT_MESSAGES_FIELD,
+      "0",
+    )
+    return
+  }
+
+  // Unstamped row: adopt into the current period without touching the counter.
+  await db
+    .insert(userQuotaModel)
+    .values({
+      userId,
+      monthlyBotMessagesPeriodStart: periodStart,
+      syncedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: userQuotaModel.userId,
+      set: {
+        monthlyBotMessagesPeriodStart: periodStart,
         updatedAt: sql`CURRENT_TIMESTAMP`,
       },
     })

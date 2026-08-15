@@ -1,10 +1,12 @@
 import { db } from "@chatbotx.io/database/client"
-import { triggerEventTypes } from "@chatbotx.io/database/partials"
+import {
+  type OperatorType,
+  triggerEventTypes,
+} from "@chatbotx.io/database/partials"
 import type { WorkspaceModel } from "@chatbotx.io/database/types"
+import { toZonedWallClock } from "@chatbotx.io/utils/datetime"
 import type { ConditionEvaluationContext } from "../types"
 import { parseDateTimeValue } from "../utils/datetime-calculator"
-
-const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/
 
 export class ConditionEvaluator {
   async evaluate(context: ConditionEvaluationContext): Promise<boolean> {
@@ -14,16 +16,21 @@ export class ConditionEvaluator {
     switch (type) {
       case triggerEventTypes.enum.tagApplied:
       case triggerEventTypes.enum.tagRemoved:
-        return this.evaluateTagCondition(
-          type,
+        return this.evaluateSourceIdMatch(
           sourceId,
           eventData.eventData.tagId as string,
+        )
+
+      case triggerEventTypes.enum.contactInfoUpdated:
+        return this.evaluateSourceIdMatch(
+          sourceId,
+          eventData.eventData.infoType as string,
         )
 
       case triggerEventTypes.enum.customFieldValueChanged:
         return await this.evaluateCustomFieldCondition(
           sourceId,
-          operator,
+          operator as OperatorType | null,
           value,
           eventData.eventData,
           contactId,
@@ -58,20 +65,20 @@ export class ConditionEvaluator {
     }
   }
 
-  private evaluateTagCondition(
-    _conditionType: string,
-    expectedTagId: string | null,
-    actualTagId: string,
+  /** Conditions pinned to a source (tag id, contact info type, …) match only that exact source. */
+  private evaluateSourceIdMatch(
+    expectedSourceId: string | null,
+    actualSourceId: string,
   ): boolean {
-    if (!expectedTagId) {
+    if (!expectedSourceId) {
       return false
     }
-    return expectedTagId === actualTagId
+    return expectedSourceId === actualSourceId
   }
 
   private async evaluateCustomFieldCondition(
     customFieldId: string | null,
-    operator: string | null,
+    operator: OperatorType | null,
     expectedValue: unknown,
     metadata: Record<string, unknown>,
     contactId: string,
@@ -112,22 +119,63 @@ export class ConditionEvaluator {
       actualValue,
       expectedValue,
       customField?.type,
-      workspace.timezone || "UTC",
+      this.extractConditionTimezone(expectedValue) ||
+        workspace.timezone ||
+        "UTC",
     )
   }
 
+  /**
+   * Timezone the editor captured on the condition's stored value (e.g.
+   * `{ text, timezone }` for a date/datetime comparison). Absent on legacy
+   * conditions, in which case callers fall back to the workspace zone.
+   */
+  private extractConditionTimezone(value: unknown): string | undefined {
+    if (typeof value === "object" && value !== null) {
+      const timezone = (value as Record<string, unknown>).timezone
+      if (typeof timezone === "string" && timezone.length > 0) {
+        return timezone
+      }
+    }
+    return
+  }
+
+  /**
+   * The trigger editor persists operators from the `operatorTypes` enum
+   * (`eq`, `ne`, `isEmpty`, …) — the shared contact-filter vocabulary — while
+   * this evaluator was originally written against a legacy `is`/`isNot`/
+   * `hasAnyValue` spelling. Map the stored vocabulary onto the internal one at
+   * this single boundary so unrecognized names can no longer fall through to
+   * `default: return false` and silently drop a matching condition. Legacy
+   * values pass through unchanged, keeping any old stored conditions working.
+   */
+  private normalizeOperator(operator: OperatorType): string {
+    const aliases: Record<string, string> = {
+      eq: "is",
+      ne: "isNot",
+      isEmpty: "hasNoValue",
+      isNotEmpty: "hasAnyValue",
+      notContains: "doesNotContain",
+      isBetween: "interval",
+      notBetween: "notInterval",
+    }
+    return aliases[operator] ?? operator
+  }
+
   private evaluateOperator(
-    operator: string,
+    operator: OperatorType,
     actualValue: unknown,
     expectedValue: unknown,
     customFieldType?: string,
     timezone?: string,
   ): boolean {
-    if (operator === "hasAnyValue") {
+    const normalizedOperator = this.normalizeOperator(operator)
+
+    if (normalizedOperator === "hasAnyValue") {
       return actualValue != null && actualValue !== ""
     }
 
-    if (operator === "hasNoValue") {
+    if (normalizedOperator === "hasNoValue") {
       return (
         actualValue == null || actualValue === "" || actualValue === undefined
       )
@@ -137,9 +185,12 @@ export class ConditionEvaluator {
     const isDateField =
       customFieldType === "date" || customFieldType === "datetime"
 
-    if (operator === "interval" || operator === "notInterval") {
+    if (
+      normalizedOperator === "interval" ||
+      normalizedOperator === "notInterval"
+    ) {
       return this.evaluateIntervalOperator(
-        operator,
+        normalizedOperator,
         actualValue,
         expected,
         isDateField,
@@ -149,14 +200,18 @@ export class ConditionEvaluator {
 
     if (isDateField) {
       return this.evaluateDateOperator(
-        operator,
+        normalizedOperator,
         actualValue,
         expected,
         timezone || "UTC",
       )
     }
 
-    return this.evaluateStandardOperator(operator, actualValue, expected)
+    return this.evaluateStandardOperator(
+      normalizedOperator,
+      actualValue,
+      expected,
+    )
   }
 
   private extractExpectedValue(expectedValue: unknown): unknown {
@@ -357,6 +412,7 @@ export class ConditionEvaluator {
       timeValue?: number
       timeType?: string
       at?: string
+      timezone?: string
     }
 
     const { triggerType, timeValue, timeType, at } = config
@@ -365,29 +421,19 @@ export class ConditionEvaluator {
       return false
     }
 
-    const timezone = workspace?.timezone || "UTC"
+    // Per-condition zone captured in the editor wins; legacy conditions with
+    // none fall back to the workspace zone, then UTC.
+    const timezone = config.timezone || workspace?.timezone
 
-    const isDateOnly = DATE_ONLY_REGEX.test(customFieldValue.trim())
-    let targetDate: Date
-
-    if (isDateOnly) {
-      const dateTimeStr = `${customFieldValue} 23:59:59.999`
-      targetDate = new Date(
-        new Date(dateTimeStr).toLocaleString("en-US", {
-          timeZone: timezone,
-        }),
-      )
-    } else {
-      targetDate = new Date(
-        new Date(customFieldValue).toLocaleString("en-US", {
-          timeZone: timezone,
-        }),
-      )
+    // `datetime` values are persisted as a UTC instant; `date` values as an
+    // offset-preserved start-of-day (e.g. `...+07:00`). `parseDateTimeValue`
+    // resolves either into the condition's zone as a wall-clock moment, and also
+    // guards a bare "YYYY-MM-DD" (read as local midnight) and unparseable values.
+    const targetDate = parseDateTimeValue(customFieldValue, timezone)
+    if (!targetDate) {
+      return false
     }
-
-    const now = new Date(
-      new Date().toLocaleString("en-US", { timeZone: timezone }),
-    )
+    const now = toZonedWallClock(new Date(), timezone)
 
     if (triggerType === "before") {
       if (!(timeValue && timeType)) {

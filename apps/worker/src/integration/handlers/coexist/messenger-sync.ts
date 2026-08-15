@@ -396,7 +396,8 @@ async function runMessagesPhase(ctx: SyncContext): Promise<PhaseResult> {
   const fallbackCutoff = new Date(Date.now() - STORE_WINDOW_MS)
   // ONE factory shared across all per-conv bulkImportMessages calls in this
   // chunk — its per-import used-set probes same-ms IDs that collide across convs
-  // (H1). IDs are derived from (createdAt, sourceId), independent of runId.
+  // (H1). IDs are derived from (createdAt, contactInboxId, sourceId),
+  // independent of runId.
   const idFactory = createHistoricalIdFactory()
 
   return walkConversationsPages(
@@ -477,6 +478,7 @@ async function runMessagesPhase(ctx: SyncContext): Promise<PhaseResult> {
             // Newest message time across this conv's pages — one activity bump
             // per conv (not per page).
             let convNewest: Date | null = null
+            let convOldest: Date | null = null
             let convNewestIncoming: Date | null = null
 
             try {
@@ -515,6 +517,12 @@ async function runMessagesPhase(ctx: SyncContext): Promise<PhaseResult> {
                     convNewest = result.newestMessageAt
                   }
                   if (
+                    result.oldestMessageAt &&
+                    (!convOldest || convOldest > result.oldestMessageAt)
+                  ) {
+                    convOldest = result.oldestMessageAt
+                  }
+                  if (
                     result.newestIncomingMessageAt &&
                     (!convNewestIncoming ||
                       convNewestIncoming < result.newestIncomingMessageAt)
@@ -525,10 +533,17 @@ async function runMessagesPhase(ctx: SyncContext): Promise<PhaseResult> {
               })
 
               if (convNewest) {
+                let oldestMessageAt: Date = convNewest
+                if (convOldest) {
+                  oldestMessageAt = convOldest
+                }
                 activityUpdates.push({
                   contactInboxId: link.contactInboxId,
+                  contactId: link.contactId,
+                  workspaceId: ctx.workspaceId,
                   conversationId: link.conversationId,
                   newestMessageAt: convNewest,
+                  oldestMessageAt,
                   newestIncomingMessageAt: convNewestIncoming,
                 })
               }

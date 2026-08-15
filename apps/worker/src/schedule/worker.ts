@@ -12,19 +12,29 @@ import {
   cleanupTriggerExecutions,
   scanDateTimeTriggers,
 } from "../trigger/datetime-trigger-scanner"
+import {
+  cleanupWebhookExecutions,
+  scanDateTimeWebhooks,
+} from "../webhook/datetime-webhook-scanner"
 import { enqueueBroadcast } from "./handlers/enqueue-broadcast"
 import { finalizeBroadcasts } from "./handlers/finalize-broadcasts"
 import { maintainMacPartitions } from "./handlers/maintain-mac-partitions"
 import { prepareBroadcast } from "./handlers/prepare-broadcast"
 import { processBroadcastContacts } from "./handlers/process-broadcast-contacts"
 import { purgeCoexistStaging } from "./handlers/purge-coexist-staging"
+import { purgeWhatsappSignupSessions } from "./handlers/purge-whatsapp-signup-sessions"
+import { purgeWorkspaces } from "./handlers/purge-workspaces"
 import { reconcileBroadcasts } from "./handlers/reconcile-broadcasts"
+import { reconcileMetaCatalogSyncs } from "./handlers/reconcile-meta-catalog-syncs"
 import { reconcileTenants } from "./handlers/reconcile-tenants"
-import { refreshZaloTokens } from "./handlers/refresh-zalo-tokens"
+import { refreshChannelTokens } from "./handlers/refresh-channel-tokens"
 import { registerSchedules } from "./handlers/register-schedules"
+import { scanAppointmentReminders } from "./handlers/scan-appointment-reminders"
 import { scanCoexistRuns } from "./handlers/scan-coexist-runs"
 import { scanSmartDelay } from "./handlers/scan-smart-delay"
 import { syncUserQuota } from "./handlers/sync-user-quota"
+import { teardownExpiredTrial } from "./handlers/teardown-expired-trial"
+import { unsubscribeExpiredTrials } from "./handlers/unsubscribe-expired-trials"
 
 async function startScheduleWorker() {
   try {
@@ -77,8 +87,20 @@ async function startScheduleWorker() {
           await cleanupTriggerExecutions()
           return
 
+        case ScheduleJobData.evaluateDateTimeWebhooks:
+          await scanDateTimeWebhooks()
+          return
+
+        case ScheduleJobData.cleanupWebhookExecutions:
+          await cleanupWebhookExecutions()
+          return
+
         case ScheduleJobData.scanSmartDelay:
           await scanSmartDelay()
+          return
+
+        case ScheduleJobData.scanAppointmentReminders:
+          await scanAppointmentReminders(job.data.data)
           return
 
         case ScheduleJobData.syncUserQuota:
@@ -97,12 +119,32 @@ async function startScheduleWorker() {
           await scanCoexistRuns()
           return
 
+        case ScheduleJobData.reconcileMetaCatalogSyncs:
+          await reconcileMetaCatalogSyncs()
+          return
+
         case ScheduleJobData.purgeCoexistStaging:
           await purgeCoexistStaging()
           return
 
-        case ScheduleJobData.refreshZaloTokens:
-          await refreshZaloTokens()
+        case ScheduleJobData.purgeWhatsappSignupSessions:
+          await purgeWhatsappSignupSessions()
+          return
+
+        case ScheduleJobData.purgeWorkspaces:
+          await purgeWorkspaces()
+          return
+
+        case ScheduleJobData.refreshChannelTokens:
+          await refreshChannelTokens()
+          return
+
+        case ScheduleJobData.unsubscribeExpiredTrials:
+          await unsubscribeExpiredTrials(job.data.data.cursor)
+          return
+
+        case ScheduleJobData.teardownExpiredTrial:
+          await teardownExpiredTrial(job.data.data.userId)
           return
 
         default:

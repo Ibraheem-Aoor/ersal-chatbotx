@@ -1,13 +1,23 @@
+import { automatedResponseService } from "@chatbotx.io/automated-response"
 import {
+  appointmentService,
   broadcastToWorkspaceParty,
   buildContext,
+  type ContactInboxTrackingData,
+  contactInboxService,
   contactService,
   conversationService,
+  messageCleanupService,
   quotaEnforcementService,
   resolveTenantSettings,
   updateContactFromMessage,
   workspaceService,
 } from "@chatbotx.io/business"
+import { resolveLastUserInputTracking } from "@chatbotx.io/business/contact-inbox"
+import {
+  finalizeContactProfile,
+  normalizeLanguage,
+} from "@chatbotx.io/business/contact-locale"
 import { db, eq } from "@chatbotx.io/database/client"
 import {
   type ContactSource,
@@ -27,6 +37,10 @@ import type {
   InboxModel,
   MessageModel,
 } from "@chatbotx.io/database/types"
+import {
+  parseAppointmentCancelPostback,
+  verifyAppointmentCancelPostback,
+} from "@chatbotx.io/encryption"
 import { emit } from "@chatbotx.io/event-bus"
 import {
   emitContactCreated,
@@ -39,14 +53,19 @@ import type { IncomingAttachment } from "@chatbotx.io/sdk"
 import {
   type AuthValue,
   contentTypes,
+  getStoryReply,
   type IncomingContact,
   type IncomingMessage,
+  type MessageLocationEntity,
   type MessageWhatsappFlowResponseEntity,
   messageTypes,
+  type ReceivedMessageResult,
   SdkException,
 } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import {
+  ChatJobAction,
+  chatQueue,
   IntegrationJobAction,
   type IntegrationJobDeleteIncomingComment,
   type IntegrationJobReceiveComment,
@@ -55,12 +74,79 @@ import {
   integrationQueue,
 } from "@chatbotx.io/worker-config"
 import { UnrecoverableError } from "bullmq"
+import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../lib/logger"
 import {
   allIntegrations,
   integrationService,
   isInstagramViaFacebook,
 } from "../../services/integrations"
+import { sanitizeFlowAction } from "./flow-action"
+
+type ContactInboxTracking = ContactInboxTrackingData
+
+type ContactLocation = {
+  latitude: number
+  longitude: number
+}
+
+type ReceivedMessageSystemFieldUpdates = {
+  contactInboxTracking: ContactInboxTracking
+  contactLocation: ContactLocation | null
+}
+
+const correctStoryReplyDirectionForNewContact = (
+  message: IncomingMessage | null,
+  isNewContact: boolean,
+): IncomingMessage | null => {
+  const storyReply = getStoryReply(message?.contentAttributes)
+  if (
+    message &&
+    isNewContact &&
+    message.messageType === messageTypes.enum.outgoing &&
+    storyReply
+  ) {
+    return { ...message, messageType: messageTypes.enum.incoming }
+  }
+  return message
+}
+
+const APPOINTMENT_CANCEL_FEEDBACK_COPY = {
+  en: {
+    unavailable:
+      "This cancellation link has expired or is no longer available.",
+    workspaceInactive:
+      "This appointment cannot be cancelled because the workspace is currently inactive.",
+  },
+  vi: {
+    unavailable: "Liên kết hủy lịch đã hết hạn hoặc không còn khả dụng.",
+    workspaceInactive: "Không thể hủy lịch vì workspace đang tạm ngưng.",
+  },
+} as const
+
+type AppointmentCancelFeedbackReason =
+  keyof (typeof APPOINTMENT_CANCEL_FEEDBACK_COPY)["en"]
+
+const resolveAppointmentCancelFeedbackText = ({
+  reason,
+  contactInbox,
+  incomingContact,
+}: {
+  reason: AppointmentCancelFeedbackReason
+  contactInbox: ContactInboxModel
+  incomingContact: IncomingContact
+}) => {
+  const language =
+    normalizeLanguage(contactInbox.language) ??
+    normalizeLanguage(incomingContact.language) ??
+    normalizeLanguage(incomingContact.locale) ??
+    "en"
+
+  const supportedLanguage: keyof typeof APPOINTMENT_CANCEL_FEEDBACK_COPY =
+    language === "vi" ? language : "en"
+
+  return APPOINTMENT_CANCEL_FEEDBACK_COPY[supportedLanguage][reason]
+}
 
 export const metaReferralToContactSource = (
   raw?: string | null,
@@ -80,11 +166,13 @@ export const metaReferralToContactSource = (
 export const receiveMessage = async (
   props: IntegrationJobReceiveMessage["data"],
 ): Promise<{
-  message: MessageModel | null
+  message: (MessageModel & { attachments: unknown[] }) | null
   conversation: ConversationModel
   postbackAction: string | null
+  templateFlowToken: string | null
   quickReplyAction: string | null
   ref?: string | null
+  channelType: "instagram" | "instagramFacebook"
 }> => {
   setWebhookExecutionContext({ source: "webhook" })
 
@@ -106,17 +194,18 @@ export const receiveMessage = async (
       `No integration registered for channel: ${integrationType}`,
     )
   }
-  if (
-    integrationType === "instagram" &&
-    isInstagramViaFacebook(integrationRow)
-  ) {
+  const isFacebookConnectedInstagram =
+    integrationType === "instagram" && isInstagramViaFacebook(integrationRow)
+  if (isFacebookConnectedInstagram) {
     integration = allIntegrations.instagramFacebook ?? integration
   }
+  const channelType: "instagram" | "instagramFacebook" =
+    isFacebookConnectedInstagram ? "instagramFacebook" : "instagram"
 
   const workspace = await workspaceService.findById({ id: inbox.workspaceId })
   const isWorkspaceActive = workspaceService.isActiveNow(workspace)
 
-  await resolveTenantSettings({
+  const { storageUrl } = await resolveTenantSettings({
     workspaceId: inbox.workspaceId,
   })
   const ctx = await buildContext({
@@ -135,19 +224,31 @@ export const receiveMessage = async (
   }
 
   const {
-    message: incomingMessage,
+    message: rawIncomingMessage,
     contact: incomingContact,
-    postbackAction,
-    quickReplyAction,
+    postbackAction: rawPostbackAction,
+    templateFlowToken,
+    quickReplyAction: rawQuickReplyAction,
     ref,
     referralSource,
   } = parsedMessage
+  const appointmentCancelToken =
+    parseAppointmentCancelPostback(rawPostbackAction)
+  let postbackAction = sanitizeFlowAction(rawPostbackAction, {
+    kind: "postback",
+    integrationType,
+    integrationIdentifier,
+  })
+  const quickReplyAction = sanitizeFlowAction(rawQuickReplyAction, {
+    kind: "quickReply",
+    integrationType,
+    integrationIdentifier,
+  })
 
   const detected = await detectContactAndConversation({
     incomingContact,
     inbox,
     integrationRow,
-    skipProfileLookup: incomingMessage?.messageType === "outgoing",
     source:
       metaReferralToContactSource(referralSource) ??
       contactSources.enum.inboundMessage,
@@ -155,7 +256,15 @@ export const receiveMessage = async (
   if (!detected) {
     throw new SdkException("Unable to resolve contact and conversation")
   }
-  const { contactInbox, conversation, contact } = detected
+  const { contactInbox, conversation, contact, isNewContact } = detected
+  const incomingMessage = correctStoryReplyDirectionForNewContact(
+    rawIncomingMessage,
+    isNewContact,
+  )
+  const systemFieldUpdates = getReceivedMessageSystemFieldUpdates({
+    ...parsedMessage,
+    message: incomingMessage,
+  })
 
   // Overwrite Contact.phoneNumber/email from message text — every inbound
   // channel. Unconditional: the customer just typed the value, so it's
@@ -193,7 +302,7 @@ export const receiveMessage = async (
     }
   }
 
-  let createdMessage: MessageModel | null = null
+  let createdMessage: (MessageModel & { attachments: unknown[] }) | null = null
   if (incomingMessage) {
     const { message: newMessage, isNew: isNewMessage } =
       await saveAndBroadcastMessage({
@@ -201,14 +310,69 @@ export const receiveMessage = async (
         contactInbox,
         conversation,
         incomingMessage,
+        storageUrl,
+        ...systemFieldUpdates,
       })
 
     if (isNewMessage) {
       createdMessage = newMessage
 
+      if (appointmentCancelToken) {
+        try {
+          const payload = await verifyAppointmentCancelPostback(
+            rawPostbackAction ?? "",
+          )
+          postbackAction = null
+
+          if (isWorkspaceActive) {
+            const result =
+              await appointmentService.cancelAppointmentByToken(payload)
+            if (!result.cancellable) {
+              await sendAppointmentCancelFeedback({
+                conversation,
+                contactInbox,
+                text: resolveAppointmentCancelFeedbackText({
+                  reason: "unavailable",
+                  contactInbox,
+                  incomingContact,
+                }),
+              })
+            }
+          } else {
+            await sendAppointmentCancelFeedback({
+              conversation,
+              contactInbox,
+              text: resolveAppointmentCancelFeedbackText({
+                reason: "workspaceInactive",
+                contactInbox,
+                incomingContact,
+              }),
+            })
+          }
+        } catch (error) {
+          logger.warn(
+            {
+              error: normalizeError(error),
+              conversationId: conversation.id,
+              contactInboxId: contactInbox.id,
+            },
+            "Appointment cancel postback failed",
+          )
+          await sendAppointmentCancelFeedback({
+            conversation,
+            contactInbox,
+            text: resolveAppointmentCancelFeedbackText({
+              reason: "unavailable",
+              contactInbox,
+              incomingContact,
+            }),
+          })
+        }
+      }
+
       if (postbackAction && isWorkspaceActive) {
-        await integrationQueue.add(IntegrationJobAction.runFlowPostback, {
-          type: IntegrationJobAction.runFlowPostback,
+        await automatedResponseService.enqueueFlowAction({
+          kind: "postback",
           data: {
             conversationId: conversation,
             contactInboxId: contactInbox,
@@ -226,8 +390,8 @@ export const receiveMessage = async (
       }
 
       if (quickReplyAction && isWorkspaceActive) {
-        await integrationQueue.add(IntegrationJobAction.runFlowQuickReply, {
-          type: IntegrationJobAction.runFlowQuickReply,
+        await automatedResponseService.enqueueFlowAction({
+          kind: "quickReply",
           data: {
             conversationId: conversation,
             contactInboxId: contactInbox,
@@ -236,6 +400,27 @@ export const receiveMessage = async (
             messageId: createdMessage?.id,
           },
         })
+      }
+
+      if (templateFlowToken && isWorkspaceActive) {
+        const flowResponse = getWhatsappFlowResponse(incomingMessage)
+        if (flowResponse) {
+          await integrationQueue.add(
+            IntegrationJobAction.captureTemplateFlowResponse,
+            {
+              type: IntegrationJobAction.captureTemplateFlowResponse,
+              data: {
+                workspaceId: conversation.workspaceId,
+                conversationId: conversation,
+                contactInboxId: contactInbox,
+                messageId: createdMessage.id,
+                templateFlowToken,
+                flowResponse,
+              },
+            },
+            { jobId: `template-flow-response-${createdMessage.id}` },
+          )
+        }
       }
     }
   }
@@ -248,6 +433,7 @@ export const receiveMessage = async (
         contactInboxId: contactInbox,
         ref,
         messageId: createdMessage?.id,
+        isNewContact,
       },
     })
   }
@@ -256,8 +442,106 @@ export const receiveMessage = async (
     message: createdMessage,
     conversation,
     postbackAction,
+    templateFlowToken: templateFlowToken ?? null,
     quickReplyAction,
     ref,
+    channelType,
+  }
+}
+
+const getReceivedMessageSystemFieldUpdates = (
+  parsedMessage: Pick<
+    ReceivedMessageResult,
+    "buttonTitle" | "message" | "referral"
+  >,
+): ReceivedMessageSystemFieldUpdates => ({
+  contactInboxTracking: getReceivedMessageContactInboxTracking(parsedMessage),
+  contactLocation: parseIncomingLocation(parsedMessage.message),
+})
+
+const getWhatsappFlowResponse = (
+  message: IncomingMessage,
+): Record<string, unknown> | null => {
+  const entity = message.contentAttributes as
+    | MessageWhatsappFlowResponseEntity
+    | undefined
+  return entity?.type === "whatsapp_flow_response" &&
+    entity.flowResponse &&
+    typeof entity.flowResponse === "object"
+    ? entity.flowResponse
+    : null
+}
+
+const getReceivedMessageContactInboxTracking = (
+  parsedMessage: Pick<ReceivedMessageResult, "buttonTitle" | "referral">,
+): ContactInboxTracking => {
+  const tracking: ContactInboxTracking = {}
+
+  if (parsedMessage.referral) {
+    tracking.referral = parsedMessage.referral
+  }
+
+  if (parsedMessage.buttonTitle) {
+    tracking.lastBtnTitle = parsedMessage.buttonTitle
+  }
+
+  return tracking
+}
+
+const parseIncomingLocation = (
+  message?: IncomingMessage | null,
+): ContactLocation | null => {
+  if (!message) {
+    return null
+  }
+
+  if (message.messageType === messageTypes.enum.outgoing) {
+    return null
+  }
+
+  if (message.contentType !== contentTypes.enum.location) {
+    return null
+  }
+
+  const location = message.contentAttributes as
+    | (MessageLocationEntity & {
+        lat?: unknown
+        long?: unknown
+      })
+    | undefined
+  const latitude = Number(location?.latitude ?? location?.lat)
+  const longitude = Number(location?.longitude ?? location?.long)
+  if (!(Number.isFinite(latitude) && Number.isFinite(longitude))) {
+    return null
+  }
+
+  return { latitude, longitude }
+}
+
+async function sendAppointmentCancelFeedback(input: {
+  conversation: ConversationModel
+  contactInbox: ContactInboxModel
+  text: string
+}) {
+  try {
+    await chatQueue.add(ChatJobAction.sendChatMessage, {
+      type: ChatJobAction.sendChatMessage,
+      data: {
+        conversation: input.conversation,
+        contactInbox: input.contactInbox,
+        text: input.text,
+      },
+    })
+  } catch (error) {
+    logger.warn(
+      {
+        err: normalizeError(error),
+        conversationId: input.conversation.id,
+        contactInboxId: input.contactInbox.id,
+        action: "sendAppointmentCancelFeedback",
+      },
+      "Failed to send appointment cancel feedback",
+    )
   }
 }
 
@@ -270,11 +554,34 @@ const saveAndBroadcastMessage = async (props: {
   contactInbox: ContactInboxModel
   conversation: ConversationModel
   incomingMessage: IncomingMessage
+  contactInboxTracking?: ContactInboxTracking
+  contactLocation?: ContactLocation | null
   createdAt?: Date
-}): Promise<{ message: MessageModel; isNew: boolean }> => {
-  const { inbox, contactInbox, conversation, incomingMessage, createdAt } =
-    props
+  storageUrl: string
+}): Promise<{
+  message: MessageModel & { attachments: unknown[] }
+  isNew: boolean
+}> => {
+  const {
+    inbox,
+    contactInbox,
+    conversation,
+    incomingMessage,
+    contactInboxTracking,
+    contactLocation,
+    createdAt,
+    storageUrl,
+  } = props
   const repository = await createMessageRepository()
+
+  // Computed from the pre-update `contactInbox` snapshot this function was
+  // called with — before persistNewMessageSideEffects' updateTracking runs —
+  // because ContactInbox.lastIncomingMessageAt/firstInteractionAt get set by
+  // outbound sends too (see contact-inbox/service.ts) and can't be used to
+  // infer "first inbound message" after the tracking update has landed.
+  const isInboundMessage = incomingMessage.messageType !== "outgoing"
+  const isFirstIncomingMessage =
+    isInboundMessage && contactInbox.lastIncomingMessageAt === null
 
   const messageInput = {
     id: createId(),
@@ -325,27 +632,15 @@ const saveAndBroadcastMessage = async (props: {
   const newMessage = messageWithAttachments
 
   if (isNew) {
-    const lastMessageUpdate: Partial<typeof contactInboxModel.$inferInsert> = {
-      lastMessageAt: newMessage.createdAt,
-    }
-
-    if (
-      incomingMessage.messageType !== "outgoing" &&
-      messageInput.type === "message"
-    ) {
-      lastMessageUpdate.lastIncomingMessageAt = newMessage.createdAt
-    }
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(contactInboxModel)
-        .set(lastMessageUpdate)
-        .where(eq(contactInboxModel.id, contactInbox.id))
-
-      await tx
-        .update(conversationModel)
-        .set({ lastActivityAt: newMessage.createdAt })
-        .where(eq(conversationModel.id, conversation.id))
+    await persistNewMessageSideEffects({
+      inbox,
+      contactInbox,
+      conversation,
+      incomingMessage,
+      message: newMessage,
+      storageUrl,
+      contactInboxTracking,
+      contactLocation,
     })
   }
 
@@ -367,10 +662,102 @@ const saveAndBroadcastMessage = async (props: {
       inboxId: inbox.id,
       occurredAt: newMessage.createdAt,
       sourceId: newMessage.sourceId ?? undefined,
+      origin: isInboundMessage ? "inbound" : undefined,
+      messageId: newMessage.id,
+      isFirstIncomingMessage,
     })
   }
 
   return { message: newMessage, isNew }
+}
+
+const persistNewMessageSideEffects = async (props: {
+  inbox: InboxModel
+  contactInbox: ContactInboxModel
+  conversation: ConversationModel
+  incomingMessage: IncomingMessage
+  message: MessageModel
+  storageUrl: string
+  contactInboxTracking?: ContactInboxTracking
+  contactLocation?: ContactLocation | null
+}): Promise<void> => {
+  const {
+    inbox,
+    contactInbox,
+    conversation,
+    incomingMessage,
+    message,
+    storageUrl,
+    contactInboxTracking,
+    contactLocation,
+  } = props
+
+  const trackingInvalidation = await db.transaction(async (tx) => {
+    const invalidation = await contactInboxService.updateTracking({
+      tx,
+      contactInboxId: contactInbox.id,
+      contactId: contactInbox.contactId,
+      workspaceId: inbox.workspaceId,
+      data: {
+        ...getMessageActivityTracking({ incomingMessage, message, storageUrl }),
+        ...contactInboxTracking,
+      },
+    })
+
+    if (contactLocation) {
+      await contactService.update(
+        { workspaceId: inbox.workspaceId, id: contactInbox.contactId },
+        { location: contactLocation },
+        tx,
+      )
+    }
+
+    await tx
+      .update(conversationModel)
+      .set({ lastActivityAt: message.createdAt })
+      .where(eq(conversationModel.id, conversation.id))
+
+    return invalidation
+  })
+
+  if (trackingInvalidation) {
+    await contactInboxService.invalidateTracking(trackingInvalidation)
+  }
+}
+
+const getMessageActivityTracking = (props: {
+  incomingMessage: IncomingMessage
+  message: MessageModel
+  storageUrl: string
+}): ContactInboxTracking => {
+  const { incomingMessage, message, storageUrl } = props
+  const tracking: ContactInboxTracking = {
+    firstInteractionAt: message.createdAt,
+    lastMessageAt: message.createdAt,
+  }
+
+  if (incomingMessage.type === "comment") {
+    tracking.lastCommentMessageId = message.id
+    tracking.lastCommentMessageAt = message.createdAt
+  }
+
+  if (
+    incomingMessage.messageType !== "outgoing" &&
+    (incomingMessage.type ?? "message") === "message"
+  ) {
+    tracking.lastIncomingMessageAt = message.createdAt
+    Object.assign(
+      tracking,
+      resolveLastUserInputTracking({
+        contentType: incomingMessage.contentType,
+        text: incomingMessage.text,
+        attachments: incomingMessage.attachments,
+        storageUrl,
+      }),
+    )
+  }
+
+  return tracking
 }
 
 // Handles a Facebook fanpage comment (enqueued as `incomingComment` by the
@@ -459,13 +846,22 @@ export const receiveComment = async (
     type: "comment",
     parentId,
     attachments,
+    // The commented post id lives on the comment message itself (not on the
+    // ContactInbox); the `last_post_id`/`last_commented_post_text` system fields
+    // read it back from here via the user's latest comment message.
+    contentAttributes: { postId: commentData.postId },
   }
+
+  const { storageUrl } = await resolveTenantSettings({
+    workspaceId: inbox.workspaceId,
+  })
 
   await saveAndBroadcastMessage({
     inbox,
     contactInbox,
     conversation,
     incomingMessage,
+    storageUrl,
   })
 
   const workspace = await workspaceService.findById({ id: inbox.workspaceId })
@@ -578,7 +974,7 @@ export const deleteIncomingComment = async (
   }
 }
 
-const detectContactAndConversation = async (props: {
+export const detectContactAndConversation = async (props: {
   inbox: InboxModel
   incomingContact: IncomingContact
   integrationRow: {
@@ -588,14 +984,13 @@ const detectContactAndConversation = async (props: {
     [x: string]: unknown
   }
   source: ContactSource
-  skipProfileLookup?: boolean
 }): Promise<{
   contactInbox: ContactInboxModel
   contact: ContactModel
   conversation: ConversationModel
+  isNewContact: boolean
 }> => {
-  const { incomingContact, inbox, integrationRow, source, skipProfileLookup } =
-    props
+  const { incomingContact, inbox, integrationRow, source } = props
 
   const existingContactInbox = await db.query.contactInboxModel.findFirst({
     where: {
@@ -624,6 +1019,7 @@ const detectContactAndConversation = async (props: {
       contactInbox: existingContactInbox,
       contact: existingContactInbox.contact,
       conversation,
+      isNewContact: false,
     }
   }
 
@@ -631,7 +1027,7 @@ const detectContactAndConversation = async (props: {
     ...incomingContact,
     workspaceId: inbox.workspaceId,
   }
-  if (canGetUserProfileIfNeeded(inbox.channel) && !skipProfileLookup) {
+  if (canGetUserProfileIfNeeded(inbox.channel)) {
     const integrationType =
       inbox.channel === "instagram" && isInstagramViaFacebook(integrationRow)
         ? "instagramFacebook"
@@ -663,6 +1059,25 @@ const detectContactAndConversation = async (props: {
         )
       }
     }
+  }
+
+  const finalizedProfile = finalizeContactProfile(
+    {
+      locale: contactData.locale,
+      language: incomingContact.language,
+      timezone: contactData.timezone,
+    },
+    {
+      phoneHint:
+        incomingContact.phoneNumber ??
+        (inbox.channel === "whatsapp" ? incomingContact.sourceId : undefined),
+      fallbackLocale: inbox.channel === "zalo" ? "vi_VN" : undefined,
+    },
+  )
+  contactData = {
+    ...contactData,
+    locale: finalizedProfile.locale,
+    timezone: finalizedProfile.timezone,
   }
 
   const ws = await workspaceService.find({ where: { id: inbox.workspaceId } })
@@ -701,12 +1116,21 @@ const detectContactAndConversation = async (props: {
           source,
           sourceId: incomingContact.sourceId,
           channel: inbox.channel,
+          language: finalizedProfile.language,
         })
         .returning()
         .then((rows) => rows[0])
       if (!contactInbox) {
         throw new Error("Contact inbox not found")
       }
+
+      // A re-created contact keeps its history: cancel any pending message
+      // cleanup recorded when a contact with this inbox identity was deleted.
+      await messageCleanupService.cancelByInboxSource({
+        inboxId: inbox.id,
+        sourceIds: [contactInbox.sourceId],
+        tx,
+      })
 
       const conversation = await conversationService.findOrCreate({
         workspaceId: inbox.workspaceId,
@@ -766,7 +1190,7 @@ const detectContactAndConversation = async (props: {
     })
   }
 
-  return { contactInbox, contact: newContact, conversation }
+  return { contactInbox, contact: newContact, conversation, isNewContact: true }
 }
 
 const canGetUserProfileIfNeeded = (integrationType: string) =>

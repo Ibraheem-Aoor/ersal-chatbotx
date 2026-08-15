@@ -1,32 +1,41 @@
-import { externalRequestService } from "@chatbotx.io/business"
+import {
+  contactCustomFieldService,
+  customFieldService,
+  externalRequestService,
+} from "@chatbotx.io/business"
+import { createSourceTimezoneResolver } from "@chatbotx.io/business/contact-custom-field"
+import { javascriptExecutionService } from "@chatbotx.io/business/javascript-execution"
 import { and, db, inArray } from "@chatbotx.io/database/client"
 import {
   type SystemFieldType,
   systemFieldTypes,
 } from "@chatbotx.io/database/partials"
-import {
-  contactCustomFieldModel,
-  customFieldModel,
-} from "@chatbotx.io/database/schema"
-import { emitCustomFieldChanged } from "@chatbotx.io/events"
+import { customFieldModel } from "@chatbotx.io/database/schema"
 import {
   type CountCharactersStepSchema,
+  type ExecuteJavascriptStepSchema,
   type ExternalRequestStepSchema,
   type FormatDateStepSchema,
+  FormatTimezone,
   type GenerateCodeStepSchema,
   GenerateCodeType,
   type GetDataFromJsonStepSchema,
 } from "@chatbotx.io/flow-config"
-import { createId } from "@chatbotx.io/utils"
+import {
+  isTemporalCustomFieldType,
+  SourceTimezoneStrategy,
+} from "@chatbotx.io/utils/datetime"
 import {
   contactVariableService,
   extractVariables,
   getSystemFieldValue,
+  interpolate,
   resolveContactVariablesDeep,
 } from "@chatbotx.io/variables"
 import { faker } from "@faker-js/faker"
-import { format } from "date-fns"
+import { formatInTimeZone } from "date-fns-tz"
 import { getProperty } from "dot-prop"
+import { logger } from "../../lib/logger"
 import type { ExecuteStepProps } from "./flow"
 import type { ExecuteStepResult } from "./step"
 
@@ -57,47 +66,20 @@ export async function countCharacters({
 
   const value = `${`${targetContactCustomField.value}`.length}`
 
-  // Get existing value and custom field name
-  const existing = await db.query.contactCustomFieldModel.findFirst({
-    where: {
-      contactId: conversation.contactId,
-      customFieldId: step.outputFieldId,
-    },
-    columns: { value: true },
+  await contactCustomFieldService.setValues({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    fields: [{ customFieldId: step.outputFieldId, value }],
   })
-
-  const customField = await db.query.customFieldModel.findFirst({
-    where: { id: step.outputFieldId },
-    columns: { name: true },
-  })
-
-  await db
-    .insert(contactCustomFieldModel)
-    .values({
-      id: createId(),
-      value,
-      contactId: conversation.contactId,
-      customFieldId: step.outputFieldId,
-    })
-    .onConflictDoUpdate({
-      target: [
-        contactCustomFieldModel.contactId,
-        contactCustomFieldModel.customFieldId,
-      ],
-      set: {
-        value,
-      },
-    })
-
-  await emitCustomFieldChanged(
-    conversation.workspaceId,
-    conversation.contactId,
-    step.outputFieldId,
-    customField?.name || step.outputFieldId,
-    existing?.value || null,
-    value,
-  )
 }
+
+const FORMAT_DATE_TIMEZONE_STRATEGIES = {
+  [FormatTimezone.contact]: SourceTimezoneStrategy.ContactThenWorkspace,
+  [FormatTimezone.workspace]: SourceTimezoneStrategy.Workspace,
+} as const satisfies Record<
+  FormatDateStepSchema["timezone"],
+  SourceTimezoneStrategy
+>
 
 export async function formatDate({
   conversation,
@@ -114,48 +96,30 @@ export async function formatDate({
     return
   }
 
-  const newValue = format(new Date(inputContactCustomField.value), step.format)
+  const outputCustomField = await customFieldService.findBy({
+    where: { id: step.outputFieldId, workspaceId: conversation.workspaceId },
+  })
+  if (!outputCustomField || isTemporalCustomFieldType(outputCustomField.type)) {
+    return
+  }
 
-  // Get existing value and custom field name
-  const existing = await db.query.contactCustomFieldModel.findFirst({
-    where: {
-      contactId: conversation.contactId,
-      customFieldId: step.outputFieldId,
-    },
-    columns: { value: true },
+  const resolveSourceTimezone = createSourceTimezoneResolver({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    strategy: FORMAT_DATE_TIMEZONE_STRATEGIES[step.timezone],
   })
 
-  const customField = await db.query.customFieldModel.findFirst({
-    where: { id: step.outputFieldId },
-    columns: { name: true },
-  })
-
-  await db
-    .insert(contactCustomFieldModel)
-    .values({
-      id: createId(),
-      value: newValue,
-      contactId: conversation.contactId,
-      customFieldId: step.outputFieldId,
-    })
-    .onConflictDoUpdate({
-      target: [
-        contactCustomFieldModel.contactId,
-        contactCustomFieldModel.customFieldId,
-      ],
-      set: {
-        value: newValue,
-      },
-    })
-
-  await emitCustomFieldChanged(
-    conversation.workspaceId,
-    conversation.contactId,
-    step.outputFieldId,
-    customField?.name || step.outputFieldId,
-    existing?.value || null,
-    newValue,
+  const newValue = formatInTimeZone(
+    inputContactCustomField.value,
+    await resolveSourceTimezone(),
+    step.format,
   )
+
+  await contactCustomFieldService.setValues({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    fields: [{ customFieldId: step.outputFieldId, value: newValue }],
+  })
 }
 
 export async function generateCode({
@@ -183,46 +147,11 @@ export async function generateCode({
   }
 
   if (value) {
-    // Get existing value and custom field name
-    const existing = await db.query.contactCustomFieldModel.findFirst({
-      where: {
-        contactId: conversation.contactId,
-        customFieldId: step.outputFieldId,
-      },
-      columns: { value: true },
+    await contactCustomFieldService.setValues({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      fields: [{ customFieldId: step.outputFieldId, value }],
     })
-
-    const customField = await db.query.customFieldModel.findFirst({
-      where: { id: step.outputFieldId },
-      columns: { name: true },
-    })
-
-    await db
-      .insert(contactCustomFieldModel)
-      .values({
-        id: createId(),
-        value,
-        contactId: conversation.contactId,
-        customFieldId: step.outputFieldId,
-      })
-      .onConflictDoUpdate({
-        target: [
-          contactCustomFieldModel.contactId,
-          contactCustomFieldModel.customFieldId,
-        ],
-        set: {
-          value,
-        },
-      })
-
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      step.outputFieldId,
-      customField?.name || step.outputFieldId,
-      existing?.value || null,
-      value,
-    )
   }
 }
 
@@ -267,82 +196,32 @@ export async function getDataFromJSON({
     },
     columns: {
       id: true,
-      name: true,
     },
   })
   const validCustomFieldIds = validCustomFields.map((v) => v.id)
-  const customFieldMap = new Map(validCustomFields.map((f) => [f.id, f.name]))
 
-  const updatedFields = await db.transaction(async (tx) => {
-    const updated: Array<{
-      customFieldId: string
-      customFieldName: string
-      oldValue: string | null
-      newValue: string
-    }> = []
-
-    // Batch-fetch existing values to avoid N+1 queries
-    const existingFields = await tx.query.contactCustomFieldModel.findMany({
-      where: {
-        contactId: conversation.contactId,
-        customFieldId: { in: validCustomFieldIds },
-      },
-      columns: { customFieldId: true, value: true },
-    })
-    const existingMap = new Map(
-      existingFields.map((f) => [f.customFieldId, f.value]),
-    )
-
-    for (const data of mapping) {
-      if (validCustomFieldIds.includes(data.outputFieldId)) {
-        const value = getProperty(dataJSON, data.jsonPath)
-
-        if (value !== undefined && value !== null) {
-          const encodedValue =
-            typeof value === "string" ? value : JSON.stringify(value)
-          const oldValue = existingMap.get(data.outputFieldId) ?? null
-
-          await tx
-            .insert(contactCustomFieldModel)
-            .values({
-              id: createId(),
-              value: encodedValue,
-              contactId: conversation.contactId,
-              customFieldId: data.outputFieldId,
-            })
-            .onConflictDoUpdate({
-              target: [
-                contactCustomFieldModel.contactId,
-                contactCustomFieldModel.customFieldId,
-              ],
-              set: {
-                value: encodedValue,
-              },
-            })
-
-          updated.push({
-            customFieldId: data.outputFieldId,
-            customFieldName:
-              customFieldMap.get(data.outputFieldId) || data.outputFieldId,
-            oldValue,
-            newValue: encodedValue,
-          })
-        }
-      }
+  // setValues already batches existence lookup, normalization, persistence, and
+  // change events into a single transaction — build the field list from the
+  // mapping and hand the whole batch over in one call.
+  const fields = mapping.flatMap((data) => {
+    if (!validCustomFieldIds.includes(data.outputFieldId)) {
+      return []
     }
-
-    return updated
+    const value = getProperty(dataJSON, data.jsonPath)
+    if (value === undefined || value === null) {
+      return []
+    }
+    const encodedValue =
+      typeof value === "string" ? value : JSON.stringify(value)
+    return [{ customFieldId: data.outputFieldId, value: encodedValue }]
   })
 
-  for (const field of updatedFields) {
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      field.customFieldId,
-      field.customFieldName,
-      field.oldValue,
-      field.newValue,
-    )
+  if (fields.length > 0) {
+    await contactCustomFieldService.setValues({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      fields,
+    })
   }
 
   return { status: "success", result: null }
@@ -356,6 +235,7 @@ export async function getDataFromJSON({
 async function resolveJsonBodyVariables(
   contactId: string,
   contactInbox: ExecuteStepProps<ExternalRequestStepSchema>["contactInbox"],
+  conversation: ExecuteStepProps<ExternalRequestStepSchema>["conversation"],
   jsonBody: string,
 ): Promise<string> {
   const variableNames = extractVariables(jsonBody)
@@ -366,6 +246,7 @@ async function resolveJsonBodyVariables(
   const variables = await contactVariableService.getAll({
     contactId,
     contactInbox,
+    conversation,
   })
   const { customFieldsMap } = variables
 
@@ -385,10 +266,7 @@ async function resolveJsonBodyVariables(
     }
   }
 
-  return jsonBody.replace(
-    /\{\{(\w+)\}\}/g,
-    (match, variable) => mapping[variable] ?? match,
-  )
+  return interpolate(jsonBody, mapping)
 }
 
 export async function externalRequest({
@@ -403,7 +281,7 @@ export async function externalRequest({
   const resolvedStepWithoutBody = await resolveContactVariablesDeep(
     conversation.contactId,
     stepWithoutBody,
-    { contactInbox },
+    { contactInbox, conversation },
   )
   const resolvedBody =
     body?.bodyType === "json"
@@ -412,11 +290,13 @@ export async function externalRequest({
           jsonBody: await resolveJsonBodyVariables(
             conversation.contactId,
             contactInbox,
+            conversation,
             body.jsonBody,
           ),
         }
       : await resolveContactVariablesDeep(conversation.contactId, body, {
           contactInbox,
+          conversation,
         })
 
   try {
@@ -446,6 +326,57 @@ export async function externalRequest({
       status: "error",
       errorMessage:
         error instanceof Error ? error.message : "External request failed",
+      result: null,
+    }
+  }
+}
+
+export async function handleExecuteJavascript({
+  contactInbox,
+  conversation,
+  step,
+}: ExecuteStepProps<ExecuteJavascriptStepSchema>): Promise<ExecuteStepResult> {
+  try {
+    const variables = await contactVariableService.getAll({
+      contactId: conversation.contactId,
+      contactInbox,
+      conversation,
+    })
+    const input: Record<string, unknown> = Object.fromEntries(
+      [...variables.customFieldsMap.entries()].map(([name, field]) => [
+        name,
+        field.value,
+      ]),
+    )
+
+    const systemFieldEntries = await Promise.all(
+      systemFieldTypes.options.map(
+        async (systemField) =>
+          [
+            systemField,
+            await getSystemFieldValue(variables, systemField),
+          ] as const,
+      ),
+    )
+    for (const [systemField, value] of systemFieldEntries) {
+      input[systemField] = value
+    }
+
+    await javascriptExecutionService.executeAndMap({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      code: step.code,
+      input,
+      customFieldId: step.customFieldId,
+    })
+
+    return { status: "success", result: null }
+  } catch (error) {
+    logger.error({ err: error }, "[handleExecuteJavascript] failed")
+    return {
+      status: "error",
+      errorMessage:
+        error instanceof Error ? error.message : "JavaScript execution failed",
       result: null,
     }
   }

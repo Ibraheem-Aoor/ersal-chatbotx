@@ -1,36 +1,32 @@
-import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import {
+  contactCustomFieldService,
+  contactInboxService,
+  conversationService,
+  resolveTenantSettings,
+} from "@chatbotx.io/business"
+import {
+  type ReplyValidationResult,
+  validateReplyInput,
+} from "@chatbotx.io/business/get-user-data"
+import { getPublicFileUrl } from "@chatbotx.io/business/utils"
 import { isMessageStorageError } from "@chatbotx.io/database/errors"
-import type { ConversationAttributes } from "@chatbotx.io/database/partials"
 import {
   createMessageRepository,
   getSafeSinceTime,
 } from "@chatbotx.io/database/repositories"
 import {
-  contactCustomFieldModel,
-  conversationModel,
-  customFieldModel,
-} from "@chatbotx.io/database/schema"
-import {
   type GetUserDataStepSchema,
-  ReplyFormat,
+  type InputFailureReason,
+  inputFailureReasons,
+  type SendTextStepSchema,
+  stepTypes,
 } from "@chatbotx.io/flow-config"
 import { IntegrationException, type Variable } from "@chatbotx.io/sdk"
-import { createId } from "@chatbotx.io/utils"
-import { resolveContactVariablesDeep } from "@chatbotx.io/variables"
-import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
 import { add, isBefore } from "date-fns"
 import { logger } from "../../lib/logger"
-import { waitForChatJobCompletion } from "../utils/message"
 import type { ExecuteStepProps } from "./flow"
+import { enqueueFlowStepMessage } from "./flow-utils"
 import type { ExecuteStepResult } from "./step"
-
-export type GetUserDataResult = {
-  userInput?: string
-  errorMessage?: string
-}
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRegex = /^\+?(\d[\d-. ]+)?(\([\d-. ]+\))?[\d-. ]+\d$/
 
 export async function getUserData(
   props: ExecuteStepProps<GetUserDataStepSchema>,
@@ -49,6 +45,11 @@ export async function getUserData(
     if (isMessageStorageError(error)) {
       throw error
     }
+
+    await clearChallengeSafely({
+      workspaceId: props.conversation.workspaceId,
+      conversationId: props.conversation.id,
+    })
 
     return { result: undefined, status: "error", errorMessage }
   }
@@ -77,49 +78,28 @@ async function handleSkipOrError(
   }
 
   // if user data is valid, save to custom field if configured
-  if (validUserData.userInput) {
-    if (step.outputFieldId) {
-      await findOrFail({
-        table: customFieldModel,
-        where: {
-          id: step.outputFieldId,
-          workspaceId: props.conversation.workspaceId,
-        },
-        message: "Field not found",
-      })
+  if (validUserData.ok) {
+    await contactInboxService.updateTracking({
+      contactInboxId: props.contactInbox.id,
+      contactId: props.contactInbox.contactId,
+      workspaceId: props.conversation.workspaceId,
+      data: { lastInputFailure: null },
+    })
 
-      await db.transaction(async (tx) => {
-        await tx
-          .insert(contactCustomFieldModel)
-          .values({
-            id: createId(),
-            contactId: props.conversation.contactId,
-            customFieldId: step.outputFieldId,
-            value: validUserData.userInput ?? "",
-          })
-          .onConflictDoUpdate({
-            target: [
-              contactCustomFieldModel.contactId,
-              contactCustomFieldModel.customFieldId,
-            ],
-            set: {
-              value: validUserData.userInput,
-            },
-          })
+    if (step.outputFieldId) {
+      const value = await resolveOutputValue(props, validUserData)
+      await contactCustomFieldService.setValueByKey({
+        workspaceId: props.conversation.workspaceId,
+        contactId: props.conversation.contactId,
+        keyword: step.outputFieldId,
+        value,
       })
     }
 
-    // remove challenge from conversation attributes
-    await db
-      .update(conversationModel)
-      .set({
-        additionalAttributes: {
-          ...(props.conversation
-            .additionalAttributes as ConversationAttributes),
-          challenge: undefined,
-        },
-      })
-      .where(eq(conversationModel.id, props.conversation.id))
+    await clearChallenge({
+      workspaceId: props.conversation.workspaceId,
+      conversationId: props.conversation.id,
+    })
 
     return { result: validUserData.userInput, status: "success" }
   }
@@ -128,11 +108,31 @@ async function handleSkipOrError(
   if (step.autoSkip) {
     const skipResult = checkSkipCondition(step, ctx.variables.conversation)
     if (skipResult.skip) {
+      await contactInboxService.updateTracking({
+        contactInboxId: props.contactInbox.id,
+        contactId: props.contactInbox.contactId,
+        workspaceId: props.conversation.workspaceId,
+        data: { lastInputFailure: skipResult.reason },
+      })
+
+      await clearChallenge({
+        workspaceId: props.conversation.workspaceId,
+        conversationId: props.conversation.id,
+      })
+
       return { result: undefined, status: "skip" }
     }
   }
 
   // if user data is invalid, retry
+  logger.info(
+    {
+      conversationId: props.conversation.id,
+      reason: validUserData.errorMessage ?? "getUserData: invalid user data",
+    },
+    "getUserData: input rejected, retrying",
+  )
+
   await sendMessage(
     props,
     step.retryMessage ?? step.message,
@@ -144,8 +144,7 @@ async function handleSkipOrError(
 
 async function validateUserData(
   props: ExecuteStepProps<GetUserDataStepSchema>,
-): Promise<GetUserDataResult> {
-  const { contactInbox } = props
+): Promise<ReplyValidationResult> {
   const messageRepository = await createMessageRepository()
   const lastMessages = await messageRepository.findLastByConversation(
     props.conversation.id,
@@ -154,8 +153,14 @@ async function validateUserData(
       limit: 1,
       requireCompleteResults: true,
       withAttachments: true,
+      // Anchor on this conversation's own lastActivityAt, not the
+      // ContactInbox's lastMessageAt — a contact's ContactInbox is shared
+      // across their DM and every comment-thread conversation, so its
+      // lastMessageAt can reflect a different, more recently active
+      // conversation and push sinceTime past this conversation's real last
+      // incoming message, causing the sharded scan to miss it.
       sinceTime: getSafeSinceTime(
-        contactInbox.lastMessageAt ?? contactInbox.createdAt,
+        props.conversation.lastActivityAt ?? props.conversation.createdAt,
         365 * 24 * 60 * 60 * 1000, // 1 year
       ),
       workspaceId: props.conversation.workspaceId,
@@ -165,65 +170,30 @@ async function validateUserData(
 
   if (!lastUserMessage) {
     return {
+      ok: false,
       errorMessage: `getUserData: unable to find last message of conversation ${props.conversation.id}`,
     }
   }
 
-  if (lastUserMessage.attachments.length > 0) {
-    if (
-      props.step.replyFormat === ReplyFormat.image &&
-      lastUserMessage.attachments[0].fileType === "image"
-    ) {
-      return { userInput: lastUserMessage.attachments[0].originPath }
-    }
-    if (props.step.replyFormat === ReplyFormat.file) {
-      return { userInput: lastUserMessage.attachments[0].originPath }
-    }
-    return { errorMessage: "getUserData: invalid user data" }
+  return validateReplyInput(props.step.replyFormat, lastUserMessage)
+}
+
+// Attachments validate to a bare storage key; turn it into a public URL (with
+// the tenant's storage domain) so the stored value is usable downstream. Text
+// and location values are stored verbatim.
+async function resolveOutputValue(
+  props: ExecuteStepProps<GetUserDataStepSchema>,
+  result: Extract<ReplyValidationResult, { ok: true }>,
+): Promise<string> {
+  if (result.kind !== "attachment") {
+    return result.userInput
   }
 
-  if (lastUserMessage.text) {
-    switch (props.step.replyFormat) {
-      case ReplyFormat.number: {
-        if (!Number.isNaN(Number.parseFloat(lastUserMessage.text))) {
-          return { userInput: lastUserMessage.text }
-        }
-        return { errorMessage: "getUserData: invalid number" }
-      }
-      case ReplyFormat.email: {
-        if (emailPattern.test(lastUserMessage.text)) {
-          return { userInput: lastUserMessage.text }
-        }
-        return { errorMessage: "getUserData: invalid email address" }
-      }
-      case ReplyFormat.phone: {
-        if (phoneRegex.test(lastUserMessage.text)) {
-          return { userInput: lastUserMessage.text }
-        }
-        return { errorMessage: "getUserData: invalid phone number" }
-      }
-      case ReplyFormat.link: {
-        try {
-          new URL(lastUserMessage.text)
-          return { userInput: lastUserMessage.text }
-        } catch {
-          return { errorMessage: "getUserData: invalid link" }
-        }
-      }
-      case ReplyFormat.date:
-      case ReplyFormat.datetime: {
-        const dateObj = new Date(lastUserMessage.text)
-        if (Number.isNaN(dateObj.getTime())) {
-          return { errorMessage: "getUserData: invalid date" }
-        }
-        return { userInput: dateObj.toISOString() }
-      }
-      default:
-        return { userInput: lastUserMessage.text }
-    }
-  }
+  const { storageUrl } = await resolveTenantSettings({
+    workspaceId: props.conversation.workspaceId,
+  })
 
-  return { errorMessage: "getUserData: invalid user data" }
+  return getPublicFileUrl(result.userInput, storageUrl)
 }
 
 async function sendMessage(
@@ -231,77 +201,95 @@ async function sendMessage(
   text: string,
   attempts = 1,
 ) {
-  const {
-    conversation,
-    contactInbox: targetContactInbox,
-    flowVersion,
-    step,
-  } = props
-
-  const contactInbox =
-    targetContactInbox ??
-    (await db.query.contactInboxModel.findFirst({
-      where: {
-        contactId: conversation.contactId,
-      },
-      orderBy: {
-        lastMessageAt: "desc",
-      },
-    }))
-  if (!contactInbox) {
+  const { conversation, contactInbox, flowVersion, step } = props
+  const nodeId = props.targetId
+  if (!nodeId) {
     throw new IntegrationException(
-      `getUserData: contact inbox not found for conversation ${conversation.id}`,
+      `getUserData: missing target node for conversation ${conversation.id}`,
     )
   }
 
-  const resolvedText = await resolveContactVariablesDeep(
-    conversation.contactId,
-    text,
-    {
-      contactInbox,
-    },
-  )
+  const flowVersionId = props.useLatestFlowVersion ? undefined : flowVersion.id
 
-  const job = await chatQueue.add(ChatJobAction.sendChatMessage, {
-    type: ChatJobAction.sendChatMessage,
-    data: {
-      contactInbox,
-      conversation,
-      text: resolvedText,
+  await conversationService.updateChallenge({
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    challenge: {
+      type: "step",
+      data: {
+        flowId: flowVersion.flowId,
+        flowVersionId,
+        nodeId,
+        stepId: step.id,
+        attempts,
+        lastAttemptAt: new Date(),
+        appointmentId: props.appointmentId,
+      },
     },
   })
 
-  await db
-    .update(conversationModel)
-    .set({
-      additionalAttributes: {
-        ...(conversation.additionalAttributes as ConversationAttributes),
-        challenge: {
-          type: "step",
-          data: {
-            flowId: flowVersion.flowId,
-            flowVersionId: props.useLatestFlowVersion
-              ? undefined
-              : flowVersion.id,
-            nodeId: props.targetId,
-            stepId: step.id,
-            attempts,
-            lastAttemptAt: new Date(),
-          },
-        },
-      } as ConversationAttributes,
-    })
-    .where(eq(conversationModel.id, conversation.id))
+  const promptStep: SendTextStepSchema = {
+    id: step.id,
+    nodeId,
+    stepType: stepTypes.enum.sendText,
+    text,
+    buttons: [],
+  }
 
-  await waitForChatJobCompletion(job, { conversationId: conversation.id })
+  await enqueueFlowStepMessage({
+    conversationId: conversation.id,
+    contactInboxId: contactInbox.id,
+    flowId: flowVersion.flowId,
+    flowVersionId,
+    step: promptStep,
+    metadata: props.metadata,
+    ...(props.appointmentId ? { appointmentId: props.appointmentId } : {}),
+  })
+}
+
+async function clearChallenge(props: {
+  workspaceId: string
+  conversationId: string
+}): Promise<void> {
+  await conversationService.updateChallenge({
+    workspaceId: props.workspaceId,
+    conversationId: props.conversationId,
+    challenge: undefined,
+  })
+}
+
+async function clearChallengeSafely(props: {
+  workspaceId: string
+  conversationId: string
+}): Promise<void> {
+  try {
+    await clearChallenge(props)
+  } catch (error) {
+    logger.warn(
+      { err: error, conversationId: props.conversationId },
+      "getUserData: failed to clear challenge after terminal error",
+    )
+  }
+}
+
+function toValidDate(value: unknown): Date | undefined {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? undefined : date
+  }
 }
 
 function checkSkipCondition(
   step: GetUserDataStepSchema,
   conversationVariables: Record<string, Variable>,
-): { skip: boolean; skipReason?: string } {
+): { skip: true; reason: InputFailureReason } | { skip: false } {
   const lastAttemptAt =
-    (conversationVariables.challengeLastAttemptAt?.value as Date) ?? new Date()
+    toValidDate(conversationVariables.challengeLastAttemptAt?.value) ??
+    new Date()
   const attempts =
     (conversationVariables.challengeAttempts?.value as number) ?? 1
 
@@ -315,14 +303,14 @@ function checkSkipCondition(
   ) {
     return {
       skip: true,
-      skipReason: "out of time",
+      reason: inputFailureReasons.timeout,
     }
   }
 
   if (attempts >= step.autoSkipFailAttempts) {
     return {
       skip: true,
-      skipReason: "out of attempts",
+      reason: inputFailureReasons.invalidInputAttempts,
     }
   }
 

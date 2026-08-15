@@ -5,8 +5,11 @@ import {
   trackingResponseTypes,
 } from "@chatbotx.io/analytics"
 import {
+  appointmentCalendarService,
   broadcastToGuestParty,
   broadcastToWorkspaceParty,
+  contactInboxService,
+  conversationService,
   resolveTenantSettings,
 } from "@chatbotx.io/business"
 import { getPublicFileUrl } from "@chatbotx.io/business/utils"
@@ -17,13 +20,16 @@ import {
   messageTypes,
   senderTypes,
 } from "@chatbotx.io/database/partials"
-import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
-  contactInboxModel,
+  createMessageRepository,
+  type MessageWithAttachments,
+} from "@chatbotx.io/database/repositories"
+import {
   conversationModel,
   type messageModel,
 } from "@chatbotx.io/database/schema"
-import type { AttachmentModel } from "@chatbotx.io/database/types"
+import type { AttachmentModel, MessageModel } from "@chatbotx.io/database/types"
+import { signAppointmentWebviewToken } from "@chatbotx.io/encryption"
 import { emit } from "@chatbotx.io/event-bus"
 import { uploadFileFromUrl } from "@chatbotx.io/filesystem"
 import type { MetadataPayload } from "@chatbotx.io/flow-config"
@@ -53,7 +59,11 @@ import type {
 } from "@chatbotx.io/worker-config"
 import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../lib/logger"
-import { sendFlowStepToChannel, sendMessageToChannel } from "./send-message"
+import {
+  recordMessageSendError,
+  sendFlowStepToChannel,
+  sendMessageToChannel,
+} from "./send-message"
 import { processMessengerTemplate } from "./send-messenger-template"
 import { processWhatsappTemplate } from "./send-whatsapp-template"
 
@@ -83,6 +93,44 @@ const isBlankTextCarrierStep = (step: SendFlowStepData) => {
   }
 
   return false
+}
+
+const BOOKING_PUBLIC_LINK_PATH_REGEX = /^\/booking\/([^/]+)$/
+
+const extractBookingPublicLinkSlug = (url: string): string | null => {
+  try {
+    const parsedUrl = new URL(url)
+    const match = parsedUrl.pathname.match(BOOKING_PUBLIC_LINK_PATH_REGEX)
+    return match?.[1] ? decodeURIComponent(match[1]) : null
+  } catch {
+    return null
+  }
+}
+
+const findTargetContactInbox = ({
+  contactId,
+  contactInboxId,
+}: {
+  contactId: string
+  contactInboxId?: string
+}) => {
+  if (contactInboxId) {
+    return db.query.contactInboxModel.findFirst({
+      where: {
+        id: contactInboxId,
+        contactId,
+      },
+    })
+  }
+
+  return db.query.contactInboxModel.findFirst({
+    where: {
+      contactId,
+    },
+    orderBy: {
+      lastMessageAt: "desc",
+    },
+  })
 }
 
 export const convertButtonsToTemplate = (props: {
@@ -125,6 +173,128 @@ export const convertButtonsToTemplate = (props: {
   })
 }
 
+const signBookingButtonIfNeeded = async (props: {
+  workspaceId: string
+  contactId: string
+  conversationId: string
+  contactInboxId: string
+  channel: string
+  flowId: string
+  flowVersionId?: string
+  executedFlowVersionId?: string
+  stepId: string
+  appUrl: string
+  button: ButtonStepProps
+}): Promise<ButtonStepProps> => {
+  const { button } = props
+  if (!(button.buttonType === buttonTypes.enum.openWebsite)) {
+    return button
+  }
+  const tokenFlowVersionId = props.flowVersionId ?? props.executedFlowVersionId
+  if (!tokenFlowVersionId) {
+    return button
+  }
+
+  const publicLinkSlug = extractBookingPublicLinkSlug(button.beforeStep.url)
+  if (!publicLinkSlug) {
+    return button
+  }
+
+  const calendar = await appointmentCalendarService.findByPublicLinkSlug({
+    workspaceId: props.workspaceId,
+    publicLinkSlug,
+  })
+  if (!calendar) {
+    return button
+  }
+
+  const token = await signAppointmentWebviewToken({
+    mode: "book",
+    workspaceId: props.workspaceId,
+    calendarId: calendar.id,
+    contactId: props.contactId,
+    conversationId: props.conversationId,
+    contactInboxId: props.contactInboxId,
+    channel: props.channel,
+    flowId: props.flowId,
+    flowVersionId: tokenFlowVersionId,
+    stepId: props.stepId,
+  })
+  const pickerUrl = new URL("/booking/picker", props.appUrl)
+  pickerUrl.searchParams.set("token", token)
+
+  return {
+    ...button,
+    beforeStep: {
+      ...button.beforeStep,
+      url: pickerUrl.toString(),
+    },
+  }
+}
+
+const signBookingButtonsIfNeeded = async (props: {
+  workspaceId: string
+  contactId: string
+  conversationId: string
+  contactInboxId: string
+  channel: string
+  flowId: string
+  flowVersionId?: string
+  executedFlowVersionId?: string
+  stepId: string
+  appUrl: string
+  buttons?: ButtonStepProps[]
+}) => {
+  if (!props.buttons?.length) {
+    return props.buttons
+  }
+  return await Promise.all(
+    props.buttons.map((button) =>
+      signBookingButtonIfNeeded({ ...props, button }),
+    ),
+  )
+}
+
+const signBookingLinksInStep = async (props: {
+  workspaceId: string
+  contactId: string
+  conversationId: string
+  contactInboxId: string
+  channel: string
+  flowId: string
+  flowVersionId?: string
+  executedFlowVersionId?: string
+  appUrl: string
+  step: SendFlowStepData
+}): Promise<SendFlowStepData> => {
+  let step = props.step
+  if ("buttons" in step && step.buttons.length > 0) {
+    const buttons = await signBookingButtonsIfNeeded({
+      ...props,
+      stepId: step.id,
+      buttons: step.buttons,
+    })
+    step = { ...step, buttons: buttons ?? [] } as SendFlowStepData
+  }
+  if (!("cards" in step) || step.cards.length === 0) {
+    return step
+  }
+  const cards = await Promise.all(
+    step.cards.map(async (card) => {
+      if (!("buttons" in card) || card.buttons.length === 0) {
+        return card
+      }
+      const buttons = await signBookingButtonsIfNeeded({
+        ...props,
+        stepId: step.id,
+        buttons: card.buttons,
+      })
+      return { ...card, buttons: buttons ?? [] } as SendCardStepSchema
+    }),
+  )
+  return { ...step, cards } as SendFlowStepData
+}
+
 const convertCardsToTemplate = (props: {
   flowId: string
   flowVersionId?: string
@@ -154,14 +324,18 @@ const convertCardsToTemplate = (props: {
 
 export async function sendFlowStep({
   conversationId,
+  contactInboxId,
   flowId,
   flowVersionId,
+  executedFlowVersionId,
   step,
   trackingContext,
   metadata,
   richResponse,
   quickReplies,
   sendFrom,
+  commentAnchor,
+  appointmentId,
 }: ChatJobSendFlowStep["data"]) {
   const conversation = await db.query.conversationModel.findFirst({
     where: { id: conversationId },
@@ -171,14 +345,9 @@ export async function sendFlowStep({
     return
   }
 
-  // Temporary use the last contact inbox for the conversation
-  const targetContactInbox = await db.query.contactInboxModel.findFirst({
-    where: {
-      contactId: conversation.contactId,
-    },
-    orderBy: {
-      lastMessageAt: "desc",
-    },
+  const targetContactInbox = await findTargetContactInbox({
+    contactId: conversation.contactId,
+    contactInboxId,
   })
   if (!targetContactInbox) {
     return
@@ -287,7 +456,11 @@ export async function sendFlowStep({
   const resolvedStep = await resolveContactVariablesDeep(
     conversation.contactId,
     step,
-    { contactInbox: targetContactInbox },
+    {
+      contactInbox: targetContactInbox,
+      conversation,
+      ...(appointmentId ? { appointmentId } : {}),
+    },
   )
 
   if (isBlankTextCarrierStep(resolvedStep as SendFlowStepData)) {
@@ -307,11 +480,41 @@ export async function sendFlowStep({
   const messageText =
     resolvedStep.stepType === stepTypes.enum.sendText ? resolvedStep.text : null
 
+  let message: MessageModel | MessageWithAttachments | undefined
+
   try {
-    const [repository, { storageUrl }] = await Promise.all([
+    const [repository, tenantSettings] = await Promise.all([
       createMessageRepository(),
       resolveTenantSettings({ workspaceId: conversation.workspaceId }),
     ])
+    const { appUrl, storageUrl } = tenantSettings
+    const stepWithSignedBookingLinks = await signBookingLinksInStep({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      conversationId: conversation.id,
+      contactInboxId: targetContactInbox.id,
+      channel: targetContactInbox.channel,
+      flowId,
+      flowVersionId,
+      executedFlowVersionId,
+      appUrl,
+      step: resolvedStep as SendFlowStepData,
+    })
+    const quickRepliesWithSignedBookingLinks = await signBookingButtonsIfNeeded(
+      {
+        workspaceId: conversation.workspaceId,
+        contactId: conversation.contactId,
+        conversationId: conversation.id,
+        contactInboxId: targetContactInbox.id,
+        channel: targetContactInbox.channel,
+        flowId,
+        flowVersionId,
+        executedFlowVersionId,
+        stepId: stepWithSignedBookingLinks.id,
+        appUrl,
+        buttons: quickReplies,
+      },
+    )
 
     let contentAttributes: (typeof messageModel.$inferInsert)["contentAttributes"] =
       {
@@ -324,22 +527,24 @@ export async function sendFlowStep({
       }
 
     const canonicalQuickReplies =
-      quickReplies && quickReplies.length > 0
+      quickRepliesWithSignedBookingLinks &&
+      quickRepliesWithSignedBookingLinks.length > 0
         ? convertButtonsToTemplate({
             flowId,
             flowVersionId,
-            buttons: quickReplies,
+            buttons: quickRepliesWithSignedBookingLinks,
             metadata,
             contactInboxId: targetContactInbox.id,
           })
         : undefined
 
     const canonicalStepButtons =
-      "buttons" in resolvedStep && resolvedStep.buttons.length > 0
+      "buttons" in stepWithSignedBookingLinks &&
+      stepWithSignedBookingLinks.buttons.length > 0
         ? convertButtonsToTemplate({
             flowId,
             flowVersionId,
-            buttons: resolvedStep.buttons,
+            buttons: stepWithSignedBookingLinks.buttons,
             metadata,
             contactInboxId: targetContactInbox.id,
           })
@@ -360,7 +565,10 @@ export async function sendFlowStep({
         ...contentAttributes,
       }
     }
-    if ("cards" in resolvedStep && resolvedStep.cards.length > 0) {
+    if (
+      "cards" in stepWithSignedBookingLinks &&
+      stepWithSignedBookingLinks.cards.length > 0
+    ) {
       contentAttributes = {
         type: "template",
         payload: {
@@ -368,12 +576,27 @@ export async function sendFlowStep({
           cards: convertCardsToTemplate({
             flowId,
             flowVersionId,
-            cards: resolvedStep.cards,
+            cards: stepWithSignedBookingLinks.cards,
             metadata,
             contactInboxId: targetContactInbox.id,
           }),
         },
         ...contentAttributes,
+      }
+    }
+
+    const isPublicCommentReply = commentAnchor?.replyChannel === "public"
+    if (isPublicCommentReply) {
+      // Mirrors postPublicCommentReply's shape (comment-automation/index.ts) so
+      // this message is recognized as a public comment reply below and routed
+      // through sendMessageToChannel's "comment" channel group instead of a
+      // normal flow DM. sendComment only reads text + the first attachment and
+      // ignores buttons/quick replies/multiple cards — a carousel/button-heavy
+      // first step degrades to best-effort text-and-first-attachment, same
+      // precedent as the private-reply fix's Messenger-template gap.
+      contentAttributes = {
+        ...contentAttributes,
+        replyToCommentId: commentAnchor.commentId,
       }
     }
 
@@ -388,6 +611,7 @@ export async function sendFlowStep({
       text: messageText,
       contentAttributes,
       createdAt: new Date(),
+      ...(isPublicCommentReply ? { type: "comment" as const } : {}),
     }
 
     // Upload file if exists
@@ -406,7 +630,7 @@ export async function sendFlowStep({
       }
     }
 
-    const message = attachmentInput
+    message = attachmentInput
       ? await repository.createWithAttachments(messageInput, [attachmentInput])
       : await repository.create(messageInput)
 
@@ -419,36 +643,77 @@ export async function sendFlowStep({
         }))
     }
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(contactInboxModel)
-        .set({ lastMessageAt: message.createdAt })
-        .where(eq(contactInboxModel.id, targetContactInbox.id))
+    const createdMessage = message
+    const trackingInvalidation = await db.transaction(async (tx) => {
+      const invalidation =
+        await contactInboxService.recordOutboundMessageCreated({
+          tx,
+          contactInboxId: targetContactInbox.id,
+          contactId: targetContactInbox.contactId,
+          workspaceId: conversation.workspaceId,
+          at: createdMessage.createdAt,
+        })
 
-      await tx
-        .update(conversationModel)
-        .set({ lastActivityAt: message.createdAt })
-        .where(eq(conversationModel.id, conversation.id))
+      await conversationService.updateFlowStepState({
+        tx,
+        workspaceId: conversation.workspaceId,
+        conversationId: conversation.id,
+        lastActivityAt: createdMessage.createdAt,
+        lastStep: conversation.currentStep,
+        currentStep: resolvedStep.id,
+      })
+
+      return invalidation
     })
+    await Promise.all([
+      trackingInvalidation
+        ? contactInboxService.invalidateTracking(trackingInvalidation)
+        : Promise.resolve(),
+      conversationService.invalidate({
+        workspaceId: conversation.workspaceId,
+        ids: [conversation.id],
+      }),
+    ])
+
+    const channelSend = isPublicCommentReply
+      ? sendMessageToChannel({
+          conversation,
+          contactInbox: targetContactInbox,
+          message,
+          quickReplies: canonicalQuickReplies,
+          metadata,
+          sendFrom,
+        })
+      : sendFlowStepToChannel({
+          conversation,
+          contactInbox: targetContactInbox,
+          flowId,
+          flowVersionId,
+          step: stepWithSignedBookingLinks,
+          metadata,
+          richResponse,
+          quickReplies: canonicalQuickReplies,
+          messageId: message?.id,
+          messageCreatedAt: message?.createdAt,
+          sendFrom,
+          // Comment-anchored private replies are Messenger-only (no Instagram
+          // private_replies equivalent) — defensive re-check in case a resolved
+          // contactInboxId ever points at a different channel than the job
+          // intended. A "public" anchor never reaches this branch (routed to
+          // sendMessageToChannel above instead).
+          commentAnchor:
+            targetContactInbox.channel === channelTypes.enum.messenger &&
+            commentAnchor?.replyChannel === "private"
+              ? commentAnchor
+              : undefined,
+        })
 
     const promises: Promise<unknown>[] = [
       broadcastToWorkspaceParty(conversation.workspaceId, {
         eventType: RealtimeEventType.messageCreated,
         data: message,
       }),
-      sendFlowStepToChannel({
-        conversation,
-        contactInbox: targetContactInbox,
-        flowId,
-        flowVersionId,
-        step: resolvedStep as SendFlowStepData,
-        metadata,
-        richResponse,
-        quickReplies: canonicalQuickReplies,
-        messageId: message?.id,
-        messageCreatedAt: message?.createdAt,
-        sendFrom,
-      }),
+      channelSend,
     ]
 
     if (targetContactInbox.channel === channelTypes.enum.webchat) {
@@ -466,10 +731,19 @@ export async function sendFlowStep({
       )
     }
 
-    await Promise.all(promises)
+    const [, channelResult] = await Promise.all(promises)
+    const providerMessageId = (
+      channelResult as { messageIds?: string[] } | undefined
+    )?.messageIds?.[0]
+
     await emit(messageEventTypeSchema.enum["message:sent"], {
       ...eventLogData,
-      action: { messageId: "", flowId },
+      action: {
+        flowId,
+        flowVersionId,
+        messageId: message.id,
+        sourceId: providerMessageId,
+      },
       occurredAt: new Date(),
     })
 
@@ -491,7 +765,6 @@ export async function sendFlowStep({
         },
       },
     })
-
     if (trackingContext) {
       await emit("analytics:dashboard", {
         eventType: "message:bot_received",
@@ -526,12 +799,20 @@ export async function sendFlowStep({
     await emit(messageEventTypeSchema.enum["message:failed"], {
       ...eventLogData,
       action: {
-        messageId: "",
+        messageId: message?.id ?? "",
         flowId,
       },
       errorData: parsedError,
       occurredAt: new Date(),
     })
+
+    await recordMessageSendError(
+      message?.id,
+      undefined,
+      conversation.workspaceId,
+      message?.createdAt,
+      parsedError.message,
+    )
 
     if (trackingContext) {
       await emit("analytics:dashboard", {
@@ -569,6 +850,7 @@ export const sendChatMessage = async (
     contactInbox: targetContactInbox,
     text,
     url,
+    quickReplies,
     trackingContext,
     metadata,
   } = props
@@ -640,6 +922,15 @@ export const sendChatMessage = async (
       text: messageText,
       contentAttributes: {
         metadata,
+        ...(quickReplies && quickReplies.length > 0
+          ? {
+              type: "template" as const,
+              payload: {
+                templateType: "button" as const,
+                buttons: quickReplies,
+              },
+            }
+          : {}),
       },
       createdAt: new Date(),
     }
@@ -657,17 +948,26 @@ export const sendChatMessage = async (
         }))
     }
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(contactInboxModel)
-        .set({ lastMessageAt: message.createdAt })
-        .where(eq(contactInboxModel.id, contactInbox.id))
+    const trackingInvalidation = await db.transaction(async (tx) => {
+      const invalidation =
+        await contactInboxService.recordOutboundMessageCreated({
+          tx,
+          contactInboxId: contactInbox.id,
+          contactId: contactInbox.contactId,
+          workspaceId: conversation.workspaceId,
+          at: message.createdAt,
+        })
 
       await tx
         .update(conversationModel)
         .set({ lastActivityAt: message.createdAt })
         .where(eq(conversationModel.id, conversation.id))
+
+      return invalidation
     })
+    if (trackingInvalidation) {
+      await contactInboxService.invalidateTracking(trackingInvalidation)
+    }
 
     const promises: Promise<unknown>[] = [
       broadcastToWorkspaceParty(conversation.workspaceId, {
@@ -678,6 +978,7 @@ export const sendChatMessage = async (
         conversation,
         contactInbox,
         message,
+        quickReplies,
         metadata,
       }),
     ]

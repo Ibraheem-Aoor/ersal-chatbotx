@@ -16,6 +16,7 @@ const {
   mockReplaceVariables,
   mockContactVariables,
   mockSendFlowStep,
+  mockRecordSendFailure,
   mockDbSet,
 } = vi.hoisted(() => {
   const insertChain = {
@@ -74,6 +75,7 @@ const {
     mockSendFlowStep: vi
       .fn()
       .mockResolvedValue({ messageIds: ["provider-msg-1"] }),
+    mockRecordSendFailure: vi.fn().mockResolvedValue(undefined),
     mockDbSet,
   }
 })
@@ -110,6 +112,14 @@ vi.mock("@chatbotx.io/database/schema", () => ({
 
 vi.mock("@chatbotx.io/business", () => ({
   broadcastToWorkspaceParty: mockBroadcast,
+  contactInboxService: {
+    recordOutboundMessageCreated: vi
+      .fn()
+      .mockResolvedValue({ cacheTags: ["contacts:contact-1:contact-inboxes"] }),
+    recordOutboundMessageSent: vi.fn().mockResolvedValue(undefined),
+    recordSendFailure: mockRecordSendFailure,
+    invalidateTracking: vi.fn().mockResolvedValue(undefined),
+  },
 }))
 
 vi.mock("@chatbotx.io/event-bus", () => ({
@@ -120,9 +130,13 @@ vi.mock("@chatbotx.io/partysocket-config", () => ({
   RealtimeEventType: { messageCreated: "messageCreated" },
 }))
 
-vi.mock("@chatbotx.io/sdk", () => ({
-  parseSdkError: vi.fn().mockResolvedValue({ message: "sdk error" }),
-}))
+vi.mock("@chatbotx.io/sdk", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@chatbotx.io/sdk")>()
+  return {
+    ...actual,
+    parseSdkError: vi.fn().mockResolvedValue({ message: "sdk error" }),
+  }
+})
 
 vi.mock("@chatbotx.io/utils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
@@ -166,9 +180,10 @@ vi.mock("@chatbotx.io/flow-config", async (importOriginal) => {
 
 import type { ProcessMessengerTemplateParams } from "../src/chat/handlers/send-messenger-template"
 
-const { processMessengerTemplate } = await import(
+const { processMessengerTemplate, sendMessengerTemplateMessage } = await import(
   "../src/chat/handlers/send-messenger-template"
 )
+const { ChannelError, ChannelErrorCategory } = await import("@chatbotx.io/sdk")
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -195,6 +210,20 @@ const fakeTemplate = {
   params: {} as ProcessMessengerTemplateParams["template"]["params"],
   inboxId: "inbox-1",
 } as ProcessMessengerTemplateParams["template"]
+
+const broadcastTemplateJobData: Parameters<
+  typeof sendMessengerTemplateMessage
+>[0] = {
+  conversation: fakeConversation,
+  contactInbox: {
+    ...fakeContactInbox,
+    contactId: "contact-1",
+  },
+  templateId: "tmpl-1",
+  broadcastId: "broadcast-1",
+  templateData: {},
+  metadata: { type: "broadcast", broadcastId: "broadcast-1" },
+}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -298,8 +327,7 @@ describe("processMessengerTemplate", () => {
       "ws-1",
       createdAt,
     )
-    expect(mockDbUpdate).toHaveBeenCalledTimes(2)
-    expect(mockDbSet).toHaveBeenCalledWith({ lastMessageAt: createdAt })
+    expect(mockDbUpdate).toHaveBeenCalledTimes(1)
     expect(mockDbSet).toHaveBeenCalledWith({ lastActivityAt: createdAt })
   })
 
@@ -321,5 +349,53 @@ describe("processMessengerTemplate", () => {
     ).resolves.toBeDefined()
 
     expect(mockSendFlowStep).toHaveBeenCalledTimes(1)
+  })
+
+  test("does not throw permanent ChannelError from broadcast template send", async () => {
+    const error = new ChannelError(
+      "(#551) This person isn't available at the moment.",
+      ChannelErrorCategory.USER_BLOCKED,
+      { code: 551 },
+    )
+    mockSendFlowStep.mockRejectedValueOnce(error)
+
+    await expect(
+      sendMessengerTemplateMessage(broadcastTemplateJobData),
+    ).resolves.toBeUndefined()
+
+    expect(mockSendFlowStep).toHaveBeenCalledTimes(1)
+    expect(mockEmit).toHaveBeenCalledWith(
+      "message:failed",
+      expect.objectContaining({ occurredAt: expect.any(Date) }),
+    )
+  })
+
+  test("rethrows non-ChannelError from Messenger broadcast template send", async () => {
+    const error = new Error("unexpected provider failure")
+    mockSendFlowStep.mockRejectedValueOnce(error)
+
+    await expect(
+      sendMessengerTemplateMessage(broadcastTemplateJobData),
+    ).rejects.toBe(error)
+
+    expect(mockSendFlowStep).toHaveBeenCalledTimes(1)
+  })
+
+  test("template-not-found failure emits message:failed with inboxId in context", async () => {
+    mockValidateTemplate.mockResolvedValueOnce(null)
+
+    await expect(
+      sendMessengerTemplateMessage(broadcastTemplateJobData),
+    ).rejects.toThrow("Messenger template not found")
+
+    expect(mockEmit).toHaveBeenCalledWith(
+      "message:failed",
+      expect.objectContaining({
+        context: expect.objectContaining({
+          contactInboxId: "ci-1",
+          inboxId: "inbox-1",
+        }),
+      }),
+    )
   })
 })

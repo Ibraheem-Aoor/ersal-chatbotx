@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, type Mock, test, vi } from "vitest"
 
 const dbQueryIntegrationFindFirst = vi.fn()
 const dbQueryContactCustomFieldFindFirst = vi.fn()
+const setCustomFieldValues = vi.fn(async () => undefined)
+const applyWhatsappFlowResponse = vi.fn(async () => undefined)
 
 const dbUpdateWhere = vi.fn(async () => undefined)
 const dbUpdateSet = vi.fn(() => ({ where: dbUpdateWhere }))
@@ -50,6 +52,18 @@ vi.mock("../src/lib/logger", () => ({
 const emitCustomFieldChanged = vi.fn(async () => undefined)
 vi.mock("@chatbotx.io/events", () => ({
   emitCustomFieldChanged,
+}))
+
+// The handler now delegates custom-field writes to the business service (which
+// owns normalization + change events). Mock the whole barrel so its real schema
+// graph isn't pulled into this test's partial schema mock.
+vi.mock("@chatbotx.io/business", () => ({
+  contactCustomFieldService: {
+    setValues: (...args: unknown[]) => setCustomFieldValues(...args),
+  },
+  whatsappFlowResponseService: {
+    applyResponse: (...args: unknown[]) => applyWhatsappFlowResponse(...args),
+  },
 }))
 
 vi.mock("@chatbotx.io/utils", async (importOriginal) => {
@@ -184,6 +198,7 @@ describe("findWhatsappFlowStepByButtonId", () => {
 describe("applyWhatsappFlowResponseSideEffects", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    applyWhatsappFlowResponse.mockResolvedValue(undefined)
     dbQueryIntegrationFindFirst.mockResolvedValue({ id: "wa-integration-1" })
     dbQueryContactCustomFieldFindFirst.mockResolvedValue(null)
     dbInsertOnConflict.mockResolvedValue(undefined)
@@ -205,10 +220,10 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
     })
 
     expect(logger.warn as Mock).toHaveBeenCalledOnce()
-    expect(dbQueryIntegrationFindFirst).not.toHaveBeenCalled()
+    expect(applyWhatsappFlowResponse).not.toHaveBeenCalled()
   })
 
-  test("increments completedCount when sourceId is present", async () => {
+  test("delegates side effects when sourceId is present", async () => {
     const step = makeWhatsappFlowStep("btn-1")
 
     await applyWhatsappFlowResponseSideEffects({
@@ -219,11 +234,18 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: {},
     })
 
-    expect(dbQueryIntegrationFindFirst).toHaveBeenCalledOnce()
-    expect(dbUpdate).toHaveBeenCalledOnce()
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledOnce()
+    expect(applyWhatsappFlowResponse.mock.calls[0][0]).toEqual({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      contactInbox: makeContactInbox(),
+      flowSourceId: "wa-flow-1",
+      fieldMappings: [],
+      flowResponse: {},
+    })
   })
 
-  test("skips field mappings without customFieldId", async () => {
+  test("delegates mappings without customFieldId to the business service", async () => {
     const step = makeWhatsappFlowStep("btn-1")
     step.flow.fieldMappings = [
       { paramKey: "name", paramLabel: "Name", customFieldId: null },
@@ -237,11 +259,19 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: { name: "Alice" },
     })
 
-    expect(dbInsert).not.toHaveBeenCalled()
-    expect(emitCustomFieldChanged).not.toHaveBeenCalled()
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      contactInbox: makeContactInbox(),
+      flowSourceId: "wa-flow-1",
+      fieldMappings: [
+        { paramKey: "name", paramLabel: "Name", customFieldId: null },
+      ],
+      flowResponse: { name: "Alice" },
+    })
   })
 
-  test("upserts custom field and emits event for valid mapping", async () => {
+  test("delegates a valid mapping to the business service", async () => {
     const step = makeWhatsappFlowStep("btn-1")
     step.flow.fieldMappings = [
       { paramKey: "email", paramLabel: "Email", customFieldId: "cf-1" },
@@ -255,17 +285,20 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: { email: "user@example.com" },
     })
 
-    expect(dbInsert).toHaveBeenCalledOnce()
-    expect(emitCustomFieldChanged).toHaveBeenCalledOnce()
-    const args = (emitCustomFieldChanged as Mock).mock.calls[0]
-    expect(args[0]).toBe("ws-1")
-    expect(args[1]).toBe("contact-1")
-    expect(args[2]).toBe("cf-1")
-    expect(args[3]).toBe("Email")
-    expect(args[5]).toBe("user@example.com")
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledOnce()
+    expect(applyWhatsappFlowResponse.mock.calls[0][0]).toEqual({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      contactInbox: makeContactInbox(),
+      flowSourceId: "wa-flow-1",
+      fieldMappings: [
+        { paramKey: "email", paramLabel: "Email", customFieldId: "cf-1" },
+      ],
+      flowResponse: { email: "user@example.com" },
+    })
   })
 
-  test("uses paramKey as field name when paramLabel is missing", async () => {
+  test("delegates raw response values before business serialization", async () => {
     const step = makeWhatsappFlowStep("btn-1")
     step.flow.fieldMappings = [
       { paramKey: "phone_number", customFieldId: "cf-2" },
@@ -279,12 +312,16 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: { phone_number: "0901234567" },
     })
 
-    expect(emitCustomFieldChanged).toHaveBeenCalledOnce()
-    const args = (emitCustomFieldChanged as Mock).mock.calls[0]
-    expect(args[3]).toBe("phone_number")
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledOnce()
+    expect(applyWhatsappFlowResponse.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        fieldMappings: [{ paramKey: "phone_number", customFieldId: "cf-2" }],
+        flowResponse: { phone_number: "0901234567" },
+      }),
+    )
   })
 
-  test("skips upsert when response value is null/undefined for the key", async () => {
+  test("delegates missing response values to the business service", async () => {
     const step = makeWhatsappFlowStep("btn-1")
     step.flow.fieldMappings = [
       { paramKey: "missing_key", paramLabel: "Missing", customFieldId: "cf-3" },
@@ -298,13 +335,21 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: {},
     })
 
-    expect(dbInsert).not.toHaveBeenCalled()
-    expect(emitCustomFieldChanged).not.toHaveBeenCalled()
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fieldMappings: [
+          {
+            paramKey: "missing_key",
+            paramLabel: "Missing",
+            customFieldId: "cf-3",
+          },
+        ],
+        flowResponse: {},
+      }),
+    )
   })
 
-  test("logs warning when integrationWhatsapp not found for completedCount increment", async () => {
-    dbQueryIntegrationFindFirst.mockResolvedValue(null)
-    const { logger } = await import("../src/lib/logger")
+  test("lets business service handle missing integrationWhatsapp", async () => {
     const step = makeWhatsappFlowStep("btn-1")
 
     await applyWhatsappFlowResponseSideEffects({
@@ -315,7 +360,6 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       flowResponse: {},
     })
 
-    expect(logger.warn as Mock).toHaveBeenCalledOnce()
-    expect(dbUpdate).not.toHaveBeenCalled()
+    expect(applyWhatsappFlowResponse).toHaveBeenCalledOnce()
   })
 })

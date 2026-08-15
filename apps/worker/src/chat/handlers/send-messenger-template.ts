@@ -1,8 +1,10 @@
-import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
+import {
+  broadcastToWorkspaceParty,
+  contactInboxService,
+} from "@chatbotx.io/business"
 import { db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
-  contactInboxModel,
   conversationModel,
   type messageModel,
 } from "@chatbotx.io/database/schema"
@@ -37,6 +39,7 @@ import {
   validateMessengerTemplate,
 } from "../../integration/handlers/messenger-template-handler"
 import { logger } from "../../lib/logger"
+import { shouldSuppressRetryableChannelError } from "../utils/retry"
 import { sendFlowStepToChannel } from "./send-message"
 
 export interface ProcessMessengerTemplateParams {
@@ -114,6 +117,7 @@ export async function processMessengerTemplate(
       conversationId: conversation.id,
       channel: contactInbox.channel,
       contactInboxId: contactInbox.id,
+      inboxId: contactInbox.inboxId,
     },
     action: {
       flowId: flow?.id || "",
@@ -142,6 +146,7 @@ export async function processMessengerTemplate(
     const variables = await contactVariableService.getAll({
       contactId: conversation.contactId,
       contactInbox,
+      conversation,
     })
     const completeParams = mergeMessengerTemplateButtonParams(
       template.params,
@@ -187,17 +192,26 @@ export async function processMessengerTemplate(
     })
     const createdMessage = newMessage
 
-    await db.transaction(async (tx) => {
-      await tx
-        .update(contactInboxModel)
-        .set({ lastMessageAt: createdMessage.createdAt })
-        .where(eq(contactInboxModel.id, contactInbox.id))
+    const trackingInvalidation = await db.transaction(async (tx) => {
+      const invalidation =
+        await contactInboxService.recordOutboundMessageCreated({
+          tx,
+          contactInboxId: contactInbox.id,
+          contactId: contactInbox.contactId,
+          workspaceId: conversation.workspaceId,
+          at: createdMessage.createdAt,
+        })
 
       await tx
         .update(conversationModel)
         .set({ lastActivityAt: createdMessage.createdAt })
         .where(eq(conversationModel.id, conversation.id))
+
+      return invalidation
     })
+    if (trackingInvalidation) {
+      await contactInboxService.invalidateTracking(trackingInvalidation)
+    }
 
     broadcastToWorkspaceParty(conversation.workspaceId, {
       eventType: RealtimeEventType.messageCreated,
@@ -226,6 +240,29 @@ export async function processMessengerTemplate(
       occurredAt: new Date(),
     })
 
+    // Bot-message quota accounting: `chat/worker.ts`'s pre-send gate blocks
+    // `sendMessengerTemplateMessage` jobs, but nothing previously counted a
+    // successful send here — the quota gate and the quota meter must stay
+    // structurally paired or the gate is enforced against a counter that
+    // never moves.
+    emit("analytics:dashboard", {
+      eventType: "message:bot_sent",
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      senderType: "bot",
+      occurredAt: new Date(),
+      source: contactInbox.source,
+      sourceId: contactInbox.sourceId,
+      channel: contactInbox.channel,
+      metadata: {
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "processMessengerTemplate",
+          triggerType: "message_bot_sent_messenger_template",
+        },
+      },
+    })
+
     const providerMessageId = result?.messageIds?.[0]
 
     if (providerMessageId) {
@@ -250,6 +287,8 @@ export async function processMessengerTemplate(
       message: { ...newMessage, sourceId: providerMessageId || null },
     }
   } catch (error) {
+    const errorData = await parseSdkError(error)
+
     logger.error(
       {
         error,
@@ -266,7 +305,7 @@ export async function processMessengerTemplate(
         messageId: newMessage?.id || "",
         flowId: flow?.id || "",
       },
-      errorData: await parseSdkError(error),
+      errorData,
       occurredAt: new Date(),
     })
 
@@ -276,7 +315,7 @@ export async function processMessengerTemplate(
 
 export async function sendMessengerTemplateMessage(
   data: ChatJobSendMessengerTemplateMessage["data"],
-) {
+): Promise<ProcessMessengerTemplateResult | undefined> {
   const {
     conversation,
     templateId,
@@ -294,6 +333,7 @@ export async function sendMessengerTemplateMessage(
       conversationId: conversation.id,
       channel: contactInbox.channel,
       contactInboxId: contactInbox.id,
+      inboxId: contactInbox.inboxId,
     },
     action: {
       flowId: "",
@@ -405,6 +445,9 @@ export async function sendMessengerTemplateMessage(
       },
       "Error sending Messenger template message for broadcast",
     )
+    if (shouldSuppressRetryableChannelError(error, contactInbox.channel)) {
+      return
+    }
     throw error
   }
 }

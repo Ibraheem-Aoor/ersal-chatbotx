@@ -12,6 +12,7 @@ import type {
   WorkspaceModel,
 } from "@chatbotx.io/database/types"
 import { integration as integrationChatbotx } from "@chatbotx.io/integration-chatbotx"
+import { integration as integrationGoogleCalendar } from "@chatbotx.io/integration-google-calendar"
 import { integration as integrationGoogleSheets } from "@chatbotx.io/integration-google-sheets"
 import { integration as integrationInstagram } from "@chatbotx.io/integration-instagram"
 import { integration as integrationInstagramFacebook } from "@chatbotx.io/integration-instagram-facebook"
@@ -30,6 +31,7 @@ import {
   type IntegrationDefinition,
   SdkException,
 } from "@chatbotx.io/sdk"
+import { IntegrationNotFoundError } from "./orphaned-integration-cleanup"
 
 export const allIntegrations: Record<
   string,
@@ -37,6 +39,7 @@ export const allIntegrations: Record<
   Integration<IntegrationDefinition<any, any, any>> | undefined
 > = {
   gemini: undefined,
+  googleCalendar: integrationGoogleCalendar,
   googleSheets: integrationGoogleSheets,
   messenger: integrationMessenger,
   openai: undefined,
@@ -75,6 +78,7 @@ export const integrationService = {
     let modelName: string | null = null
     let columnName: string | null = null
 
+    // SMTP is outbound-only and has no inbound identifier resolution path.
     switch (integrationType) {
       case "whatsapp": {
         modelName = "IntegrationWhatsapp"
@@ -130,9 +134,7 @@ export const integrationService = {
     )
 
     if (!result.rows[0]) {
-      throw new Error(
-        `Integration not found: ${integrationType} ${integrationIdentifier}`,
-      )
+      throw new IntegrationNotFoundError(integrationType, integrationIdentifier)
     }
 
     const workspace = await workspaceService.findById({
@@ -155,12 +157,40 @@ export const integrationService = {
   getIntegrationFromContactInbox: async (
     contactInbox: ContactInboxModel,
   ): Promise<IntegrationRow> => {
-    const inboxName = contactInbox.channel
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join("")
+    let integrationTable: string
+    switch (contactInbox.channel) {
+      case "messenger":
+        integrationTable = "IntegrationMessenger"
+        break
+      case "telegram":
+        integrationTable = "IntegrationTelegram"
+        break
+      case "whatsapp":
+        integrationTable = "IntegrationWhatsapp"
+        break
+      case "zalo":
+        integrationTable = "IntegrationZalo"
+        break
+      case "tiktok":
+        integrationTable = "IntegrationTiktok"
+        break
+      case "webchat":
+        integrationTable = "IntegrationWebchat"
+        break
+      case "smtp":
+        integrationTable = "IntegrationSmtp"
+        break
+      case "instagram":
+        integrationTable = "IntegrationInstagram"
+        break
+      default:
+        throw new ChannelError(
+          `Unsupported integration channel: ${contactInbox.channel}`,
+          ChannelErrorCategory.AUTH_FAILED,
+          { code: "unsupported_channel" },
+        )
+    }
 
-    const integrationTable = `Integration${inboxName}`
     const result = await db.execute<{
       id: string
       auth: AuthValue
