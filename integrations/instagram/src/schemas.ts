@@ -22,7 +22,7 @@ export type InstagramAuthValue = Oauth2AuthValue & {
 
 export type InstagramActions = {
   getPostDetails: (props: {
-    ctx: Context<InstagramAuthValue>
+    ctx: Pick<Context<InstagramAuthValue>, "auth">
     input: { postId: string }
   }) => Promise<import("./apis/post").InstagramMediaDetails>
 }
@@ -42,6 +42,14 @@ const attachmentTypeSchema = z.enum([
 // Base attachment payload — url optional because location/share have no url
 const baseAttachmentPayloadSchema = z.object({
   url: z.url().optional(),
+  coordinates: z
+    .object({
+      lat: z.number().optional(),
+      long: z.number().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+    })
+    .optional(),
 })
 
 // Common ID schemas
@@ -64,6 +72,21 @@ export const instagramMessageSchema = z.object({
   quick_reply: z
     .object({
       payload: z.string(),
+      title: z.string().optional(),
+    })
+    .optional(),
+  // `reply_to.mid` = reply to another DM message; `reply_to.story` = reply to
+  // a story (id/url of the story). Mutually exclusive per Meta's docs — never
+  // both set on the same message.
+  reply_to: z
+    .object({
+      mid: z.string().optional(),
+      story: z
+        .object({
+          id: z.string(),
+          url: z.string().optional(),
+        })
+        .optional(),
     })
     .optional(),
 })
@@ -83,6 +106,19 @@ export const instagramReferralSchema = z.object({
   ref: z.string(),
   source: z.string(),
   type: z.string(),
+  ad_id: z.string().optional(),
+  source_url: z.string().optional(),
+  source_platform: z.string().optional(),
+  ads_context_data: z
+    .object({
+      ad_title: z.string().optional(),
+      post_id: z.string().optional(),
+      photo_url: z.string().optional(),
+      video_url: z.string().optional(),
+      product_id: z.string().optional(),
+      flow_id: z.string().optional(),
+    })
+    .optional(),
 })
 export type InstagramReferral = z.infer<typeof instagramReferralSchema>
 
@@ -239,7 +275,7 @@ export type InstagramGraphAPIError = z.infer<
 export const instagramUserProfileSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
-  profile_picture_url: z.url().optional(),
+  profile_pic: z.url().optional(),
   username: z.string().optional(),
 })
 export type InstagramUserProfile = z.infer<typeof instagramUserProfileSchema>
@@ -309,7 +345,9 @@ export const instagramProfileRequest = z.object({
 export type InstagramProfileRequest = z.infer<typeof instagramProfileRequest>
 
 export type InstagramContactProfile = {
+  username: string | null
   followersCount: number | null
   followsBusiness: boolean | null
   businessFollowUser: boolean | null
+  isVerified: boolean | null
 }

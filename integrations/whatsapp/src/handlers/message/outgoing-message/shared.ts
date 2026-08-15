@@ -1,5 +1,7 @@
 import {
+  appendCodeToMagicLink,
   type ButtonStepProps,
+  buttonTypes,
   encodeButtonPayload,
   extractMetadata,
   type MetadataPayload,
@@ -10,7 +12,9 @@ import {
 } from "@chatbotx.io/sdk"
 import {
   ActionButtons,
+  ActionCTA,
   ActionList,
+  Body,
   type Footer,
   Header,
   type Image,
@@ -146,12 +150,60 @@ function chunkList<T>(items: T[], size: number): T[][] {
 }
 
 /**
+ * Builds CTA URL interactive messages for `openWebsite` buttons.
+ *
+ * WhatsApp supports a single CTA URL button per message, so each link button
+ * becomes its own interactive message. `appendCodeToMagicLink` attaches the
+ * contact-inbox tracking code to magic-link URLs (plain URLs pass through
+ * unmodified).
+ */
+function buildCtaUrlMessages(props: {
+  buttons: ButtonStepProps[]
+  bodyText: string
+  contactInboxId?: string
+  flowId: string
+  flowVersionId?: string
+  metadata?: MetadataPayload
+}): ClientMessage[] {
+  const ctaButtons = props.buttons.filter(
+    (b) => b.buttonType === buttonTypes.enum.openWebsite,
+  )
+
+  if (ctaButtons.length === 0) {
+    return []
+  }
+
+  return ctaButtons.map((button) => {
+    const url = button.beforeStep?.url ?? ""
+    const replyButton = normalizeRawButton({
+      flowId: props.flowId,
+      flowVersionId: props.flowVersionId,
+      button,
+      metadata: props.metadata,
+      contactInboxId: props.contactInboxId,
+    })
+    const resolvedUrl = appendCodeToMagicLink(url, replyButton.id)
+
+    return new Interactive(
+      new ActionCTA(
+        clampText(button.label, messageLimits.buttonTitle),
+        resolvedUrl,
+      ),
+      new Body(props.bodyText),
+    )
+  })
+}
+
+/**
  * Builds the message sequence that carries `bodyText`, an optional image and a
  * set of replies.
  *
- * Nothing is discarded to fit a WhatsApp limit: overflowing text and overflowing
- * replies each become additional messages. Only values with nowhere to overflow
- * to — a button title, a footer — are clamped.
+ * `openWebsite` buttons are sent as CTA URL interactive messages (one per link
+ * button), and the remaining reply buttons are sent as regular interactive
+ * button/list messages. Nothing is discarded to fit a WhatsApp limit:
+ * overflowing text and overflowing replies each become additional messages.
+ * Only values with nowhere to overflow to — a button title, a footer — are
+ * clamped.
  */
 export function buildWhatsappButtonMessages(props: {
   flowId: string
@@ -162,17 +214,33 @@ export function buildWhatsappButtonMessages(props: {
   bodyText: string
   media?: Image
   footer?: Footer
+  contactInboxId?: string
 }): ClientMessage[] {
+  // Partition: openWebsite buttons → CTA URL messages, everything else → reply buttons
+  const ctaMessages = buildCtaUrlMessages({
+    buttons: props.buttons,
+    bodyText: props.bodyText,
+    contactInboxId: props.contactInboxId,
+    flowId: props.flowId,
+    flowVersionId: props.flowVersionId,
+    metadata: props.metadata,
+  })
+
+  const replyButtons = props.buttons.filter(
+    (b) => b.buttonType !== buttonTypes.enum.openWebsite,
+  )
+
   const replies = selectReplyButtons({
     flowId: props.flowId,
     flowVersionId: props.flowVersionId,
-    buttons: props.buttons,
+    buttons: replyButtons,
     quickReplies: props.quickReplies,
     metadata: props.metadata,
   })
 
+  // If only CTA buttons with no reply buttons, return CTA messages
   if (replies.length === 0) {
-    return []
+    return ctaMessages
   }
 
   // Only the closing chunk becomes the interactive body; anything before it
@@ -190,6 +258,7 @@ export function buildWhatsappButtonMessages(props: {
     )
 
     return [
+      ...ctaMessages,
       ...leading,
       new Interactive(
         new ActionButtons(firstButton, ...restButtons),
@@ -204,6 +273,7 @@ export function buildWhatsappButtonMessages(props: {
   // three replies the image is sent on its own and the replies are spread over
   // as many lists as they need instead of being cut off.
   return [
+    ...ctaMessages,
     ...leading,
     ...(props.media ? [props.media] : []),
     ...chunkList(replies, MAX_LIST_ROWS).map((chunk) => {

@@ -10,7 +10,11 @@ import {
   findConversationalAutomation,
   updateConversationalAutomation,
 } from "./api/phone-number"
-import { listFlows, listMessageTemplates } from "./api/waba"
+import {
+  createMessageTemplate,
+  listFlows,
+  listMessageTemplates,
+} from "./api/waba"
 import { unsubscribeWebhook } from "./api/webhook"
 import { uploadMedia, verifyAccessToken } from "./client"
 import { botHandlers } from "./handlers/bot"
@@ -51,6 +55,8 @@ const config: IntegrationDefinition<
       await findConversationalAutomation(ctx.auth),
     updateConversationalAutomation: async ({ ctx, data }) =>
       await updateConversationalAutomation(ctx.auth, data),
+    createMessageTemplate: async ({ ctx, data }) =>
+      await createMessageTemplate(ctx.auth, data),
   },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")

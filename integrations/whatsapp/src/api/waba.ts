@@ -140,7 +140,7 @@ export const createMessageTemplate = (
         headers: {
           Authorization: `Bearer ${auth.tokens.accessToken}`,
         },
-        body: JSON.stringify(data),
+        json: data,
       })
       .json(),
   )

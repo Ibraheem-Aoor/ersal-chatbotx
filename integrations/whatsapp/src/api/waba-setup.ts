@@ -29,6 +29,11 @@ export function addSystemUser({
   auth: WhatsappAuthValue
   whatsappSettings: WhatsappSettings
 }) {
+  if (process.env.SKIP_WABA_USER_ASSIGNMENT === "true") {
+    logger.info("Skipping WABA user assignment (SKIP_WABA_USER_ASSIGNMENT=true)")
+    return Promise.resolve()
+  }
+
   const { version = DEFAULT_API_VERSION } = auth
 
   return rescue(async () => {
@@ -54,6 +59,11 @@ export function shareCreditLine({
   auth: WhatsappAuthValue
   whatsappSettings: WhatsappSettings
 }) {
+  if (process.env.SKIP_WABA_CREDIT_SHARING === "true") {
+    logger.info("Skipping WABA credit sharing (SKIP_WABA_CREDIT_SHARING=true)")
+    return Promise.resolve()
+  }
+
   const { version = DEFAULT_API_VERSION } = auth
 
   return rescue(async () => {
@@ -157,6 +167,11 @@ export function registerPhoneNumber({
   auth: WhatsappAuthValue
   phoneNumberId: string
 }): Promise<RegisterPhoneNumberResult> {
+  if (process.env.SKIP_WABA_PHONE_REGISTRATION === "true") {
+    logger.info("Skipping WABA phone registration (SKIP_WABA_PHONE_REGISTRATION=true)")
+    return Promise.resolve({ status: "registered" })
+  }
+
   const { version = DEFAULT_API_VERSION } = auth
 
   return rescue(async () => {

@@ -4,6 +4,7 @@ import type {
   Handler,
   Oauth2AuthValue,
 } from "@chatbotx.io/sdk"
+import type { CreateMessageTemplateProps } from "./api/waba"
 import type { ServerMessage } from "whatsapp-api-js/types"
 import z from "zod"
 import type {
@@ -259,5 +260,12 @@ export type WhatsappActions = {
       data: ConversationalAutomation
     },
     void
+  >
+  createMessageTemplate: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      data: CreateMessageTemplateProps
+    },
+    MessageTemplateEntity
   >
 }

@@ -10,6 +10,7 @@ export {
   readWhatsappOriginErrorDetail,
   type WhatsappOriginErrorDetail,
 } from "./lib/origin-error"
+export type { CreateMessageTemplateProps } from "./api/waba"
 export type {
   WhatsappAuthValue,
   WhatsappFlowScreen,

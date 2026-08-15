@@ -25,6 +25,11 @@ export function subscribeWebhook({
   includeAutomaticEvents?: boolean
   overrideCallbackUrl?: boolean
 }) {
+  if (process.env.SKIP_WABA_WEBHOOK_SUBSCRIBE === "true") {
+    logger.info("Skipping WABA webhook subscribe (SKIP_WABA_WEBHOOK_SUBSCRIBE=true)")
+    return Promise.resolve()
+  }
+
   const { version = DEFAULT_API_VERSION } = auth
   const url = `${API_URL}/${version}/${auth.metadata.wabaId}/subscribed_apps`
 
