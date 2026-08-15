@@ -344,6 +344,11 @@ class UserQuotaService extends BaseService {
       monthlyBotMessagesUsed: 0,
       monthlyBotMessagesPeriodStart: null,
       botMessagesTopUpGranted: 0,
+      flowsLimit: null,
+      flowsUsed: 0,
+      broadcastsLimit: null,
+      broadcastsUsed: 0,
+      aiAgentsEnabled: true,
       whiteLabel: false,
       ssoSaml: false,
       saasMode: false,
@@ -511,6 +516,68 @@ class UserQuotaService extends BaseService {
       })
       .where(eq(userQuotaModel.userId, userId))
     await this.store.invalidate(userId)
+  }
+
+  /**
+   * Apply a billing plan's entitlements to a user's quota row. This sets the
+   * limit columns (contacts, workspaces, channels, team members, flows,
+   * broadcasts, AI agents, MAC) and the plan identity. Used by the billing
+   * renewal service after a successful charge and by the admin service when
+   * assigning a plan manually. The quota-worker remains the long-term
+   * authority; this method is the immediate write-through.
+   */
+  async applyPlanEntitlements(input: {
+    userId: string
+    planName: string
+    contactsLimit: number | null
+    macLimit: number | null
+    workspacesLimit: number | null
+    channelsLimit: number | null
+    teamMembersLimit: number | null
+    flowsLimit: number | null
+    broadcastsLimit: number | null
+    aiAgentsEnabled: boolean
+    periodStart: Date
+    periodEnd: Date | null
+  }): Promise<void> {
+    await db
+      .insert(userQuotaModel)
+      .values({
+        userId: input.userId,
+        planName: input.planName,
+        planStatus: planStatuses.enum.active,
+        contactsLimit: input.contactsLimit,
+        macLimit: input.macLimit,
+        workspacesLimit: input.workspacesLimit,
+        channelsLimit: input.channelsLimit,
+        teamMembersLimit: input.teamMembersLimit,
+        flowsLimit: input.flowsLimit,
+        broadcastsLimit: input.broadcastsLimit,
+        aiAgentsEnabled: input.aiAgentsEnabled,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        syncedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userQuotaModel.userId,
+        set: {
+          planName: input.planName,
+          planStatus: planStatuses.enum.active,
+          contactsLimit: input.contactsLimit,
+          macLimit: input.macLimit,
+          workspacesLimit: input.workspacesLimit,
+          channelsLimit: input.channelsLimit,
+          teamMembersLimit: input.teamMembersLimit,
+          flowsLimit: input.flowsLimit,
+          broadcastsLimit: input.broadcastsLimit,
+          aiAgentsEnabled: input.aiAgentsEnabled,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        },
+      })
+
+    await this.store.invalidate(input.userId)
   }
 
   /**
