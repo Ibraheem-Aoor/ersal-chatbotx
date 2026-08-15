@@ -1,5 +1,6 @@
 import type {
   ContactInboxModel,
+  ConversationModel,
   WorkspaceModel,
 } from "@chatbotx.io/database/types"
 import { contactVariableService } from "./contact-variable"
@@ -71,7 +72,9 @@ export const resolveContactVariablesDeep = async <T>(
   value: T,
   source: {
     contactInbox: ContactInboxModel | string
+    conversation?: ConversationModel | null
     workspace?: WorkspaceModel
+    appointmentId?: string
   },
 ): Promise<T> => {
   if (!valueContainsVariablePlaceholder(value)) {

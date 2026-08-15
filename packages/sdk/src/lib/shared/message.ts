@@ -12,6 +12,7 @@ export type IncomingContact = {
   avatar?: string
   gender?: string
   locale?: string
+  language?: string
   timezone?: string
 }
 
@@ -56,6 +57,7 @@ export type IncomingMessage = {
     | MessageLocationEntity
     | MessageTemplateEntity
     | MessageWhatsappFlowResponseEntity
+    | MessageStoryReplyEntity
     | { [x: string]: unknown }
   attachments?: IncomingAttachment[]
   clientId?: string | null
@@ -67,6 +69,41 @@ export type MessageWhatsappFlowResponseEntity = {
   flowResponse: Record<string, unknown>
   flowToken: string | null
   decoded: ButtonPayload | null
+}
+
+/**
+ * Carried on a message that is the contact's reply to one of the workspace's
+ * Instagram/Messenger stories (Meta's `reply_to.story` webhook field), so the
+ * inbox can render "Replied to your story" context instead of showing it as
+ * a plain text message. `story.url` is Meta's CDN link and is short-lived.
+ */
+export type MessageStoryReplyEntity = {
+  type: "story_reply"
+  story: {
+    id: string
+    url?: string
+  }
+}
+
+/**
+ * Extracts the story-reply payload from a message's contentAttributes,
+ * accepting both the current `{ type: "story_reply", story }` shape and the
+ * legacy `{ storyReply }` shape some already-persisted rows still carry.
+ * Centralized so callers (worker routing, direction correction, inbox
+ * rendering) can't drift from each other on the shape check.
+ */
+export const getStoryReply = (
+  contentAttributes: unknown,
+): MessageStoryReplyEntity["story"] | undefined => {
+  if (!contentAttributes || typeof contentAttributes !== "object") {
+    return
+  }
+  const attrs = contentAttributes as {
+    type?: string
+    story?: MessageStoryReplyEntity["story"]
+    storyReply?: MessageStoryReplyEntity["story"]
+  }
+  return attrs.type === "story_reply" ? attrs.story : attrs.storyReply
 }
 
 export const MessageEntitySchema = z.custom<IncomingMessage>(
@@ -116,6 +153,8 @@ export type MessageButtonTemplate = {
   | {
       buttonType: "url"
       url: string
+      /** Enables Messenger Extensions in Facebook/Messenger webviews. */
+      messengerExtensions?: boolean
       /** Encoded flow payload for channels that cannot render URL quick replies. */
       postback?: string
     }
@@ -124,6 +163,21 @@ export type MessageButtonTemplate = {
       postback: string
     }
 )
+
+/**
+ * Reserved MessageButtonTemplate postback payloads that ask the Messenger
+ * channel to render Facebook's native "share your email / phone" quick
+ * reply (Send API content_type "user_email" / "user_phone_number") instead
+ * of a literal text button. Facebook fills the value from the contact's own
+ * Messenger account at tap time, so the sender never needs to know it in
+ * advance. Only integrations/messenger's quick reply converter interprets
+ * these; every other channel just renders them as an inert text button, so
+ * callers must gate emitting them to the messenger channel.
+ */
+export const MESSENGER_NATIVE_QUICK_REPLY = {
+  USER_EMAIL: "messenger:native-quick-reply:user_email",
+  USER_PHONE_NUMBER: "messenger:native-quick-reply:user_phone_number",
+} as const
 
 export function getCanonicalReplyPayload(
   button: MessageButtonTemplate,

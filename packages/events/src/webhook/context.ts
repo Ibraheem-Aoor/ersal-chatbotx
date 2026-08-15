@@ -1,48 +1,31 @@
+import { AsyncLocalStorage } from "node:async_hooks"
+
 type ExecutionContext = {
   source?: "webhook"
 }
 
-type AsyncLocalStorageType = {
-  enterWith: (context: ExecutionContext) => void
-  getStore: () => ExecutionContext | undefined
-}
-
-let asyncLocalStorage: AsyncLocalStorageType | null = null
-
-// Try to load AsyncLocalStorage - will fail in Edge Runtime
-async function initAsyncLocalStorage() {
-  try {
-    const asyncHooks = await import("node:async_hooks")
-    return new asyncHooks.AsyncLocalStorage()
-  } catch (e) {
-    console.error("Failed to load AsyncLocalStorage:", e)
-    return null
-  }
-}
-
-// Initialize async - will be null initially, then populated
-initAsyncLocalStorage().then((storage) => {
-  asyncLocalStorage = storage as AsyncLocalStorageType | null
-})
+const asyncLocalStorage = new AsyncLocalStorage<ExecutionContext>()
 
 export function setWebhookExecutionContext(context: ExecutionContext) {
-  if (!asyncLocalStorage) {
-    return
-  }
   return asyncLocalStorage.enterWith(context)
 }
 
+export function runWithWebhookExecutionContext<T>(
+  context: ExecutionContext,
+  callback: () => T,
+): T {
+  return asyncLocalStorage.run(context, callback)
+}
+
 export function getWebhookExecutionContext(): ExecutionContext | undefined {
-  if (!asyncLocalStorage) {
-    return
-  }
   return asyncLocalStorage.getStore()
 }
 
 export function isWebhookContext(): boolean {
-  if (!asyncLocalStorage) {
-    return false
-  }
   const context = asyncLocalStorage.getStore()
   return context?.source === "webhook"
+}
+
+export function webhookChannelOrigin(): "channel" | undefined {
+  return isWebhookContext() ? "channel" : undefined
 }

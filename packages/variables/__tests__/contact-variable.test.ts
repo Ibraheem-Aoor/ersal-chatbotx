@@ -6,12 +6,15 @@ import type {
 } from "@chatbotx.io/database/types"
 import { beforeEach, describe, expect, test, vi } from "vitest"
 import type { ContactCustomFieldValue } from "../src/schema"
+import { extractVariables } from "../src/utils"
 
 const {
   mockContactCustomFieldFindMany,
   mockContactFindFirst,
   mockContactInboxFindFirst,
   mockFindLatestLastIncomingMessageAt,
+  mockListIncomingTextsByContactInbox,
+  mockResolveCouponVariable,
   mockWorkspaceFind,
 } = vi.hoisted(() => ({
   mockContactCustomFieldFindMany: vi.fn(),
@@ -19,12 +22,18 @@ const {
   mockContactInboxFindFirst: vi.fn(),
   mockWorkspaceFind: vi.fn(),
   mockFindLatestLastIncomingMessageAt: vi.fn(),
+  mockListIncomingTextsByContactInbox: vi.fn().mockResolvedValue([]),
+  mockResolveCouponVariable: vi.fn(),
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
+  appointmentService: { findBy: vi.fn() },
   contactInboxService: {
     findLatestLastIncomingMessageAtByContactId:
       mockFindLatestLastIncomingMessageAt,
+  },
+  messageService: {
+    listIncomingTextsByContactInbox: mockListIncomingTextsByContactInbox,
   },
   resolveTenantSettings: vi.fn(),
   workspaceService: {
@@ -35,6 +44,12 @@ vi.mock("@chatbotx.io/business", () => ({
 vi.mock("@chatbotx.io/business/utils", () => ({
   getPublicFileUrl: (path: string, baseUrl: string) =>
     new URL(path, baseUrl).toString(),
+}))
+
+vi.mock("@chatbotx.io/business/coupon", () => ({
+  couponService: {
+    resolveCouponVariable: mockResolveCouponVariable,
+  },
 }))
 
 vi.mock("@chatbotx.io/database/client", () => ({
@@ -148,6 +163,70 @@ describe("contactVariableService.replaceAll", () => {
     ).resolves.toBe("{{not_a_field}}  active")
   })
 
+  test("supports dotted system variables and keeps unknown dotted placeholders literal", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "{{ai.queued.messages}} {{foo.bar}}",
+        variables: createVariables(),
+      }),
+    ).resolves.toBe(" {{foo.bar}}")
+  })
+
+  test("substitutes coupon topic variables with issued coupon code", async () => {
+    mockResolveCouponVariable.mockResolvedValue("HHFgpe")
+
+    await expect(
+      contactVariableService.replaceAll({
+        text: "Mã giảm giá của bạn là {{coupon:11619011544072192}}",
+        variables: createVariables(),
+      }),
+    ).resolves.toBe("Mã giảm giá của bạn là HHFgpe")
+
+    expect(mockResolveCouponVariable).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      contactId: "contact-1",
+      topicId: "11619011544072192",
+    })
+  })
+
+  test("extracts and resolves raw custom field variables verbatim", async () => {
+    expect(extractVariables("{{raw:Full Name}} {{raw:Ngày sinh}}")).toEqual([
+      "raw:Full Name",
+      "raw:Ngày sinh",
+    ])
+
+    await expect(
+      contactVariableService.replaceAll({
+        text: "{{raw:Full Name}} {{raw:Ngày sinh}}",
+        variables: createVariables([
+          {
+            key: "Full Name",
+            value: "Ada Lovelace",
+          },
+          {
+            key: "Ngày sinh",
+            type: "date",
+            value: "2026-07-23T00:00:00.000Z",
+          },
+        ]),
+      }),
+    ).resolves.toBe("Ada Lovelace 2026-07-23T00:00:00.000Z")
+  })
+
+  test("keeps unknown raw variables literal and preserves a real raw-prefixed field name", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "{{raw:Missing}} {{raw:X}}",
+        variables: createVariables([
+          {
+            key: "raw:X",
+            value: "field named raw colon x",
+          },
+        ]),
+      }),
+    ).resolves.toBe("{{raw:Missing}} field named raw colon x")
+  })
+
   test("does not render custom field null values as string null", async () => {
     await expect(
       contactVariableService.replaceAll({
@@ -165,6 +244,137 @@ describe("contactVariableService.replaceAll", () => {
   test("sanity-checks referenced system field names", () => {
     expect(systemFieldTypes.options).toContain("locale")
     expect(systemFieldTypes.options).toContain("first_name")
+  })
+})
+
+describe("contactVariableService.replaceAll gender casing", () => {
+  const genderVariables = (gender: string | null, language: string) => ({
+    ...createVariables(),
+    contact: { ...contact, gender } as ContactModel,
+    workspace: { ...workspace, language } as WorkspaceModel,
+  })
+
+  test("capitalises {{gender}} when it opens the text", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "{{gender}} vui lòng xác nhận đơn hàng.",
+        variables: genderVariables("male", "vi"),
+      }),
+    ).resolves.toBe("Anh vui lòng xác nhận đơn hàng.")
+  })
+
+  test("lowercases {{gender}} inside a sentence", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "Xin chào {{gender}}, đơn hàng đã được giao.",
+        variables: genderVariables("female", "vi"),
+      }),
+    ).resolves.toBe("Xin chào chị, đơn hàng đã được giao.")
+  })
+
+  test("capitalises {{gender}} after a sentence break and after a newline", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "Cảm ơn. {{gender}} nhé!\n{{gender}} cần hỗ trợ gì thêm không?",
+        variables: genderVariables(null, "vi"),
+      }),
+    ).resolves.toBe("Cảm ơn. Anh/Chị nhé!\nAnh/Chị cần hỗ trợ gì thêm không?")
+  })
+
+  test("keeps the Vietnamese labels for a region-tagged workspace language", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "Kính gửi {{gender}}",
+        variables: genderVariables("female", "vi-VN"),
+      }),
+    ).resolves.toBe("Kính gửi chị")
+  })
+
+  test("falls back to the English labels for other workspace languages", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "{{gender}} — hello {{gender}}",
+        variables: genderVariables("male", "de"),
+      }),
+    ).resolves.toBe("Male — hello male")
+  })
+
+  test("leaves other variables untouched by the sentence casing", async () => {
+    await expect(
+      contactVariableService.replaceAll({
+        text: "Hi {{first_name}}, {{gender}}!",
+        variables: genderVariables("male", "vi"),
+      }),
+    ).resolves.toBe("Hi Ada, anh!")
+  })
+})
+
+describe("contactVariableService.replaceAll gender language", () => {
+  const render = (input: {
+    workspaceLanguage: string
+    contactLocale?: string | null
+    inboxLanguage?: string | null
+  }) =>
+    contactVariableService.replaceAll({
+      text: "{{gender}}",
+      variables: {
+        ...createVariables(),
+        contact: {
+          ...contact,
+          gender: "female",
+          locale: input.contactLocale ?? null,
+        } as ContactModel,
+        contactInbox: {
+          ...contactInbox,
+          language: input.inboxLanguage ?? null,
+        } as ContactInboxModel,
+        workspace: {
+          ...workspace,
+          language: input.workspaceLanguage,
+        } as WorkspaceModel,
+      },
+    })
+
+  test("prefers the contact channel language over the workspace language", async () => {
+    await expect(
+      render({ inboxLanguage: "vi", workspaceLanguage: "en" }),
+    ).resolves.toBe("Chị")
+  })
+
+  test("falls back to the language read from the contact locale", async () => {
+    await expect(
+      render({ contactLocale: "vi_VN", workspaceLanguage: "en" }),
+    ).resolves.toBe("Chị")
+  })
+
+  test("prefers the channel language over the contact locale", async () => {
+    await expect(
+      render({
+        contactLocale: "vi_VN",
+        inboxLanguage: "en",
+        workspaceLanguage: "vi",
+      }),
+    ).resolves.toBe("Female")
+  })
+
+  test("falls back to the workspace language when the contact has none", async () => {
+    await expect(render({ workspaceLanguage: "vi" })).resolves.toBe("Chị")
+  })
+
+  test("treats a blank contact language as unknown so the workspace wins", async () => {
+    await expect(
+      render({
+        contactLocale: "",
+        inboxLanguage: "",
+        workspaceLanguage: "vi",
+      }),
+    ).resolves.toBe("Chị")
+  })
+
+  test("keeps the contact language even when it differs from the workspace", async () => {
+    await expect(
+      render({ contactLocale: "en_US", workspaceLanguage: "vi" }),
+    ).resolves.toBe("Female")
   })
 })
 

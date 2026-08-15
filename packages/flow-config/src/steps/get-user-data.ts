@@ -20,8 +20,17 @@ export const ReplyFormat = {
   location: "RF08",
   date: "RF09",
   datetime: "RF10",
+  anyInput: "RF11",
 } as const
 export type ReplyFormat = (typeof ReplyFormat)[keyof typeof ReplyFormat]
+
+export const inputFailureReasons = {
+  timeout: "timeout",
+  userSkipped: "user_skipped",
+  invalidInputAttempts: "invalid_input_attempts",
+} as const
+export type InputFailureReason =
+  (typeof inputFailureReasons)[keyof typeof inputFailureReasons]
 
 export const getUserDataStepSchema = z.object({
   id: zodBigintAsString(),
@@ -30,6 +39,7 @@ export const getUserDataStepSchema = z.object({
   replyFormat: z.string().pipe(z.enum(ReplyFormat)),
   outputFieldId: z.string().trim().min(1),
   retryMessage: z.string().trim().max(255),
+  // Reserved for a future runtime skip-button event; currently schema-only.
   skipButtonLabel: z.string().trim().max(255),
   autoSkip: z.boolean(),
   autoSkipTimeUnit: z.string().pipe(waitStepDelayUnits),

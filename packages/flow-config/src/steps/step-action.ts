@@ -22,6 +22,7 @@ export const stepTypes = z.enum([
   "waitUserReply",
   "setDebounce",
   "wait",
+  "followUp",
   "getUserData",
   "typing",
 
@@ -34,7 +35,11 @@ export const stepTypes = z.enum([
   "setCustomField",
   "clearCustomField",
   "cancelContactInput",
-  "filterContact",
+  "appointmentScheduling",
+  "questionnaires",
+  "setUpCoupon",
+  "markCouponUsed",
+  "condition",
 
   // Inbox Operations (I_)
   "disableBot",
@@ -71,7 +76,10 @@ export const stepTypes = z.enum([
   "countCharacters",
   "performAction",
   "callApi",
+  "executeJavascript",
   "splitTraffic",
+  "make",
+  "triggerN8n",
 
   // Flow Operations (F_)
   "startAnotherNode",
@@ -118,10 +126,13 @@ export const stepTypes = z.enum([
   "sendMessengerTemplateMessage",
 
   // Messenger Operations (N_)
+  "facebookCustomAudience",
+  "sendMetaCapiEvent",
   "setMessengerUserPersistentMenu",
   "enableMessengerComposer",
   "disableMessengerComposer",
   "setMessengerPersona",
+  "updateMessengerContactData",
 ])
 
 export type StepType = z.infer<typeof stepTypes>
@@ -136,4 +147,5 @@ export const hiddenActionsStepTypes = [
   stepTypes.enum.email,
   stepTypes.enum.splitTraffic,
   stepTypes.enum.wait,
+  stepTypes.enum.condition,
 ]

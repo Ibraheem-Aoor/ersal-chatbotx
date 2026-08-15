@@ -1,4 +1,5 @@
 import {
+  type ContactInfoType,
   type TriggerEventType,
   triggerEventTypes,
 } from "@chatbotx.io/database/partials"
@@ -7,7 +8,7 @@ import {
  * Base event emitter class with common functionality
  */
 export abstract class BaseEventEmitter {
-  protected abstract supportedEventTypes: Set<TriggerEventType>
+  protected abstract supportedEventTypes: ReadonlySet<TriggerEventType>
   protected abstract shouldEmitEvent(
     eventType: TriggerEventType,
     workspaceId: string,
@@ -100,6 +101,20 @@ export abstract class BaseEventEmitter {
     })
   }
 
+  async contactInfoUpdated(
+    workspaceId: string,
+    contactId: string,
+    infoType: ContactInfoType,
+    oldValue: string | null,
+    newValue: string,
+  ): Promise<void> {
+    await this.emit(triggerEventTypes.enum.contactInfoUpdated, {
+      workspaceId,
+      contactId,
+      metadata: { sourceId: infoType, infoType, oldValue, newValue },
+    })
+  }
+
   async conversationTransferredToHuman(
     workspaceId: string,
     contactId: string,
@@ -138,7 +153,6 @@ export abstract class BaseEventEmitter {
     name?: string,
     phone?: string,
     email?: string,
-    customFields?: Record<string, unknown>,
   ): Promise<void> {
     await this.emit(triggerEventTypes.enum.newContact, {
       workspaceId,
@@ -147,8 +161,33 @@ export abstract class BaseEventEmitter {
         name,
         phone,
         email,
-        customFields,
       },
+    })
+  }
+
+  async contactReferredANewContact(
+    workspaceId: string,
+    contactId: string,
+    refName?: string,
+    reflinkId?: string,
+  ): Promise<void> {
+    await this.emit(triggerEventTypes.enum.contactReferredANewContact, {
+      workspaceId,
+      contactId,
+      metadata: { refName, reflinkId },
+    })
+  }
+
+  async contactReferredExistingContact(
+    workspaceId: string,
+    contactId: string,
+    refName?: string,
+    reflinkId?: string,
+  ): Promise<void> {
+    await this.emit(triggerEventTypes.enum.contactReferredExistingContact, {
+      workspaceId,
+      contactId,
+      metadata: { refName, reflinkId },
     })
   }
 

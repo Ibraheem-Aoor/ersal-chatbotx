@@ -9,6 +9,7 @@ import {
   cacheConnections,
   distributedStore,
 } from "@chatbotx.io/redis"
+import { liveKeyFor, USER_QUOTA_LABEL } from "@chatbotx.io/utils"
 import { logger } from "../lib/logger"
 import {
   anchoredPeriod,
@@ -51,6 +52,7 @@ const BLOOM_FILTER_HOUR_BUFFER_SECONDS = 120
 const BLOOM_FILTER_CAPACITY = 1_000_000
 const HOURLY_BLOOM_FILTER_CAPACITY = 100_000
 const BLOOM_FILTER_ERROR_RATE = 0.001
+const MAC_LIVE_FIELD = "mac"
 
 type QuotaContext = {
   userId: string
@@ -63,6 +65,11 @@ type QuotaContextCacheValue = {
 }
 
 type DraftRow = Omit<PreparedRow, "workspaceMacId">
+type ResolvedOutPayload = {
+  payload: MacMessageOutPayload
+  contactInboxId: string
+  inboxId: string
+}
 
 function quotaContextCacheKey(workspaceId: string): string {
   return `mac:ctx:ws:${workspaceId}`
@@ -84,33 +91,112 @@ export class MacTrackingService {
     this.bloomFilterInstance = filter
   }
 
-  async trackMessageOut(payloads: MacMessageOutPayload[]): Promise<void> {
-    if (payloads.length === 0) {
-      return
-    }
-    const validPayloads = payloads.filter((p) => p.context.contactInboxId)
-    if (validPayloads.length === 0) {
-      return
+  /**
+   * Resolve missing outbound `inboxId` values from ContactInbox so legacy
+   * message:sent events already queued in Redis are recovered instead of
+   * dropped or written with an undefined NOT NULL column.
+   */
+  private async resolveInboxIds(
+    contexts: { contactInboxId?: string; inboxId?: string }[],
+  ): Promise<Map<string, string>> {
+    const inboxIdByContactInbox = new Map<string, string>()
+    const missing = new Set<string>()
+
+    for (const { contactInboxId, inboxId } of contexts) {
+      if (!contactInboxId) {
+        continue
+      }
+      if (inboxId) {
+        inboxIdByContactInbox.set(contactInboxId, inboxId)
+      } else {
+        missing.add(contactInboxId)
+      }
     }
 
-    const events: MacInputEvent[] = []
-    for (const payload of validPayloads) {
-      events.push({
+    for (const contactInboxId of inboxIdByContactInbox.keys()) {
+      missing.delete(contactInboxId)
+    }
+    if (missing.size === 0) {
+      return inboxIdByContactInbox
+    }
+
+    const fetched = await macRepository.getInboxIdsByContactInboxIds(
+      Array.from(missing),
+    )
+    for (const [contactInboxId, inboxId] of fetched) {
+      inboxIdByContactInbox.set(contactInboxId, inboxId)
+      missing.delete(contactInboxId)
+    }
+
+    if (missing.size > 0) {
+      logger.warn(
+        { contactInboxIds: Array.from(missing) },
+        "[MacTrackingService] dropped events with unresolvable inboxId",
+      )
+    }
+
+    return inboxIdByContactInbox
+  }
+
+  private async resolveOutPayloads(
+    payloads: MacMessageOutPayload[],
+  ): Promise<ResolvedOutPayload[]> {
+    if (payloads.length === 0) {
+      return []
+    }
+
+    const inboxIdByContactInbox = await this.resolveInboxIds(
+      payloads.map((payload) => payload.context),
+    )
+
+    const resolved: ResolvedOutPayload[] = []
+    for (const payload of payloads) {
+      const { contactInboxId } = payload.context
+      const inboxId = contactInboxId
+        ? inboxIdByContactInbox.get(contactInboxId)
+        : undefined
+      if (contactInboxId && inboxId) {
+        resolved.push({ payload, contactInboxId, inboxId })
+      }
+    }
+
+    return resolved
+  }
+
+  /**
+   * Returns the per-workspace MAC count actually persisted this call (post
+   * dedup), so callers outside this package (the worker's message listener)
+   * can mirror the delta onto `WorkspaceUsage.macUsed` without duplicating
+   * the dedup/period-anchoring logic that lives in {@link track}.
+   */
+  async trackMessageOut(
+    payloads: MacMessageOutPayload[],
+  ): Promise<Map<string, number>> {
+    const resolved = await this.resolveOutPayloads(payloads)
+    if (resolved.length === 0) {
+      return new Map()
+    }
+
+    const events: MacInputEvent[] = resolved.map(
+      ({ payload, contactInboxId, inboxId }) => ({
         workspaceId: payload.context.workspaceId,
         contactId: payload.context.contactId,
-        contactInboxId: payload.context.contactInboxId as string,
-        inboxId: payload.context.inboxId as string,
+        contactInboxId,
+        inboxId,
         eventType: "message_out",
         occurredAt: coerceOccurredAt(payload.occurredAt),
         sourceId: payload.action.sourceId ?? payload.action.messageId,
-      })
-    }
-    await this.track(events)
+      }),
+    )
+    return await this.track(events)
   }
 
-  async trackMessageIn(payloads: MacMessageInPayload[]): Promise<void> {
+  /** See {@link trackMessageOut} for the return value's purpose. */
+  async trackMessageIn(
+    payloads: MacMessageInPayload[],
+  ): Promise<Map<string, number>> {
     if (payloads.length === 0) {
-      return
+      return new Map()
     }
 
     const events: MacInputEvent[] = []
@@ -118,30 +204,35 @@ export class MacTrackingService {
       events.push({
         workspaceId: payload.workspaceId,
         contactId: payload.contactId,
-        contactInboxId: payload.contactInboxId as string,
-        inboxId: payload.inboxId as string,
+        contactInboxId: payload.contactInboxId,
+        inboxId: payload.inboxId,
         eventType: "message_in",
         occurredAt: coerceOccurredAt(payload.occurredAt),
         sourceId: payload.sourceId ?? undefined,
       })
     }
-    await this.track(events)
+    return await this.track(events)
   }
 
   async trackMessageOutHourly(payloads: MacMessageOutPayload[]): Promise<void> {
     try {
-      const rows = payloads
-        .filter((payload) => payload.context.contactInboxId)
-        .map((payload) => {
-          const occurredAt = coerceOccurredAt(payload.occurredAt)
-          return {
-            workspaceId: payload.context.workspaceId,
-            contactId: payload.context.contactId,
-            contactInboxId: payload.context.contactInboxId as string,
-            inboxId: payload.context.inboxId as string,
-            hourBucket: truncateHourInTimezone(occurredAt, DEFAULT_TIMEZONE),
-          }
-        })
+      const resolved = await this.resolveOutPayloads(payloads)
+      if (resolved.length === 0) {
+        return
+      }
+
+      const rows: HourlyPresenceRow[] = resolved.map(
+        ({ payload, contactInboxId, inboxId }) => ({
+          workspaceId: payload.context.workspaceId,
+          contactId: payload.context.contactId,
+          contactInboxId,
+          inboxId,
+          hourBucket: truncateHourInTimezone(
+            coerceOccurredAt(payload.occurredAt),
+            DEFAULT_TIMEZONE,
+          ),
+        }),
+      )
 
       await this.recordHourlyPresence(rows)
     } catch (error) {
@@ -159,8 +250,8 @@ export class MacTrackingService {
         return {
           workspaceId: payload.workspaceId,
           contactId: payload.contactId,
-          contactInboxId: payload.contactInboxId as string,
-          inboxId: payload.inboxId as string,
+          contactInboxId: payload.contactInboxId,
+          inboxId: payload.inboxId,
           hourBucket: truncateHourInTimezone(occurredAt, DEFAULT_TIMEZONE),
         }
       })
@@ -324,14 +415,21 @@ export class MacTrackingService {
     }
   }
 
-  async track(events: MacInputEvent[]): Promise<void> {
+  /**
+   * Returns the per-workspace count of monthly presence rows actually
+   * inserted this call (post dedup), keyed by `workspaceId`. Callers outside
+   * this service (the worker's message listener) use this to mirror the
+   * delta onto `WorkspaceUsage.macUsed` without re-deriving dedup/period
+   * logic that lives here.
+   */
+  async track(events: MacInputEvent[]): Promise<Map<string, number>> {
     if (events.length === 0) {
-      return
+      return new Map()
     }
 
     const deduped = await this.filterDuplicateSources(events)
     if (deduped.length === 0) {
-      return
+      return new Map()
     }
 
     const workspaceIds = Array.from(new Set(deduped.map((e) => e.workspaceId)))
@@ -382,15 +480,15 @@ export class MacTrackingService {
 
     const draftRows = Array.from(draftByKey.values())
     if (draftRows.length === 0) {
-      return
+      return new Map()
     }
 
     const rows = await this.resolveMacIds(draftRows)
     if (rows.length === 0) {
-      return
+      return new Map()
     }
 
-    await this.persistMonthlyRollup(rows, contextByWorkspace)
+    return await this.persistMonthlyRollup(rows, contextByWorkspace)
   }
 
   private async resolveMacIds(drafts: DraftRow[]): Promise<PreparedRow[]> {
@@ -432,7 +530,10 @@ export class MacTrackingService {
       cached =
         (await distributedStore.getAll<QuotaContextCacheValue>(cacheKeys)) || {}
     } catch (error) {
-      logger.error(error, "[MacTrackingService] quota context cache get failed")
+      logger.error(
+        { err: error },
+        "[MacTrackingService] quota context cache get failed",
+      )
       cached = {}
     }
 
@@ -506,7 +607,7 @@ export class MacTrackingService {
         await distributedStore.putMany(cacheEntries)
       } catch (error) {
         logger.error(
-          error,
+          { err: error },
           "[MacTrackingService] quota context cache set failed",
         )
       }
@@ -540,7 +641,10 @@ export class MacTrackingService {
 
       return eventsWithContactInbox.filter((_, index) => results[index])
     } catch (error) {
-      logger.error(error, "[MacTrackingService] bloom filter dedup failed")
+      logger.error(
+        { err: error },
+        "[MacTrackingService] bloom filter dedup failed",
+      )
       return events
     }
   }
@@ -590,7 +694,7 @@ export class MacTrackingService {
   private async persistMonthlyRollup(
     rows: PreparedRow[],
     contextByWorkspace: Map<string, QuotaContext>,
-  ): Promise<void> {
+  ): Promise<Map<string, number>> {
     const workspaceIdByMacId = new Map<string, string>()
     for (const row of rows) {
       workspaceIdByMacId.set(row.workspaceMacId, row.workspaceId)
@@ -615,8 +719,22 @@ export class MacTrackingService {
       })
 
       await this.incrementCaches(deltas, workspaceIdByMacId, contextByWorkspace)
+
+      const workspaceTotals = new Map<string, number>()
+      for (const delta of deltas) {
+        const workspaceId = workspaceIdByMacId.get(delta.workspaceMacId)
+        if (!workspaceId || delta.count === 0) {
+          continue
+        }
+        workspaceTotals.set(
+          workspaceId,
+          (workspaceTotals.get(workspaceId) ?? 0) + delta.count,
+        )
+      }
+      return workspaceTotals
     } catch (error) {
-      logger.error(error, "[MacTrackingService] monthly path failed")
+      logger.error({ err: error }, "[MacTrackingService] monthly path failed")
+      return new Map()
     }
   }
 
@@ -674,17 +792,35 @@ export class MacTrackingService {
     try {
       await Promise.all(ops)
     } catch (error) {
-      logger.error(error, "[MacTrackingService] INCRBY cache update failed")
+      logger.error(
+        { err: error },
+        "[MacTrackingService] INCRBY cache update failed",
+      )
     }
   }
   private async incrementUserQuotaMac(
     userId: string,
     count: number,
   ): Promise<void> {
+    if (count <= 0) {
+      return
+    }
     try {
       const client = await cacheConnections.useExisting()
-      const key = `user-quota-live:${userId}`
-      await client.hincrby(key, "mac", count)
+      const key = liveKeyFor(USER_QUOTA_LABEL, userId)
+
+      // Cold-seed BEFORE incrementing, using `hsetnx` so a concurrent seed can
+      // never clobber a concurrent increment: whichever of them writes the
+      // field first wins, and the other's `hsetnx` becomes a no-op.
+      if ((await client.hget(key, MAC_LIVE_FIELD)) === null) {
+        const quota = await db.query.userQuotaModel.findFirst({
+          where: { userId },
+          columns: { macUsed: true },
+        })
+        await client.hsetnx(key, MAC_LIVE_FIELD, String(quota?.macUsed ?? 0))
+      }
+
+      await client.hincrby(key, MAC_LIVE_FIELD, count)
     } catch (err) {
       logger.warn(
         { err, userId, count },

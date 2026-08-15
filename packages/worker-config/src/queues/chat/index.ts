@@ -21,6 +21,7 @@ import type {
   SendWaTemplateMessageStepSchema,
   WaTemplateParams,
 } from "@chatbotx.io/flow-config"
+import type { CommentAnchor, MessageButtonTemplate } from "@chatbotx.io/sdk"
 import { Queue } from "bullmq"
 import {
   defaultJobOptions,
@@ -44,6 +45,7 @@ export const ChatJobAction = {
   deleteChannelMessage: "deleteChannelMessage",
   editChannelMessage: "editChannelMessage",
   changeChannelMessageState: "changeChannelMessageState",
+  checkOutboundAutomatedResponse: "checkOutboundAutomatedResponse",
 } as const
 
 export type ChatJobSendChannelMessage = {
@@ -55,6 +57,7 @@ export type ChatJobSendChannelMessage = {
       clientId?: string | undefined
       parentCreatedAt?: Date | null
     }
+    quickReplies?: MessageButtonTemplate[]
     metadata?: MetadataPayload
     sendFrom?: "inbox"
   }
@@ -64,8 +67,10 @@ export type ChatJobSendFlowStep = {
   type: typeof ChatJobAction.sendFlowMessage
   data: {
     conversationId: string
+    contactInboxId?: string
     flowId: string
     flowVersionId?: string
+    executedFlowVersionId?: string
     step:
       | SendTextStepSchema
       | SendImageStepSchema
@@ -80,12 +85,15 @@ export type ChatJobSendFlowStep = {
       | SendMessengerTemplateMessageStepSchema
     trackingContext?: BotResponseTrackingContext
     metadata?: MetadataPayload
+    appointmentId?: string
     richResponse?: {
       executionId: string
       buttonPayloads: Record<string, DatabaseRichButtonPayloadEntry>
     }
     quickReplies?: ButtonStepProps[]
     sendFrom?: "inbox"
+    /** See {@link CommentAnchor}. */
+    commentAnchor?: CommentAnchor
   }
 }
 
@@ -97,6 +105,7 @@ export type ChatJobSendChatMessage = {
     text?: string
     url?: string
     storagePath?: string
+    quickReplies?: MessageButtonTemplate[]
     trackingContext?: BotResponseTrackingContext
     metadata?: MetadataPayload
   }
@@ -193,6 +202,18 @@ export type ChatJobChangeChannelMessageState = {
   }
 }
 
+export type ChatJobCheckOutboundAutomatedResponse = {
+  type: typeof ChatJobAction.checkOutboundAutomatedResponse
+  data: {
+    conversation: ConversationModel
+    contactInbox: ContactInboxModel
+    message: {
+      id: string
+      text: string
+    }
+  }
+}
+
 export type ChatJobData =
   | ChatJobSendChannelMessage
   | ChatJobSendFlowStep
@@ -205,6 +226,7 @@ export type ChatJobData =
   | ChatJobDeleteChannelMessage
   | ChatJobEditChannelMessage
   | ChatJobChangeChannelMessageState
+  | ChatJobCheckOutboundAutomatedResponse
 
 export const chatQueue =
   process.env.NEXT_PHASE === "phase-production-build"

@@ -9,6 +9,7 @@ import {
 import type { SendFlowStepData } from "./flow-step-data"
 import type {
   BaseConfig,
+  CommentAnchor,
   Context,
   HandleRequestProps,
   Handler,
@@ -69,6 +70,8 @@ export type ChannelSendFlowStepProps<IAuth extends AuthValue> = {
     metadata?: MetadataPayload
     richResponse?: RichResponseContentAttributes
     sendFrom?: "inbox"
+    /** See {@link CommentAnchor}. Channels other than Messenger ignore it. */
+    commentAnchor?: CommentAnchor
   }
 }
 
@@ -82,6 +85,7 @@ export type MessageHandlers<
       data: {
         contact: OutgoingContact
         message: OutgoingMessage
+        quickReplies?: MessageButtonTemplate[]
         metadata?: MetadataPayload
         sendFrom?: "inbox"
       }
@@ -113,6 +117,8 @@ export type MessageHandlers<
         metadata?: MetadataPayload
         richResponse?: RichResponseContentAttributes
         sendFrom?: "inbox"
+        /** See {@link ChannelSendFlowStepProps}. */
+        commentAnchor?: CommentAnchor
       }
     },
     {
