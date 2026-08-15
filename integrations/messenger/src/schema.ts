@@ -59,9 +59,13 @@ export type MessengerActions<
     personas: SyncPersonaInput[]
   }) => Promise<{ personas: Array<{ id: string; facebookPersonaId?: string }> }>
   getPostDetails: (props: {
-    ctx: Context<IAuth>
+    ctx: Pick<Context<IAuth>, "auth">
     input: { postId: string }
   }) => Promise<FacebookPostDetails>
+  getUserInboxLink: (props: {
+    ctx: { auth: IAuth }
+    input: { userId: string }
+  }) => Promise<string | null>
   getCommentAttachmentType: (props: {
     ctx: Context<IAuth>
     input: { commentId: string }
@@ -96,6 +100,14 @@ const attachmentTypeSchema = z.enum([
 // Base attachment payload — url optional because template attachments have no url
 const baseAttachmentPayloadSchema = z.object({
   url: z.url().optional(),
+  coordinates: z
+    .object({
+      lat: z.number().optional(),
+      long: z.number().optional(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+    })
+    .optional(),
 })
 
 // Common ID schemas
@@ -118,6 +130,7 @@ export const messengerMessageSchema = z.object({
   quick_reply: z
     .object({
       payload: z.string(),
+      title: z.string().optional(),
     })
     .optional(),
 })
@@ -142,6 +155,19 @@ export const messengerReferralSchema = z.object({
   ref: z.string(),
   source: z.string(),
   type: z.string(),
+  ad_id: z.string().optional(),
+  source_url: z.string().optional(),
+  source_platform: z.string().optional(),
+  ads_context_data: z
+    .object({
+      ad_title: z.string().optional(),
+      post_id: z.string().optional(),
+      photo_url: z.string().optional(),
+      video_url: z.string().optional(),
+      product_id: z.string().optional(),
+      flow_id: z.string().optional(),
+    })
+    .optional(),
 })
 export type MessengerReferral = z.infer<typeof messengerReferralSchema>
 
@@ -199,6 +225,18 @@ export const messengerFeedChangeSchema = z.object({
 })
 export type MessengerFeedChange = z.infer<typeof messengerFeedChangeSchema>
 
+// Facebook Lead Ads: a `leadgen` change carries only ids — the worker fetches
+// the lead's answers from the Graph API using the page token.
+export const messengerLeadgenValueSchema = z.object({
+  leadgen_id: z.string(),
+  form_id: z.string(),
+  page_id: z.string(),
+  created_time: z.number().optional(),
+  ad_id: z.string().optional(),
+  adgroup_id: z.string().optional(),
+})
+export type MessengerLeadgenValue = z.infer<typeof messengerLeadgenValueSchema>
+
 export const messengerPageEntrySchema = z.object({
   id: z.string(),
   time: z.number(),
@@ -226,7 +264,7 @@ export const incomingWebhookEventSchema = z.object({
 export type IncomingWebhookEvent = z.infer<typeof incomingWebhookEventSchema>
 
 export const facebookQuickReplySchema = z.object({
-  content_type: z.enum(["text", "location", "user_phone_number"]),
+  content_type: z.enum(["text", "location", "user_phone_number", "user_email"]),
   title: z.string().optional(),
   payload: z.string().optional(),
   image_url: z.url().optional(),
@@ -238,6 +276,7 @@ export const facebookButtonSchema = z.object({
   title: z.string(),
   url: z.url().optional(),
   payload: z.string().optional(),
+  messenger_extensions: z.boolean().optional(),
   webview_height_ratio: z.enum(["compact", "tall", "full"]).optional(),
 })
 export type FacebookButton = z.infer<typeof facebookButtonSchema>
@@ -256,9 +295,20 @@ export const facebookElementSchema = z.object({
 })
 export type FacebookElement = z.infer<typeof facebookElementSchema>
 
+/**
+ * How Messenger sizes the images of a generic template's elements: `horizontal`
+ * is 1.91:1, `square` is 1:1. Meta accepts no other value and defaults to
+ * `horizontal` when the field is absent.
+ */
+export const facebookImageAspectRatioSchema = z.enum(["horizontal", "square"])
+export type FacebookImageAspectRatio = z.infer<
+  typeof facebookImageAspectRatioSchema
+>
+
 export const facebookMessageAttachmentPayloadSchema = z.object({
   url: z.url().optional(),
   is_reusable: z.boolean().optional(),
+  image_aspect_ratio: facebookImageAspectRatioSchema.optional(),
   template_type: z
     .enum([
       "generic",
@@ -394,7 +444,7 @@ export type FacebookUserProfile = z.infer<typeof facebookUserProfileSchema>
 export const facebookPageSchema = z.object({
   id: z.string(),
   name: z.string(),
-  access_token: z.string(),
+  access_token: z.string().optional(),
   category: z.string().optional(),
   category_list: z
     .array(
@@ -407,6 +457,7 @@ export const facebookPageSchema = z.object({
   tasks: z.array(z.string()).optional(),
 })
 export type FacebookPage = z.infer<typeof facebookPageSchema>
+export type ConnectableFacebookPage = FacebookPage & { isConnectable: boolean }
 
 // Webhook verification schemas
 export const webhookVerificationRequestSchema = z.object({
@@ -557,6 +608,7 @@ export const messengerProfileRequest = z.object({
       }),
     )
     .optional(),
+  whitelisted_domains: z.array(z.url()).optional(),
 })
 export type MessengerProfileRequest = z.infer<typeof messengerProfileRequest>
 

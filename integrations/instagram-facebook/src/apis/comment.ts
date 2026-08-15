@@ -57,6 +57,39 @@ export const hideComment = (
   )
 }
 
+/**
+ * Sends a private DM reply to the author of a comment, addressing the
+ * Instagram business account directly via igId rather than the Page node
+ * (Meta's Messenger Platform private-reply endpoint also accepts
+ * `/<IG_ID>/messages` — see
+ * https://developers.facebook.com/docs/messenger-platform/instagram/features/private-replies).
+ */
+export const sendPrivateReply = (
+  auth: InstagramAuthValue,
+  commentId: string,
+  message: string,
+): Promise<{ message_id?: string; recipient_id: string }> => {
+  const version = auth.metadata.version ?? DEFAULT_API_VERSION
+  const endpoint = `${version}/${auth.metadata.igId}/messages`
+
+  return rescue(endpoint, () =>
+    instagramGraphClient.post<{
+      message_id?: string
+      recipient_id: string
+    }>(endpoint, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.tokens.accessToken}`,
+      },
+      json: {
+        recipient: { comment_id: commentId },
+        message: { text: message },
+      },
+      retry: 0,
+    }),
+  )
+}
+
 export const likeComment = (
   auth: InstagramAuthValue,
   commentId: string,

@@ -1,6 +1,6 @@
 import type { Context } from "@chatbotx.io/sdk"
 import { DEFAULT_API_VERSION } from "../constants"
-import { rescue } from "../exception"
+import { MessengerAPIException, rescue } from "../exception"
 import { facebookGraphClient } from "../lib/http-client"
 import { logger } from "../lib/logger"
 import type {
@@ -9,6 +9,7 @@ import type {
   PersonaRequest,
   SyncPersonaInput,
 } from "../schema"
+import { hasLeadsRetrieval } from "./auth"
 
 export const PAGE_SUBSCRIBE_SCOPES = [
   "messages",
@@ -25,6 +26,32 @@ export const PAGE_SUBSCRIBE_SCOPES = [
   "live_videos",
   "standby",
 ]
+
+/**
+ * Page webhook fields for a Facebook Lead Ads-enabled page: the base Messenger
+ * set plus `leadgen`. POSTing this to /subscribed_apps preserves the existing
+ * subscriptions while adding lead delivery. Note: a later plain Messenger
+ * reconnect re-subscribes with `PAGE_SUBSCRIBE_SCOPES` (dropping `leadgen`); the
+ * user re-runs "Add New" to restore it.
+ */
+export const LEAD_ADS_PAGE_SUBSCRIBE_FIELDS = [
+  ...PAGE_SUBSCRIBE_SCOPES,
+  "leadgen",
+]
+
+/**
+ * Page webhook fields implied by a token's granted scopes: the base Messenger
+ * set, plus `leadgen` when the token carries `leads_retrieval`. Lets callers
+ * subscribe a page to exactly what its scopes support without special-casing
+ * lead-ads at each site.
+ */
+export function scopesToPageSubscribeFields(
+  scopes: string[] | undefined,
+): string[] {
+  return hasLeadsRetrieval(scopes)
+    ? LEAD_ADS_PAGE_SUBSCRIBE_FIELDS
+    : PAGE_SUBSCRIBE_SCOPES
+}
 
 export const exchangeLongLivedToken = (
   settings: {
@@ -82,9 +109,12 @@ export const subscribePageToAppWebhook = (props: {
   pageId: string
   accessToken: string
   version?: string
+  subscribedFields?: string
 }): Promise<void> => {
   const { version = DEFAULT_API_VERSION } = props
   const endpoint = `${version}/me/subscribed_apps`
+  const subscribedFields =
+    props.subscribedFields ?? PAGE_SUBSCRIBE_SCOPES.join(",")
 
   return rescue(endpoint, () =>
     facebookGraphClient.post(endpoint, {
@@ -92,25 +122,36 @@ export const subscribePageToAppWebhook = (props: {
         Authorization: `Bearer ${props.accessToken}`,
       },
       json: {
-        subscribed_fields: PAGE_SUBSCRIBE_SCOPES.join(","),
+        subscribed_fields: subscribedFields,
       },
     }),
   )
 }
 
-export const unsubscribePageFromAppWebhook = (
-  auth: MessengerAuthValue,
-): Promise<void> => {
-  const { version = DEFAULT_API_VERSION } = auth.metadata
-  const endpoint = `${version}/me/subscribed_apps`
+export const unsubscribePageFromAppWebhook = (props: {
+  pageId: string
+  appAccessToken: string
+  version?: string
+}): Promise<void> => {
+  const { version = DEFAULT_API_VERSION } = props
+  const endpoint = `${version}/${props.pageId}/subscribed_apps`
 
-  return rescue(endpoint, () =>
-    facebookGraphClient.delete(endpoint, {
-      headers: {
-        Authorization: `Bearer ${auth.tokens.accessToken}`,
+  return rescue(endpoint, async () => {
+    const response = await facebookGraphClient.delete<{ success?: boolean }>(
+      endpoint,
+      {
+        headers: {
+          Authorization: `Bearer ${props.appAccessToken}`,
+        },
       },
-    }),
-  )
+    )
+
+    if (response.success !== true) {
+      throw new MessengerAPIException(
+        `Unsubscribe failed for page ${props.pageId}`,
+      )
+    }
+  })
 }
 
 export const updateMessengerProfile = (props: {
@@ -130,6 +171,66 @@ export const updateMessengerProfile = (props: {
       json: params,
     }),
   )
+}
+
+export const getWhitelistedDomains = (props: {
+  ctx: Pick<Context<MessengerAuthValue>, "auth">
+}): Promise<string[]> => {
+  const { ctx } = props
+  const { version = DEFAULT_API_VERSION } = ctx.auth
+  const endpoint = `${version}/me/messenger_profile`
+
+  return rescue(endpoint, async () => {
+    const response: { whitelisted_domains?: string[] } =
+      await facebookGraphClient.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${ctx.auth.tokens.accessToken}`,
+        },
+        searchParams: {
+          fields: "whitelisted_domains",
+        },
+      })
+
+    return response.whitelisted_domains ?? []
+  })
+}
+
+export const normalizeMessengerWhitelistedDomain = (
+  appUrl: string,
+): string | undefined => {
+  try {
+    const url = new URL(appUrl)
+    if (url.protocol !== "https:") {
+      return
+    }
+    return url.origin
+  } catch {
+    return
+  }
+}
+
+export const ensureMessengerWhitelistedDomain = async (props: {
+  ctx: Context<MessengerAuthValue>
+  appUrl?: string
+}): Promise<void> => {
+  const domain = normalizeMessengerWhitelistedDomain(
+    props.appUrl ?? props.ctx.platform.appUrl,
+  )
+  if (!domain) {
+    return
+  }
+
+  const whitelistedDomains = await getWhitelistedDomains({ ctx: props.ctx })
+  if (whitelistedDomains.includes(domain)) {
+    return
+  }
+
+  await updateMessengerProfile({
+    ctx: props.ctx,
+    params: {
+      whitelisted_domains: [...whitelistedDomains, domain],
+    },
+  })
 }
 
 export const createPersona = (props: {
@@ -273,7 +374,7 @@ export const getPersistentMenu = (props: {
 }
 
 export const deleteMessengerProfileFields = (props: {
-  ctx: Context<MessengerAuthValue>
+  ctx: Pick<Context<MessengerAuthValue>, "auth">
   fields: string[]
 }): Promise<void> => {
   const { ctx, fields } = props
@@ -297,6 +398,8 @@ export const addBranding = async (props: {
   url: string
 }): Promise<void> => {
   const { ctx } = props
+
+  await ensureMessengerWhitelistedDomain({ ctx, appUrl: props.url })
 
   const { persistentMenu } = await getPersistentMenu({ ctx })
 
