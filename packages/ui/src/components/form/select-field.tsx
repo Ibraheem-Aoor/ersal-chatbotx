@@ -1,5 +1,4 @@
 import { logger } from "@chatbotx.io/ui/lib/logger"
-import type { SelectProps } from "@radix-ui/react-select"
 import ky from "ky"
 import type { LucideIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
+import { CLEAR_VALUE } from "./constants"
 import { FormFieldWrapper } from "./field-wrapper"
 
 export type SingleSelectOption = {
@@ -25,7 +25,9 @@ export type SelectOption = SingleSelectOption & {
   children?: SelectOption[]
 }
 
-export type SelectFieldProps<T extends FieldValues> = SelectProps & {
+export type SelectFieldProps<T extends FieldValues> = React.ComponentProps<
+  typeof Select
+> & {
   name: FieldPath<T>
   label?: string
   placeholder?: string
@@ -33,14 +35,13 @@ export type SelectFieldProps<T extends FieldValues> = SelectProps & {
   descriptionType?: "inline" | "tooltip"
   options?: SelectOption[]
   fetchOptionsUrl?: string
+  formItemClassName?: string
   className?: string
   allowClear?: boolean
   clearLabel?: string
   triggerValueChange?: (value?: string) => void
   disableValues?: string[]
 } & React.ComponentProps<typeof Select>
-
-const CLEAR_VALUE = "__clear__"
 
 const SelectClear = ({
   children,
@@ -63,6 +64,7 @@ export const SelectField = <T extends FieldValues>(
     descriptionType = "inline",
     options = [],
     fetchOptionsUrl,
+    formItemClassName,
     allowClear,
     clearLabel,
     triggerValueChange,
@@ -95,6 +97,22 @@ export const SelectField = <T extends FieldValues>(
       )),
     [normalizedOptions, disableValues],
   )
+
+  const items = useMemo(() => {
+    const mappedItems = normalizedOptions.map((option) => ({
+      label: option.label,
+      value: option.value,
+    }))
+
+    if (allowClear) {
+      mappedItems.unshift({
+        label: clearLabel || "----",
+        value: CLEAR_VALUE,
+      })
+    }
+
+    return mappedItems
+  }, [normalizedOptions, allowClear, clearLabel])
 
   useEffect(() => {
     if (!fetchOptionsUrl || options.length > 0) {
@@ -133,23 +151,25 @@ export const SelectField = <T extends FieldValues>(
     <FormFieldWrapper<T>
       description={description}
       descriptionType={descriptionType}
+      formItemClassName={formItemClassName}
       label={label}
       name={name}
       required={required}
     >
       {(field) => {
-        const handleSelectChange = (value: string) => {
+        const handleSelectChange = (value: unknown) => {
           if (value === CLEAR_VALUE) {
             field.onChange(undefined as T[FieldPath<T>])
             triggerValueChange?.(undefined)
             return
           }
           field.onChange(value as T[FieldPath<T>])
-          triggerValueChange?.(value)
+          triggerValueChange?.(value as string)
         }
 
         return (
           <Select
+            items={items}
             onValueChange={handleSelectChange}
             value={field.value ?? ""}
             {...rest}

@@ -14,10 +14,10 @@ import {
   PopoverTrigger,
 } from "@chatbotx.io/ui/components/ui/popover"
 import { cn } from "@chatbotx.io/ui/lib/utils"
-import type { PopoverContentProps } from "@radix-ui/react-popover"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { useMemo, useState } from "react"
 import type { FieldPath, FieldValues } from "react-hook-form"
+import { CLEAR_VALUE } from "./constants"
 import type { SelectOption } from "./select-field"
 
 type OptionItemProps = {
@@ -44,7 +44,7 @@ export const OptionItem = ({
       {option.label}
       <Check
         className={cn(
-          "ml-auto h-4 w-4",
+          "ms-auto h-4 w-4",
           isSelected ? "opacity-100" : "opacity-0",
         )}
       />
@@ -61,13 +61,17 @@ export type ComboboxFieldProps<T extends FieldValues> = {
   emptyText?: string
   description?: string
   descriptionType?: "inline" | "tooltip"
+  formItemClassName?: string
   options: SelectOption[]
   className?: string
   popoverClassName?: string
-  side?: PopoverContentProps["side"]
+  side?: React.ComponentProps<typeof PopoverContent>["side"]
   triggerValueChange?: (value: string) => void
   disableValues?: string[]
   portal?: boolean
+  allowClear?: boolean
+  clearLabel?: string
+  emptyValue?: null | undefined
 }
 
 export function ComboboxField<T extends FieldValues>({
@@ -81,11 +85,15 @@ export function ComboboxField<T extends FieldValues>({
   emptyText,
   description,
   descriptionType = "inline",
+  formItemClassName,
   options,
   side,
   triggerValueChange,
   disableValues,
-  portal = true,
+  portal,
+  allowClear,
+  clearLabel,
+  emptyValue,
 }: ComboboxFieldProps<T>) {
   const [open, setOpen] = useState(false)
 
@@ -104,14 +112,23 @@ export function ComboboxField<T extends FieldValues>({
     <FormFieldWrapper<T>
       description={description}
       descriptionType={descriptionType}
+      formItemClassName={formItemClassName}
       label={label}
       name={name}
       required={required}
     >
       {(field) => {
-        const selectedLabel = field.value ? optionMap.get(field.value) : null
+        // Resolve the label for the current value, including an empty-value
+        // "none" option so a cleared selection can still show its marker.
+        const selectedLabel = optionMap.get(field.value ?? "") ?? null
 
         const handleSelect = (value: string) => {
+          if (value === CLEAR_VALUE) {
+            field.onChange(emptyValue as T[FieldPath<T>])
+            triggerValueChange?.("")
+            setOpen(false)
+            return
+          }
           field.onChange(value as T[FieldPath<T>])
           triggerValueChange?.(value)
           setOpen(false)
@@ -119,25 +136,29 @@ export function ComboboxField<T extends FieldValues>({
 
         return (
           <Popover modal={true} onOpenChange={setOpen} open={open}>
-            <PopoverTrigger asChild>
-              <Button
-                aria-expanded={open}
-                aria-label={label || "Select option"}
-                className={cn(
-                  "w-full justify-between",
-                  className,
-                  !field.value && "text-muted-foreground",
-                )}
-                role="combobox"
-                variant="outline"
-              >
-                {selectedLabel || placeholder || "Please select..."}
-                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <Button
+                  aria-expanded={open}
+                  aria-label={label || "Select option"}
+                  className={cn(
+                    "w-full justify-between",
+                    className,
+                    !field.value && "text-muted-foreground",
+                  )}
+                  role="combobox"
+                  variant="outline"
+                >
+                  <span className="min-w-0 truncate">
+                    {selectedLabel || placeholder || "Please select..."}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              }
+            />
             <PopoverContent
               align="start"
-              className={cn("w-[200px] p-0", popoverClassName)}
+              className={cn("w-50 p-0", popoverClassName)}
               portal={portal}
               side={side}
             >
@@ -148,6 +169,21 @@ export function ComboboxField<T extends FieldValues>({
                 />
                 <CommandList>
                   <CommandEmpty>{emptyText ?? "No record found."}</CommandEmpty>
+                  {allowClear && (
+                    <CommandItem
+                      className="text-muted-foreground"
+                      onSelect={() => handleSelect(CLEAR_VALUE)}
+                      value={clearLabel || "----"}
+                    >
+                      {clearLabel || "----"}
+                      <Check
+                        className={cn(
+                          "ms-auto h-4 w-4",
+                          field.value ? "opacity-0" : "opacity-100",
+                        )}
+                      />
+                    </CommandItem>
+                  )}
                   {options.map((option) =>
                     option.children ? (
                       <CommandGroup heading={option.label} key={option.value}>

@@ -108,7 +108,11 @@ export function DirectUploadButton({
               xhr.addEventListener("load", () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
                   onSuccess(file)
-                  onUploadSuccess?.(filePath, file, presignedPost.publicUrl)
+                  onUploadSuccess?.(
+                    presignedPost.path,
+                    file,
+                    presignedPost.publicUrl,
+                  )
                   resolve()
                 } else {
                   const error = new Error(
@@ -175,16 +179,18 @@ export function DirectUploadButton({
       {...props}
     >
       <FileUploadDropzone className="border-none p-0">
-        <FileUploadTrigger asChild>
-          <Button disabled={isUploading} ref={triggerRef} type="button">
-            {isUploading ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              <UploadIcon />
-            )}
-            {label}
-          </Button>
-        </FileUploadTrigger>
+        <FileUploadTrigger
+          render={
+            <Button disabled={isUploading} ref={triggerRef} type="button">
+              {isUploading ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <UploadIcon />
+              )}
+              {label}
+            </Button>
+          }
+        />
       </FileUploadDropzone>
     </FileUpload>
   )

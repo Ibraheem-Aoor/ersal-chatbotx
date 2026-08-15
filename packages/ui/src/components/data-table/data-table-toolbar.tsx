@@ -6,6 +6,7 @@ import * as React from "react"
 
 import { DataTableDateFilter } from "@chatbotx.io/ui/components/data-table/data-table-date-filter"
 import { DataTableFacetedFilter } from "@chatbotx.io/ui/components/data-table/data-table-faceted-filter"
+import { DataTableSelectFilter } from "@chatbotx.io/ui/components/data-table/data-table-select-filter"
 import { DataTableSliderFilter } from "@chatbotx.io/ui/components/data-table/data-table-slider-filter"
 import { DataTableViewOptions } from "@chatbotx.io/ui/components/data-table/data-table-view-options"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -107,10 +108,10 @@ function DataTableToolbarFilter<TData>({
                 placeholder={columnMeta.placeholder ?? columnMeta.label}
                 value={(column.getFilterValue() as string) ?? ""}
                 onChange={(event) => column.setFilterValue(event.target.value)}
-                className={cn("h-8 w-[120px]", columnMeta.unit && "pr-8")}
+                className={cn("h-8 w-[120px]", columnMeta.unit && "pe-8")}
               />
               {columnMeta.unit && (
-                <span className="absolute top-0 right-0 bottom-0 flex items-center rounded-r-md bg-accent px-2 text-muted-foreground text-sm">
+                <span className="absolute top-0 end-0 bottom-0 flex items-center rounded-e-md bg-accent px-2 text-muted-foreground text-sm">
                   {columnMeta.unit}
                 </span>
               )}
@@ -137,13 +138,21 @@ function DataTableToolbarFilter<TData>({
           )
 
         case "select":
+          return (
+            <DataTableSelectFilter
+              column={column}
+              title={columnMeta.placeholder ?? columnMeta.label ?? column.id}
+              options={columnMeta.options ?? []}
+            />
+          )
+
         case "multiSelect":
           return (
             <DataTableFacetedFilter
               column={column}
               title={columnMeta.label ?? column.id}
               options={columnMeta.options ?? []}
-              multiple={columnMeta.variant === "multiSelect"}
+              multiple
             />
           )
 
