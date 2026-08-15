@@ -1,13 +1,11 @@
-import { macTrackingService } from "@chatbotx.io/analytics"
-import { count, db, eq, type Transaction } from "@chatbotx.io/database/client"
-import {
-  inboxModel,
-  ROOT_TENANT_ID,
-  workspaceModel,
-} from "@chatbotx.io/database/schema"
+import { macAnalyticsService, macTrackingService } from "@chatbotx.io/analytics"
+import { db, type Transaction } from "@chatbotx.io/database/client"
+import { ROOT_TENANT_ID } from "@chatbotx.io/database/schema"
 import { distributedLock } from "@chatbotx.io/redis"
 import { tenantService } from "../enterprise/tenant/service"
+import { logger } from "../logger"
 import { type QuotaMetric, userQuotaService } from "../user-quota/service"
+import { workspaceUsageService } from "../workspace-usage/service"
 
 const ALL_METRICS: readonly QuotaMetric[] = [
   "workspaces",
@@ -15,8 +13,8 @@ const ALL_METRICS: readonly QuotaMetric[] = [
   "teamMembers",
   "contacts",
   "mac",
-  "flows",
-  "broadcasts",
+  "botMessages",
+  "monthlyBotMessages",
 ]
 
 const LOCK_TIMEOUT_SECONDS = 30
@@ -29,6 +27,17 @@ export type QuotaUsageSummary = Record<
   QuotaMetric,
   { used: number; limit: number | null }
 >
+
+export type WorkspaceQuotaUsageSummary = Omit<
+  Record<QuotaMetric, { used: number; limit: number | null }>,
+  "workspaces"
+> & {
+  [Metric in Exclude<QuotaMetric, "workspaces">]: {
+    workspaceUsed: number
+    used: number
+    limit: number | null
+  }
+}
 
 type QuotaContext = {
   tenantId: string
@@ -216,6 +225,20 @@ class QuotaEnforcementService {
     await this.incrementByForCtx(ctx, args.userId, args.metric, args.count)
   }
 
+  /** Release one unit at every quota level previously consumed for the actor. */
+  async release(args: { userId: string; metric: QuotaMetric }): Promise<void> {
+    await this.releaseBy({ ...args, count: 1 })
+  }
+
+  async releaseBy(args: {
+    userId: string
+    metric: QuotaMetric
+    count: number
+  }): Promise<void> {
+    const ctx = await this.resolveContext(args.userId)
+    await this.releaseByForCtx(ctx, args.userId, args.metric, args.count)
+  }
+
   /** {@link incrementBy} body for an already-resolved context (no extra DB read). */
   private async incrementByForCtx(
     ctx: QuotaContext,
@@ -237,6 +260,29 @@ class QuotaEnforcementService {
     await userQuotaService.incrementBy(ownerId, metric, count)
     if (userId !== ownerId) {
       await userQuotaService.incrementBy(userId, metric, count)
+    }
+  }
+
+  /** {@link releaseBy} body for an already-resolved context. */
+  private async releaseByForCtx(
+    ctx: QuotaContext,
+    userId: string,
+    metric: QuotaMetric,
+    count: number,
+  ): Promise<void> {
+    if (count <= 0) {
+      return
+    }
+
+    if (!this.isPooled(ctx)) {
+      await userQuotaService.releaseBy(userId, metric, count)
+      return
+    }
+
+    const { ownerId } = ctx
+    await userQuotaService.releaseBy(ownerId, metric, count)
+    if (userId !== ownerId) {
+      await userQuotaService.releaseBy(userId, metric, count)
     }
   }
 
@@ -330,6 +376,16 @@ class QuotaEnforcementService {
         }
         if (counted) {
           await macTrackingService.incrementWorkspaceMacCache(workspaceId, 1)
+          // Display-only breakdown, mirroring the `contacts` pattern below.
+          // Never let a failure here affect the authoritative MAC counters above.
+          await workspaceUsageService
+            .increment(workspaceId, "mac")
+            .catch((err) => {
+              logger.warn(
+                { err, workspaceId },
+                "workspace usage mac increment failed",
+              )
+            })
         }
         // Info-only total-contacts counter: every brand-new contact counts,
         // independent of the MAC period/limit. Recorded HERE so the single
@@ -337,10 +393,58 @@ class QuotaEnforcementService {
         // can forget to bump `contacts` (callers previously did this by hand,
         // and the bulk-import path forgot it entirely).
         await this.incrementByForCtx(ctx, ownerId, "contacts", 1)
+        // The workspace row is a display-only breakdown. Never let a failure
+        // here affect the authoritative UserQuota increment above.
+        await workspaceUsageService
+          .increment(workspaceId, "contacts")
+          .catch((err) => {
+            logger.warn(
+              { err, workspaceId },
+              "workspace usage contact increment failed",
+            )
+          })
 
         return { ok: true, value }
       },
     })
+  }
+
+  /**
+   * Create a brand-new contact WITHOUT consuming MAC.
+   *
+   * For contacts created passively (manual UI add, public-API upsert) where no
+   * inbound/outbound activity has occurred yet. Unlike
+   * {@link createNewContactWithMac} this applies NO MAC gate, writes NO
+   * `ContactActiveMonthly` presence row (which the authoritative MAC reconcile
+   * would otherwise re-sum), and does NOT increment `mac`. It only bumps the
+   * info-only `contacts` metric (user+pool) plus the display-only
+   * per-workspace breakdown. `contacts` is never gated, so there is no
+   * remaining-slots check and no distributed lock.
+   */
+  async createContactWithoutMac<T>(args: {
+    /** Workspace owner whose plan the `contacts` count rolls up to. */
+    ownerId: string
+    workspaceId: string
+    create: (tx: Transaction) => Promise<T>
+  }): Promise<T> {
+    const { ownerId, workspaceId, create } = args
+
+    const value = await db.transaction(async (tx) => create(tx))
+
+    const ctx = await this.resolveContext(ownerId)
+    await this.incrementByForCtx(ctx, ownerId, "contacts", 1)
+    // Display-only breakdown; never let its failure affect the counter above
+    // (mirrors createNewContactWithMac's own workspaceUsageService call).
+    await workspaceUsageService
+      .increment(workspaceId, "contacts")
+      .catch((err) => {
+        logger.warn(
+          { err, workspaceId },
+          "workspace usage contact increment failed",
+        )
+      })
+
+    return value
   }
 
   /** {@link macExhaustedLevel} for an already-resolved context. */
@@ -375,20 +479,27 @@ class QuotaEnforcementService {
     metric: QuotaMetric,
   ): Promise<boolean> {
     const pooled = this.isPooled(ctx)
+    const atLimit = (
+      limitUserId: string,
+      scope: { ownerId: string } | { tenantId: string },
+    ) =>
+      metric === "teamMembers"
+        ? userQuotaService.isTeamMemberLimitReached(scope, limitUserId)
+        : userQuotaService.isLimitReached(limitUserId, metric)
 
     if (pooled && userId === ctx.ownerId) {
       // Reseller acting directly: only the pool (owner row) governs.
-      return userQuotaService.isLimitReached(ctx.ownerId, metric)
+      return atLimit(ctx.ownerId, { tenantId: ctx.tenantId })
     }
 
-    const userFull = await userQuotaService.isLimitReached(userId, metric)
+    const userFull = await atLimit(userId, { ownerId: userId })
     if (!pooled) {
       return userFull
     }
     if (userFull) {
       return true
     }
-    return userQuotaService.isLimitReached(ctx.ownerId as string, metric)
+    return atLimit(ctx.ownerId as string, { tenantId: ctx.tenantId })
   }
 
   /** Tighter of the user and pool remaining slots (`null` = unlimited). */
@@ -433,54 +544,92 @@ class QuotaEnforcementService {
     const ctx = await this.resolveContext(userId)
 
     if (this.isPooled(ctx) && userId === ctx.ownerId) {
-      // Reseller acting directly: the owner's `UserQuota` row IS the pool. `used`
-      // from its live counters (near-real-time), `limit` from the same row —
-      // both from one write-through source, so they cannot disagree.
-      const [liveUsed, ownerQuota] = await Promise.all([
+      // Reseller acting directly: the owner's `UserQuota` row IS the pool. The
+      // `teamMembers` usage is live from its source tables; other metrics use
+      // their near-real-time counters, while all limits come from the owner row.
+      const [liveUsed, ownerQuota, teamMembersUsed] = await Promise.all([
         userQuotaService.getLiveUsage(ctx.ownerId),
         userQuotaService.getForUser(ctx.ownerId),
+        userQuotaService.countDistinctTeamMembersForTenant(ctx.tenantId),
       ])
       return Object.fromEntries(
         ALL_METRICS.map((metric) => [
           metric,
           {
-            used: liveUsed[metric],
+            used: metric === "teamMembers" ? teamMembersUsed : liveUsed[metric],
             limit: userQuotaService.metricValues(ownerQuota, metric).limit,
           },
         ]),
       ) as QuotaUsageSummary
     }
 
-    const [liveUsed, quota, [workspacesRow], [channelsRow]] = await Promise.all(
-      [
-        userQuotaService.getLiveUsage(userId),
-        userQuotaService.getForUser(userId),
-        db
-          .select({ count: count() })
-          .from(workspaceModel)
-          .where(eq(workspaceModel.ownerId, userId)),
-        db
-          .select({ count: count() })
-          .from(inboxModel)
-          .innerJoin(
-            workspaceModel,
-            eq(inboxModel.workspaceId, workspaceModel.id),
-          )
-          .where(eq(workspaceModel.ownerId, userId)),
-      ],
-    )
-    const summary = Object.fromEntries(
+    // `teamMembers` is read live from its source tables; the other `used` values
+    // come from near-real-time counters. Limits come from the cached quota row.
+    const [liveUsed, quota, teamMembersUsed] = await Promise.all([
+      userQuotaService.getLiveUsage(userId),
+      userQuotaService.getForUser(userId),
+      userQuotaService.countDistinctTeamMembersForOwner(userId),
+    ])
+    return Object.fromEntries(
       ALL_METRICS.map((metric) => [
         metric,
         {
-          used: liveUsed[metric],
+          used: metric === "teamMembers" ? teamMembersUsed : liveUsed[metric],
           limit: userQuotaService.metricValues(quota, metric).limit,
         },
       ]),
     ) as QuotaUsageSummary
-    summary.workspaces.used = workspacesRow?.count ?? 0
-    summary.channels.used = channelsRow?.count ?? 0
-    return summary
+  }
+
+  /**
+   * Adds this workspace's display-only contribution to the unchanged,
+   * enforcement-authoritative account summary. WorkspaceUsage is never read by
+   * a limit or consumption path.
+   */
+  async getWorkspaceUsageSummary(args: {
+    userId: string
+    workspaceId: string
+  }): Promise<WorkspaceQuotaUsageSummary> {
+    const [summary, workspaceUsage, macUsed] = await Promise.all([
+      this.getUsageSummary(args.userId),
+      workspaceUsageService.getUsage(args.workspaceId),
+      macAnalyticsService.getActiveContactCountByWorkspaceId({
+        workspaceId: args.workspaceId,
+      }),
+    ])
+
+    return {
+      contacts: {
+        ...summary.contacts,
+        workspaceUsed: workspaceUsage.contactsUsed,
+      },
+      channels: {
+        ...summary.channels,
+        workspaceUsed: workspaceUsage.channelsUsed,
+      },
+      teamMembers: {
+        ...summary.teamMembers,
+        workspaceUsed: workspaceUsage.teamMembersUsed,
+      },
+      botMessages: {
+        ...summary.botMessages,
+        workspaceUsed: workspaceUsage.botMessagesUsed,
+      },
+      // Reads straight from the `WorkspaceMac` ledger rather than
+      // `workspaceUsage.macUsed`, even though both are grounded from the same
+      // source by the scheduled reconcile: this DB read is always fresh, while
+      // `workspaceUsage.macUsed` is a Redis-cached mirror that only advances
+      // when every MAC write-through succeeds. `macUsed` still gets written
+      // (mirrors `contactsUsed`'s pattern) for callers that want the counter
+      // shape without an extra `@chatbotx.io/analytics` round-trip.
+      mac: { ...summary.mac, workspaceUsed: macUsed },
+      // The monthly account total intentionally reuses the lifetime
+      // per-workspace bot-message count as its display-only contribution.
+      monthlyBotMessages: {
+        ...summary.monthlyBotMessages,
+        workspaceUsed: workspaceUsage.botMessagesUsed,
+      },
+    }
   }
 
   /**

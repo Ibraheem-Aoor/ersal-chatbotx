@@ -40,6 +40,11 @@ type DecryptedCredential<T extends CredentialType> = {
   updatedAt: Date
 }
 
+export type MetaAppCredentialType = Extract<
+  CredentialType,
+  "messenger" | "instagram" | "instagramFacebook"
+>
+
 class PlatformCredentialService extends BaseService {
   // ─── User-scoped ─────────────────────────────────────────────────────────────
 
@@ -213,6 +218,22 @@ class PlatformCredentialService extends BaseService {
     }
   }
 
+  async resolvePlatformAppAccessToken(
+    type: MetaAppCredentialType,
+    livemode = false,
+  ): Promise<string | undefined> {
+    const credential = await this.findDecryptedPlatform({
+      type,
+      livemode,
+    })
+
+    if (!credential) {
+      return
+    }
+
+    return `${credential.config.clientId}|${credential.config.clientSecret}`
+  }
+
   async upsertPlatform<T extends CredentialType>(props: {
     type: T
     config: CredentialByType[T]
@@ -236,6 +257,24 @@ class PlatformCredentialService extends BaseService {
         set: { publicConfig, value },
       })
 
+    await this.invalidateCacheTags(`cred:p:${type}`)
+  }
+
+  async removePlatform(props: {
+    type: CredentialType
+    livemode?: boolean
+    tx?: DatabaseClient
+  }): Promise<void> {
+    const { type, livemode = false, tx = db } = props
+    await tx
+      .delete(platformCredentialModel)
+      .where(
+        and(
+          isNull(platformCredentialModel.userId),
+          eq(platformCredentialModel.type, type),
+          eq(platformCredentialModel.livemode, livemode),
+        ),
+      )
     await this.invalidateCacheTags(`cred:p:${type}`)
   }
 
@@ -276,6 +315,18 @@ class PlatformCredentialService extends BaseService {
       return this.upsertForUser({ ...props, userId: props.userId })
     }
     return this.upsertPlatform(props)
+  }
+
+  remove(props: {
+    userId: string | undefined
+    type: CredentialType
+    livemode?: boolean
+    tx?: DatabaseClient
+  }): Promise<void> {
+    if (props.userId !== undefined) {
+      return this.removeForUser({ ...props, userId: props.userId })
+    }
+    return this.removePlatform(props)
   }
 
   // ─── Resolver: user → platform fallback ─────────────────────────────────────

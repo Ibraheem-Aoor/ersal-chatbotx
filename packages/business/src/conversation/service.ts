@@ -4,7 +4,13 @@ import {
   db,
   eq,
   inArray,
+  sql,
 } from "@chatbotx.io/database/client"
+import {
+  type ChannelType,
+  type ConversationAttributes,
+  dmConversationUsesSourceId,
+} from "@chatbotx.io/database/partials"
 import { conversationModel } from "@chatbotx.io/database/schema"
 import type {
   AttachmentModel,
@@ -33,6 +39,7 @@ import {
 import { withCache } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
+import { contactInboxService } from "../contact-inbox/service"
 import { notFoundException } from "../errors"
 
 export const BOT_DISABLE_DURATION_MS = 24 * 60 * 60 * 1000
@@ -125,6 +132,64 @@ class ConversationService extends BaseService {
     })
   }
 
+  async findDMByContactIds(props: {
+    workspaceId: string
+    contactIds: string[]
+    channel?: ChannelType | null
+    tx?: DatabaseClient
+  }): Promise<ConversationModel[]> {
+    const { tx = db, workspaceId, contactIds, channel } = props
+    const uniqueContactIds = Array.from(new Set(contactIds))
+    if (uniqueContactIds.length === 0) {
+      return []
+    }
+
+    // Most channels store the DM conversation with a null sourceId. TikTok is
+    // the outlier: its DM is keyed by the channel's conversation_id held in
+    // sourceId, so it must be resolved with sourceId IS NOT NULL.
+    const usesSourceId = dmConversationUsesSourceId(channel)
+
+    const conversations = await tx.query.conversationModel.findMany({
+      where: {
+        workspaceId,
+        contactId: { in: uniqueContactIds },
+        sourceId: usesSourceId ? { isNotNull: true } : { isNull: true },
+      },
+    })
+
+    // Both DM paths return at most one conversation per contact: the null-sourceId
+    // path via the Conversation_contactId_dm_key unique index, and TikTok's
+    // non-null path because a TikTok contact has a single conversation.
+    return conversations
+  }
+
+  async updateChallenge(props: {
+    workspaceId: string
+    conversationId: string
+    challenge: ConversationAttributes["challenge"] | undefined
+  }): Promise<void> {
+    const additionalAttributes =
+      props.challenge === undefined
+        ? sql`${conversationModel.additionalAttributes} - 'challenge'`
+        : sql`jsonb_set(COALESCE(${conversationModel.additionalAttributes}, '{}'::jsonb), '{challenge}', ${JSON.stringify(props.challenge)}::jsonb, true)`
+
+    const [row] = await db
+      .update(conversationModel)
+      .set({
+        additionalAttributes,
+      })
+      .where(
+        and(
+          eq(conversationModel.id, props.conversationId),
+          eq(conversationModel.workspaceId, props.workspaceId),
+        ),
+      )
+      .returning({ id: conversationModel.id })
+    if (!row) {
+      throw notFoundException("Conversation not found")
+    }
+  }
+
   async findByContactWithInboxes(props: {
     contactId: string
     workspaceId: string
@@ -135,6 +200,20 @@ class ConversationService extends BaseService {
       where: { contactId, workspaceId },
       with: { contactInboxes: true },
     })) as ConversationWithContactInboxes | undefined
+  }
+
+  async findLatestByContact(props: {
+    contactId: string
+    tx?: DatabaseClient
+  }): Promise<ConversationModel | undefined> {
+    const { tx = db, contactId } = props
+    // A contact can have multiple conversations (DM + comment threads), all
+    // sharing the same ContactInbox — order by lastActivityAt so callers get
+    // the conversation the contact is actually active in, not an arbitrary one.
+    return await tx.query.conversationModel.findFirst({
+      where: { contactId },
+      orderBy: { lastActivityAt: "desc" },
+    })
   }
 
   async findBy(props: {
@@ -500,6 +579,47 @@ class ConversationService extends BaseService {
     await this.invalidate({ workspaceId, ids: [id] })
   }
 
+  /**
+   * Contact-side companion to updateReadStatus. Shared by read-receipt worker
+   * paths so conversation and contact-inbox tracking stay in sync.
+   */
+  async markReadByContact(props: {
+    workspaceId: string
+    conversationId: string
+    contactInboxId: string
+    contactId: string
+    seenAt: Date
+  }): Promise<void> {
+    const { workspaceId, conversationId, contactInboxId, contactId, seenAt } =
+      props
+
+    const trackingInvalidation = await db.transaction(async (tx) => {
+      await tx
+        .update(conversationModel)
+        .set({ contactLastReadAt: seenAt })
+        .where(
+          and(
+            eq(conversationModel.id, conversationId),
+            eq(conversationModel.workspaceId, workspaceId),
+          ),
+        )
+
+      return await contactInboxService.updateTracking({
+        tx,
+        contactInboxId,
+        contactId,
+        workspaceId,
+        data: { contactLastReadAt: seenAt },
+      })
+    })
+
+    if (trackingInvalidation) {
+      await contactInboxService.invalidateTracking(trackingInvalidation)
+    }
+
+    await this.invalidate({ workspaceId, ids: [conversationId] })
+  }
+
   async updateAIContextLastMessageId(props: {
     workspaceId: string
     conversationId: string
@@ -517,6 +637,44 @@ class ConversationService extends BaseService {
         ),
       )
     await this.invalidate({ workspaceId, ids: [conversationId] })
+  }
+
+  async updateFlowStepState(props: {
+    workspaceId: string
+    conversationId: string
+    currentStep?: string | null
+    lastActivityAt?: Date
+    lastStep?: string | null
+    tx?: DatabaseClient
+  }): Promise<void> {
+    const { workspaceId, conversationId, tx = db } = props
+    const data: Partial<typeof conversationModel.$inferInsert> = {}
+    if ("currentStep" in props) {
+      data.currentStep = props.currentStep
+    }
+    if ("lastActivityAt" in props) {
+      data.lastActivityAt = props.lastActivityAt
+    }
+    if ("lastStep" in props) {
+      data.lastStep = props.lastStep
+    }
+
+    if (Object.keys(data).length === 0) {
+      return
+    }
+
+    await tx
+      .update(conversationModel)
+      .set(data)
+      .where(
+        and(
+          eq(conversationModel.id, conversationId),
+          eq(conversationModel.workspaceId, workspaceId),
+        ),
+      )
+    if (!props.tx) {
+      await this.invalidate({ workspaceId, ids: [conversationId] })
+    }
   }
 
   // ─── Bot state helpers ───────────────────────────────────────────────────

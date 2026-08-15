@@ -1,4 +1,4 @@
-import { db, eq, sql } from "@chatbotx.io/database/client"
+import { and, db, eq, ne, sql } from "@chatbotx.io/database/client"
 import {
   contactInboxModel,
   fbCommentAutomationModel,
@@ -11,7 +11,7 @@ import { BaseService } from "../base.service"
 class FbCommentAutomationService extends BaseService {
   findActiveAutomations(props: {
     workspaceId: string
-    channelType: "messenger" | "instagram"
+    channelType: "messenger" | "instagram" | "instagramFacebook"
   }) {
     return db.query.fbCommentAutomationModel.findMany({
       where: {
@@ -70,6 +70,25 @@ class FbCommentAutomationService extends BaseService {
       .insert(fbCommentAutomationReplyModel)
       .values({ id: createId(), ...props })
       .onConflictDoNothing()
+  }
+
+  async hasRepliedOnOtherPost(props: {
+    automationId: string
+    contactId: string
+    postId: string
+  }): Promise<boolean> {
+    const rows = await db
+      .select({ one: sql`1` })
+      .from(fbCommentAutomationReplyModel)
+      .where(
+        and(
+          eq(fbCommentAutomationReplyModel.automationId, props.automationId),
+          eq(fbCommentAutomationReplyModel.contactId, props.contactId),
+          ne(fbCommentAutomationReplyModel.postId, props.postId),
+        ),
+      )
+      .limit(1)
+    return rows.length > 0
   }
 
   async incrementRepliesCount(automationId: string) {

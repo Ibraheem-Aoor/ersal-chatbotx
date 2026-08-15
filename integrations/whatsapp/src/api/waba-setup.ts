@@ -1,8 +1,15 @@
-import ky, { HTTPError } from "ky"
+import {
+  ChannelError,
+  ChannelErrorCategory,
+  UNKNOWN_ERROR,
+} from "@chatbotx.io/sdk"
+import ky from "ky"
 import type { WhatsappAuthValue } from ".."
 import { API_URL, DEFAULT_API_VERSION } from "../constants"
 import { rescue, WhatsappException } from "../exception"
+import { mapToChannelError } from "../lib/error-mapper"
 import { logger } from "../lib/logger"
+import { listPhoneNumbers } from "./phone-number"
 
 const api = ky.create({
   timeout: 60_000,
@@ -15,7 +22,7 @@ interface WhatsappSettings {
   systemUserToken: string
 }
 
-export async function addSystemUser({
+export function addSystemUser({
   auth,
   whatsappSettings,
 }: {
@@ -23,98 +30,52 @@ export async function addSystemUser({
   whatsappSettings: WhatsappSettings
 }) {
   const { version = DEFAULT_API_VERSION } = auth
-  const skipAssignment = process.env.SKIP_WABA_USER_ASSIGNMENT === "true"
 
-  try {
-    await rescue(async () => {
+  return rescue(async () => {
+    await api.post(
+      `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
+      {
+        searchParams: {
+          user: whatsappSettings.systemUserId,
+          tasks: "MANAGE",
+        },
+        headers: {
+          Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
+        },
+      },
+    )
+  })
+}
+
+export function shareCreditLine({
+  auth,
+  whatsappSettings,
+}: {
+  auth: WhatsappAuthValue
+  whatsappSettings: WhatsappSettings
+}) {
+  const { version = DEFAULT_API_VERSION } = auth
+
+  return rescue(async () => {
+    const creditLineId = await retrieveCreditLineId(whatsappSettings)
+
+    try {
       await api.post(
-        `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
+        `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
         {
           searchParams: {
-            user: whatsappSettings.systemUserId,
-            tasks: "MANAGE",
+            waba_id: auth.metadata.wabaId,
+            waba_currency: "USD",
           },
           headers: {
             Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
           },
         },
       )
-    })
-  } catch (err) {
-    if (skipAssignment) {
-      logger.warn(
-        { err, wabaId: auth.metadata.wabaId },
-        "WABA system user assignment failed — skipped (SKIP_WABA_USER_ASSIGNMENT=true)",
-      )
-      return
+    } catch (error) {
+      logger.info({ error }, "Failed to share credit line")
     }
-    throw err
-  }
-}
-
-export async function shareCreditLine({
-  auth,
-  whatsappSettings,
-}: {
-  auth: WhatsappAuthValue
-  whatsappSettings: WhatsappSettings
-}) {
-  const { version = DEFAULT_API_VERSION } = auth
-  const skipCreditSharing = process.env.SKIP_WABA_CREDIT_SHARING === "true"
-
-  try {
-    await rescue(async () => {
-      const creditLineId = await retrieveCreditLineId(whatsappSettings)
-
-      try {
-        await api.post(
-          `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
-          {
-            searchParams: {
-              waba_id: auth.metadata.wabaId,
-              waba_currency: "USD",
-            },
-            headers: {
-              Authorization: `Bearer ${whatsappSettings.systemUserToken}`,
-            },
-          },
-        )
-      } catch (error) {
-        if (error instanceof HTTPError) {
-          const response = error.data
-          if (
-            response.error?.code === -1 &&
-            response.error?.error_subcode === 1_752_244
-          ) {
-            logger.info(
-              "Credit line sharing skipped: same business owns both WABA and credit line",
-            )
-            return
-          }
-
-          if (
-            response.error?.code === -1 &&
-            response.error?.error_subcode === 1_752_294
-          ) {
-            logger.warn(
-              "Credit line sharing not allowed: violates Facebook invoicing policy",
-            )
-            return
-          }
-        }
-        throw error
-      }
-    })
-  } catch (err) {
-    if (skipCreditSharing) {
-      logger.warn(
-        { err, wabaId: auth.metadata.wabaId },
-        "WABA credit line sharing failed — skipped (SKIP_WABA_CREDIT_SHARING=true)",
-      )
-      return
-    }
-    throw err
-  }
+  })
 }
 
 function retrieveCreditLineId(
@@ -147,65 +108,102 @@ function retrieveCreditLineId(
   })
 }
 
-export async function registerPhoneNumber({
-  auth,
-}: {
-  auth: WhatsappAuthValue
-}) {
-  const { version = DEFAULT_API_VERSION } = auth
-  const skipRegistration = process.env.SKIP_WABA_PHONE_REGISTRATION === "true"
+export type RegisterPhoneNumberResult =
+  | { status: "registered" }
+  | { status: "verification_required"; error: ChannelError }
+  | { status: "failed"; error: ChannelError }
 
-  try {
-    await rescue(async () => {
-      const phoneNumbers = await getPhoneNumbers(auth)
+const PHONE_VERIFICATION_REQUIRED_CODE = 133_006
+const PHONE_NOT_VERIFIED_SUBCODE = 2_593_005
 
-      for (const phoneNumber of phoneNumbers) {
-        if (phoneNumber.code_verification_status !== "VERIFIED") {
-          continue
-        }
+const isVerificationRequiredError = (error: ChannelError): boolean =>
+  Number(error.code) === PHONE_VERIFICATION_REQUIRED_CODE ||
+  Number(error.subCode) === PHONE_NOT_VERIFIED_SUBCODE
 
-        const pin = generatePin(phoneNumber.id, auth.metadata.wabaId)
-        await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
-          json: {
-            messaging_product: "whatsapp",
-            pin,
-          },
-          headers: {
-            Authorization: `Bearer ${auth.tokens.accessToken}`,
-          },
-        })
-      }
-    })
-  } catch (err) {
-    if (skipRegistration) {
-      logger.warn(
-        { err, wabaId: auth.metadata.wabaId },
-        "WABA phone registration failed — skipped (SKIP_WABA_PHONE_REGISTRATION=true)",
-      )
-      return
-    }
-    throw err
-  }
+const createPhoneNumberNotFoundError = (phoneNumberId: string) => {
+  const error = new ChannelError(
+    "WhatsApp phone number was not found in the selected WhatsApp Business Account.",
+    ChannelErrorCategory.PERMISSION_DENIED,
+    {
+      code: UNKNOWN_ERROR.code,
+      httpStatusCode: 404,
+      subCode: null,
+      type: "PhoneNumberNotFound",
+    },
+  )
+  error.setOriginError({ phoneNumberId })
+  return error
 }
 
-function getPhoneNumbers(auth: WhatsappAuthValue) {
+const createVerificationRequiredError = (phoneNumberId: string) => {
+  const error = new ChannelError(
+    "WhatsApp phone number verification is required before registration.",
+    ChannelErrorCategory.PERMISSION_DENIED,
+    {
+      code: PHONE_VERIFICATION_REQUIRED_CODE,
+      httpStatusCode: 403,
+      subCode: null,
+      type: "PhoneVerificationRequired",
+    },
+  )
+  error.setOriginError({ phoneNumberId })
+  return error
+}
+
+export function registerPhoneNumber({
+  auth,
+  phoneNumberId,
+}: {
+  auth: WhatsappAuthValue
+  phoneNumberId: string
+}): Promise<RegisterPhoneNumberResult> {
   const { version = DEFAULT_API_VERSION } = auth
 
   return rescue(async () => {
-    const response = await api
-      .get(`${API_URL}/${version}/${auth.metadata.wabaId}/phone_numbers`, {
+    const phoneNumbers = await listPhoneNumbers({
+      wabaId: auth.metadata.wabaId,
+      accessToken: auth.tokens.accessToken,
+      version,
+    })
+    const phoneNumber = phoneNumbers.data.find(
+      (candidate) => candidate.id === phoneNumberId,
+    )
+
+    if (!phoneNumber) {
+      return {
+        status: "failed",
+        error: createPhoneNumberNotFoundError(phoneNumberId),
+      }
+    }
+
+    if (phoneNumber.code_verification_status !== "VERIFIED") {
+      return {
+        status: "verification_required",
+        error: createVerificationRequiredError(phoneNumberId),
+      }
+    }
+
+    try {
+      const registrationPin = generatePin(phoneNumber.id, auth.metadata.wabaId)
+
+      await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
+        json: {
+          messaging_product: "whatsapp",
+          pin: registrationPin,
+        },
         headers: {
           Authorization: `Bearer ${auth.tokens.accessToken}`,
         },
       })
-      .json<{
-        data: Array<{
-          id: string
-          code_verification_status: string
-        }>
-      }>()
+      return { status: "registered" }
+    } catch (error) {
+      const channelError = mapToChannelError(error)
+      if (isVerificationRequiredError(channelError)) {
+        return { status: "verification_required", error: channelError }
+      }
 
-    return response.data
+      return { status: "failed", error: channelError }
+    }
   })
 }
 

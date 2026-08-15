@@ -10,5 +10,38 @@ export type BroadcastAudienceInput = {
   integrationWhatsappId?: string | null
   integrationMessengerId?: string | null
   contactFilter?: ContactFilterCriteriaInput | null
+  canViewEmailAndPhone?: boolean
   subaction?: BroadcastSubaction | null
+  restrictToAssignedUserId?: string
 }
+
+export type BroadcastAudiencePreviewRow = {
+  contactId: string
+  contactInboxId: string
+  firstName: string | null
+  lastName: string | null
+  fullName: string | null
+  avatar: string | null
+  createdAt: Date
+  channel: ChannelType
+  conversationId: string | null
+}
+
+type BroadcastBaseTemplateDetail = {
+  id: string
+  name: string
+  language: string
+  category: string
+  status: string
+  components: unknown
+  integrationName: string | null
+}
+
+export type BroadcastTemplateDetail =
+  | (BroadcastBaseTemplateDetail & {
+      channel: "whatsapp"
+    })
+  | (BroadcastBaseTemplateDetail & {
+      channel: "messenger"
+      parameterFormat: string
+    })

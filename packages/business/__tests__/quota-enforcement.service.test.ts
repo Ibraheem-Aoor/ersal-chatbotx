@@ -11,13 +11,33 @@ vi.mock("@chatbotx.io/database/client", () => ({
     transaction: dbTransaction,
   },
 }))
-vi.mock("@chatbotx.io/database/schema", () => ({ ROOT_TENANT_ID: "1" }))
+vi.mock("@chatbotx.io/database/schema", () => ({
+  ROOT_TENANT_ID: "1",
+  workspaceUsageModel: { workspaceId: "workspaceId-column" },
+}))
 
 const macTrackingService = {
   claimNewActiveContact: vi.fn(async () => ({ counted: true })),
   incrementWorkspaceMacCache: vi.fn(async () => undefined),
 }
-vi.mock("@chatbotx.io/analytics", () => ({ macTrackingService }))
+const macAnalyticsService = {
+  getActiveContactCountByWorkspaceId: vi.fn(async () => 0),
+}
+vi.mock("@chatbotx.io/analytics", () => ({
+  macAnalyticsService,
+  macTrackingService,
+}))
+
+const workspaceUsageService = {
+  getUsage: vi.fn(async () => ({
+    contactsUsed: 0,
+    channelsUsed: 0,
+    teamMembersUsed: 0,
+    botMessagesUsed: 0,
+  })),
+  increment: vi.fn(async () => undefined),
+}
+vi.mock("../src/workspace-usage/service", () => ({ workspaceUsageService }))
 
 // distributedLock just runs the critical section inline for the test.
 const distributedLock = {
@@ -39,6 +59,8 @@ const zeroLiveUsage = () => ({
   teamMembers: 0,
   contacts: 0,
   mac: 0,
+  botMessages: 0,
+  monthlyBotMessages: 0,
 })
 
 // Both quota levels now live on `UserQuota`: the pool is the tenant owner's row,
@@ -49,9 +71,13 @@ const userQuotaService = {
   hasCapacity: vi.fn(async () => true),
   consume: vi.fn(async () => undefined),
   isLimitReached: vi.fn(async () => false),
+  isTeamMemberLimitReached: vi.fn(async () => false),
+  countDistinctTeamMembersForOwner: vi.fn(async () => 0),
+  countDistinctTeamMembersForTenant: vi.fn(async () => 0),
   getRemainingSlots: vi.fn(async () => null as number | null),
   increment: vi.fn(async () => undefined),
   incrementBy: vi.fn(async () => undefined),
+  releaseBy: vi.fn(async () => undefined),
   getForUser: vi.fn(async () => null as unknown),
   getLiveUsage: vi.fn(async () => zeroLiveUsage()),
   metricValues: vi.fn(() => ({ limit: null as number | null, used: 0 })),
@@ -101,6 +127,13 @@ beforeEach(() => {
   )
   macTrackingService.claimNewActiveContact.mockResolvedValue({ counted: true })
   macTrackingService.incrementWorkspaceMacCache.mockResolvedValue(undefined)
+  macAnalyticsService.getActiveContactCountByWorkspaceId.mockResolvedValue(0)
+  workspaceUsageService.getUsage.mockResolvedValue({
+    contactsUsed: 0,
+    channelsUsed: 0,
+    teamMembersUsed: 0,
+    botMessagesUsed: 0,
+  })
 })
 
 describe("quotaEnforcementService.tryConsume", () => {
@@ -255,6 +288,44 @@ describe("quotaEnforcementService.increment", () => {
   })
 })
 
+describe("quotaEnforcementService.release", () => {
+  test("releases both the sub-account and owner pool rows", async () => {
+    asCustomer()
+
+    await quotaEnforcementService.release({
+      userId: CUSTOMER,
+      metric: "teamMembers",
+    })
+
+    expect(userQuotaService.releaseBy).toHaveBeenCalledWith(
+      RESELLER,
+      "teamMembers",
+      1,
+    )
+    expect(userQuotaService.releaseBy).toHaveBeenCalledWith(
+      CUSTOMER,
+      "teamMembers",
+      1,
+    )
+  })
+
+  test("releases only the owner pool row for a reseller", async () => {
+    asReseller()
+
+    await quotaEnforcementService.release({
+      userId: RESELLER,
+      metric: "teamMembers",
+    })
+
+    expect(userQuotaService.releaseBy).toHaveBeenCalledTimes(1)
+    expect(userQuotaService.releaseBy).toHaveBeenCalledWith(
+      RESELLER,
+      "teamMembers",
+      1,
+    )
+  })
+})
+
 describe("quotaEnforcementService.createNewContactWithMac", () => {
   const created = {
     value: { contactId: "c-1" },
@@ -403,6 +474,96 @@ describe("quotaEnforcementService.createNewContactWithMac", () => {
   })
 })
 
+describe("quotaEnforcementService.createContactWithoutMac", () => {
+  test("root user: runs the callback in a transaction and bumps only contacts", async () => {
+    asRootUser()
+    const create = vi.fn(async () => ({ contactId: "c-1" }))
+
+    const value = await quotaEnforcementService.createContactWithoutMac({
+      ownerId: ROOT_USER,
+      workspaceId: "ws-1",
+      create,
+    })
+
+    expect(value).toEqual({ contactId: "c-1" })
+    expect(dbTransaction).toHaveBeenCalledTimes(1)
+    expect(create).toHaveBeenCalledWith(fakeTx)
+    expect(userQuotaService.incrementBy).toHaveBeenCalledWith(
+      ROOT_USER,
+      "contacts",
+      1,
+    )
+    expect(workspaceUsageService.increment).toHaveBeenCalledWith(
+      "ws-1",
+      "contacts",
+    )
+    // Never gates, locks, or touches MAC.
+    expect(distributedLock.runExclusive).not.toHaveBeenCalled()
+    expect(macTrackingService.claimNewActiveContact).not.toHaveBeenCalled()
+    expect(userQuotaService.incrementBy).not.toHaveBeenCalledWith(
+      ROOT_USER,
+      "mac",
+      1,
+    )
+  })
+
+  test("customer: bumps both the sub's row and the owner pool row", async () => {
+    asCustomer()
+    const create = vi.fn(async () => ({ contactId: "c-1" }))
+
+    await quotaEnforcementService.createContactWithoutMac({
+      ownerId: CUSTOMER,
+      workspaceId: "ws-1",
+      create,
+    })
+
+    expect(userQuotaService.incrementBy).toHaveBeenCalledWith(
+      RESELLER,
+      "contacts",
+      1,
+    )
+    expect(userQuotaService.incrementBy).toHaveBeenCalledWith(
+      CUSTOMER,
+      "contacts",
+      1,
+    )
+  })
+
+  test("never rejects — there is no MAC/contacts gate to fail", async () => {
+    asRootUser()
+    userQuotaService.getRemainingSlots.mockResolvedValue(0)
+    const create = vi.fn(async () => ({ contactId: "c-1" }))
+
+    const value = await quotaEnforcementService.createContactWithoutMac({
+      ownerId: ROOT_USER,
+      workspaceId: "ws-1",
+      create,
+    })
+
+    expect(value).toEqual({ contactId: "c-1" })
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+
+  test("workspace usage increment failure does not affect the returned value", async () => {
+    asRootUser()
+    workspaceUsageService.increment.mockRejectedValueOnce(new Error("boom"))
+    const create = vi.fn(async () => ({ contactId: "c-1" }))
+
+    const value = await quotaEnforcementService.createContactWithoutMac({
+      ownerId: ROOT_USER,
+      workspaceId: "ws-1",
+      create,
+    })
+
+    expect(value).toEqual({ contactId: "c-1" })
+    expect(userQuotaService.incrementBy).toHaveBeenCalledWith(
+      ROOT_USER,
+      "contacts",
+      1,
+    )
+  })
+})
+
 describe("quotaEnforcementService.getUsageSummary", () => {
   test("root-tenant user reports live used against their UserQuota limit", async () => {
     asRootUser()
@@ -417,7 +578,11 @@ describe("quotaEnforcementService.getUsageSummary", () => {
     const summary = await quotaEnforcementService.getUsageSummary(ROOT_USER)
 
     expect(summary.workspaces).toEqual({ used: 3, limit: 10 })
+    expect(summary.teamMembers).toEqual({ used: 0, limit: 10 })
     expect(userQuotaService.getLiveUsage).toHaveBeenCalledWith(ROOT_USER)
+    expect(
+      userQuotaService.countDistinctTeamMembersForOwner,
+    ).toHaveBeenCalledWith(ROOT_USER)
   })
 
   test("reseller reports the live pooled usage against their plan limit", async () => {
@@ -433,8 +598,12 @@ describe("quotaEnforcementService.getUsageSummary", () => {
     const summary = await quotaEnforcementService.getUsageSummary(RESELLER)
 
     expect(summary.workspaces).toEqual({ used: 8, limit: 10 })
+    expect(summary.teamMembers).toEqual({ used: 0, limit: 10 })
     expect(userQuotaService.getLiveUsage).toHaveBeenCalledWith(RESELLER)
     expect(userQuotaService.getForUser).toHaveBeenCalledWith(RESELLER)
+    expect(
+      userQuotaService.countDistinctTeamMembersForTenant,
+    ).toHaveBeenCalledWith(TENANT)
   })
 
   test("sub-account reports its own live allocation, not the pool", async () => {
@@ -449,5 +618,105 @@ describe("quotaEnforcementService.getUsageSummary", () => {
 
     expect(summary.workspaces).toEqual({ used: 2, limit: 5 })
     expect(userQuotaService.getLiveUsage).toHaveBeenCalledWith(CUSTOMER)
+  })
+})
+
+describe("quotaEnforcementService.getWorkspaceUsageSummary", () => {
+  test("reuses the workspace lifetime bot-message count for the monthly metric", async () => {
+    asRootUser()
+    userQuotaService.metricValues.mockReturnValue({ limit: 100, used: 0 })
+    userQuotaService.getLiveUsage.mockResolvedValue({
+      ...zeroLiveUsage(),
+      botMessages: 25,
+      monthlyBotMessages: 10,
+    })
+    workspaceUsageService.getUsage.mockResolvedValue({
+      contactsUsed: 1,
+      channelsUsed: 2,
+      teamMembersUsed: 3,
+      botMessagesUsed: 7,
+    })
+
+    const summary = await quotaEnforcementService.getWorkspaceUsageSummary({
+      userId: ROOT_USER,
+      workspaceId: "ws-1",
+    })
+
+    expect(summary.monthlyBotMessages).toEqual({
+      used: 10,
+      limit: 100,
+      workspaceUsed: 7,
+    })
+  })
+})
+
+describe("quotaEnforcementService.hasReachedLimit", () => {
+  test("reads the current owner-scoped distinct count for team members", async () => {
+    asRootUser()
+    userQuotaService.isTeamMemberLimitReached.mockResolvedValue(true)
+
+    await expect(
+      quotaEnforcementService.hasReachedLimit({
+        userId: ROOT_USER,
+        metric: "teamMembers",
+      }),
+    ).resolves.toBe(true)
+
+    expect(userQuotaService.isTeamMemberLimitReached).toHaveBeenCalledWith(
+      { ownerId: ROOT_USER },
+      ROOT_USER,
+    )
+    expect(userQuotaService.isLimitReached).not.toHaveBeenCalled()
+  })
+
+  test("keeps non-team-member metrics on the live-counter path", async () => {
+    asRootUser()
+
+    await quotaEnforcementService.hasReachedLimit({
+      userId: ROOT_USER,
+      metric: "workspaces",
+    })
+
+    expect(userQuotaService.isLimitReached).toHaveBeenCalledWith(
+      ROOT_USER,
+      "workspaces",
+    )
+    expect(userQuotaService.isTeamMemberLimitReached).not.toHaveBeenCalled()
+  })
+
+  test("checks both the sub-account owner scope and reseller tenant pool", async () => {
+    asCustomer()
+    userQuotaService.isTeamMemberLimitReached.mockImplementation(
+      async (_scope: unknown, limitUserId: string) => limitUserId === RESELLER,
+    )
+
+    await expect(
+      quotaEnforcementService.hasReachedLimit({
+        userId: CUSTOMER,
+        metric: "teamMembers",
+      }),
+    ).resolves.toBe(true)
+
+    expect(userQuotaService.isTeamMemberLimitReached).toHaveBeenNthCalledWith(
+      1,
+      { ownerId: CUSTOMER },
+      CUSTOMER,
+    )
+    expect(userQuotaService.isTeamMemberLimitReached).toHaveBeenNthCalledWith(
+      2,
+      { tenantId: TENANT },
+      RESELLER,
+    )
+  })
+})
+
+describe("quotaEnforcementService.getAtLimitMap", () => {
+  test("includes both lifetime and monthly bot message metrics", async () => {
+    asRootUser()
+
+    const limits = await quotaEnforcementService.getAtLimitMap(ROOT_USER)
+
+    expect(limits).toHaveProperty("botMessages", false)
+    expect(limits).toHaveProperty("monthlyBotMessages", false)
   })
 })

@@ -1,4 +1,5 @@
 import {
+  type SendCarouselStepSchema,
   type SendImageStepSchema,
   type SendTextStepSchema,
   type SendWaTemplateMessageStepSchema,
@@ -21,7 +22,8 @@ import { getWhatsappClient } from "../../../client"
 import { API_URL, DEFAULT_API_VERSION } from "../../../constants"
 import { mapToChannelError } from "../../../lib/error-mapper"
 import { logger } from "../../../lib/logger"
-import type { TemplateMessage, WhatsappAuthValue } from "../../../schema"
+import type { RawWhatsappMessage, WhatsappAuthValue } from "../../../schema"
+import { generateOutgoingMessages as convertFlowStepCarousel } from "./send-carousel"
 import { convertFlowStepImage } from "./send-image"
 import { convertFlowStepText } from "./send-text"
 import { convertFlowStepWaTemplate } from "./send-wa-template"
@@ -59,7 +61,7 @@ function* convertMessageToWhatsappMessage(
 
 function* convertFlowStepToWhatsappMessage(
   props: Parameters<MessageHandlers<WhatsappAuthValue>["sendFlowStep"]>[0],
-): Generator<ClientMessage | TemplateMessage> {
+): Generator<ClientMessage | RawWhatsappMessage> {
   const {
     data: { step },
   } = props
@@ -81,6 +83,26 @@ function* convertFlowStepToWhatsappMessage(
         >[0],
       )
       break
+    case stepTypes.enum.sendCarousel: {
+      const carouselStepProps = props as Parameters<
+        MessageHandlers<
+          WhatsappAuthValue,
+          SendCarouselStepSchema
+        >["sendFlowStep"]
+      >[0]
+
+      yield* convertFlowStepCarousel({
+        flowId: carouselStepProps.data.flowId,
+        flowVersionId: carouselStepProps.data.flowVersionId,
+        metadata: carouselStepProps.data.metadata,
+        quickReplies: carouselStepProps.data.quickReplies,
+        contactInboxId: carouselStepProps.data.contact.id,
+        payload: {
+          cards: carouselStepProps.data.step.cards,
+        },
+      })
+      break
+    }
     case stepTypes.enum.sendWaTemplateMessage:
       yield* convertFlowStepWaTemplate(
         props as Parameters<
@@ -116,6 +138,59 @@ function* convertFlowStepToWhatsappMessage(
   }
 }
 
+/** `whatsapp-api-js` models neither payload, so both are posted as-is. */
+const isRawWhatsappMessage = (
+  message: ClientMessage | RawWhatsappMessage,
+): message is RawWhatsappMessage =>
+  message._type === "template" || message._type === "interactive_carousel"
+
+async function postRawMessage(props: {
+  client: ReturnType<typeof getWhatsappClient>
+  phoneNumberId: string
+  recipientId: string
+  message: RawWhatsappMessage
+}): Promise<ServerErrorResponse | ServerSentMessageResponse> {
+  const { _type, ...messageBody } = props.message
+  console.log("postRawMessage", {
+    phoneId: props.phoneNumberId,
+    recipientId: props.recipientId,
+    message: messageBody,
+    messageRaw: JSON.stringify(messageBody, null, 2),
+  })
+  const response = await props.client.$$apiFetch$$(
+    `${API_URL}/${DEFAULT_API_VERSION}/${props.phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: props.recipientId,
+        ...messageBody,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.json()
+    logger.error(errorBody, `Failed to send ${_type} message`)
+    console.log("errorBody", {
+      errorBody,
+      errorBody1: JSON.stringify(errorBody, null, 2),
+    })
+    // Pass the HTTP status alongside Meta's raw body so the mapper surfaces the
+    // real error code and detail instead of collapsing to an "unknown" (-1).
+    throw mapToChannelError({
+      httpStatus: response.status,
+      errorBody: errorBody as { error?: unknown },
+    })
+  }
+
+  return await response.json()
+}
+
 export const sendMessage: MessageHandlers<WhatsappAuthValue>["sendMessage"] =
   async (props) => {
     const {
@@ -132,6 +207,11 @@ export const sendMessage: MessageHandlers<WhatsappAuthValue>["sendMessage"] =
           continue
         }
 
+        console.log("whatsappMessage", {
+          phoneId: ctx.auth.metadata.phoneNumber.id,
+          recipientId: contact.sourceId,
+          message: whatsappMessage,
+        })
         const sendResponse = await whatsappClient.sendMessage(
           ctx.auth.metadata.phoneNumber.id,
           contact.sourceId,
@@ -197,47 +277,26 @@ export const sendFlowStep: MessageHandlers<WhatsappAuthValue>["sendFlowStep"] =
 
         let sendResponse: ServerErrorResponse | ServerSentMessageResponse
 
-        if (
-          "_type" in whatsappMessage &&
-          whatsappMessage._type === "template"
-        ) {
-          const templateMessage = whatsappMessage as TemplateMessage
-          const payload = {
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: contact.sourceId,
-            type: "template",
-            template: templateMessage.template,
-          }
-
-          const response = await whatsappClient.$$apiFetch$$(
-            `${API_URL}/${DEFAULT_API_VERSION}/${ctx.auth.metadata.phoneNumber.id}/messages`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(payload),
-            },
-          )
-
-          if (!response.ok) {
-            const errorBody = await response.json()
-            logger.error(errorBody, "Failed to send template message")
-            throw mapToChannelError(
-              (errorBody as { error?: unknown })?.error ?? errorBody,
-            )
-          }
-
-          sendResponse = await response.json()
+        if (isRawWhatsappMessage(whatsappMessage)) {
+          sendResponse = await postRawMessage({
+            client: whatsappClient,
+            phoneNumberId: ctx.auth.metadata.phoneNumber.id,
+            recipientId: contact.sourceId,
+            message: whatsappMessage,
+          })
         } else {
+          console.log("whatsappMessage", {
+            phoneId: ctx.auth.metadata.phoneNumber.id,
+            recipientId: contact.sourceId,
+            message: whatsappMessage,
+          })
           sendResponse = await whatsappClient.sendMessage(
             ctx.auth.metadata.phoneNumber.id,
             contact.sourceId,
             whatsappMessage,
           )
         }
-
+        console.log("sendResponse", sendResponse)
         const serverError = sendResponse as ServerErrorResponse
 
         if (serverError?.error) {

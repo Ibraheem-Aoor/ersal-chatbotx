@@ -4,16 +4,13 @@ import {
   type IntegrationDefinition,
   SdkException,
 } from "@chatbotx.io/sdk"
+import { exchangeLongLivedToken } from "./api/auth"
 import { getFlowAssets } from "./api/flow"
 import {
   findConversationalAutomation,
   updateConversationalAutomation,
 } from "./api/phone-number"
-import {
-  createMessageTemplate,
-  listFlows,
-  listMessageTemplates,
-} from "./api/waba"
+import { listFlows, listMessageTemplates } from "./api/waba"
 import { unsubscribeWebhook } from "./api/webhook"
 import { uploadMedia, verifyAccessToken } from "./client"
 import { botHandlers } from "./handlers/bot"
@@ -44,8 +41,6 @@ const config: IntegrationDefinition<
     uploadMedia: async ({ ctx, file }) => await uploadMedia(ctx.auth, file),
     listMessageTemplates: async ({ ctx }) =>
       await listMessageTemplates(ctx.auth),
-    createMessageTemplate: async ({ ctx, data }) =>
-      await createMessageTemplate(ctx.auth, data),
     listFlows: async ({ ctx }) => await listFlows(ctx),
     getFlowAssets: async ({ ctx, params }) =>
       await getFlowAssets({
@@ -70,6 +65,19 @@ const config: IntegrationDefinition<
   },
   disconnect: async (auth: WhatsappAuthValue): Promise<void> => {
     await unsubscribeWebhook({ auth })
+  },
+  refreshAuth: async ({ auth }) => {
+    const accessToken = await exchangeLongLivedToken(
+      { clientId: auth.clientId, clientSecret: auth.clientSecret },
+      auth.tokens.accessToken,
+    )
+    return {
+      ...auth,
+      tokens: {
+        ...auth.tokens,
+        accessToken,
+      },
+    }
   },
 }
 

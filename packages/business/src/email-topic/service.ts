@@ -10,6 +10,7 @@ import { rootFolderId } from "@chatbotx.io/database/partials"
 import { emailTopicModel } from "@chatbotx.io/database/schema"
 import type { EmailTopicModel } from "@chatbotx.io/database/types"
 import {
+  likeContains,
   parseOrderByAsObject,
   parsePagination,
 } from "@chatbotx.io/database/utils"
@@ -37,6 +38,19 @@ type UpdateEmailTopicData = {
 }
 
 class EmailTopicService {
+  async findAnalyticsWorkspaceIdByToken(props: {
+    token: string
+    tx?: DatabaseClient
+  }): Promise<string | undefined> {
+    const { token, tx = db } = props
+    const row = await tx.query.analyticsEmailTopicModel.findFirst({
+      columns: { workspaceId: true },
+      where: { token },
+    })
+
+    return row?.workspaceId
+  }
+
   async list(
     input: ListEmailTopicsInput,
   ): Promise<PaginatedResult<EmailTopicModel>> {
@@ -48,7 +62,7 @@ class EmailTopicService {
           ? { isNull: true as const }
           : input.folderId
         : undefined,
-      name: input.name ? { ilike: `%${input.name.toLowerCase()}%` } : undefined,
+      name: input.name ? { ilike: likeContains(input.name) } : undefined,
     }
 
     const orderBy = parseOrderByAsObject(emailTopicModel, input)

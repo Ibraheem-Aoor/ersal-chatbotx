@@ -28,6 +28,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
 
 vi.mock("@chatbotx.io/database/schema", () => ({
   inboxModel: {},
+  workspaceUsageModel: { workspaceId: "workspaceId-column" },
 }))
 
 vi.mock("@chatbotx.io/redis", () => ({
@@ -157,6 +158,51 @@ describe("InboxService.resolveBroadcastInboxIds", () => {
     expect(result).toEqual(["inbox-1"])
     expect(mocks.inboxFindMany).toHaveBeenCalledWith({
       where: { workspaceId: "ws-1", channel: "messenger" },
+      columns: { id: true },
+    })
+  })
+
+  test("filters inboxes by Instagram channel", async () => {
+    mocks.inboxFindMany.mockResolvedValue([{ id: "inbox-instagram" }])
+
+    const result = await inboxService.resolveBroadcastInboxIds({
+      workspaceId: "ws-1",
+      channels: ["instagram"],
+    })
+
+    expect(result).toEqual(["inbox-instagram"])
+    expect(mocks.inboxFindMany).toHaveBeenCalledWith({
+      where: { workspaceId: "ws-1", channel: "instagram" },
+      columns: { id: true },
+    })
+  })
+
+  test("filters inboxes by Telegram channel", async () => {
+    mocks.inboxFindMany.mockResolvedValue([{ id: "inbox-telegram" }])
+
+    const result = await inboxService.resolveBroadcastInboxIds({
+      workspaceId: "ws-1",
+      channels: ["telegram"],
+    })
+
+    expect(result).toEqual(["inbox-telegram"])
+    expect(mocks.inboxFindMany).toHaveBeenCalledWith({
+      where: { workspaceId: "ws-1", channel: "telegram" },
+      columns: { id: true },
+    })
+  })
+
+  test("filters inboxes by TikTok channel", async () => {
+    mocks.inboxFindMany.mockResolvedValue([{ id: "inbox-tiktok" }])
+
+    const result = await inboxService.resolveBroadcastInboxIds({
+      workspaceId: "ws-1",
+      channels: ["tiktok"],
+    })
+
+    expect(result).toEqual(["inbox-tiktok"])
+    expect(mocks.inboxFindMany).toHaveBeenCalledWith({
+      where: { workspaceId: "ws-1", channel: "tiktok" },
       columns: { id: true },
     })
   })

@@ -1,5 +1,5 @@
+import { macAnalyticsService } from "@chatbotx.io/analytics"
 import {
-  and,
   type DatabaseClient,
   db,
   eq,
@@ -10,6 +10,11 @@ import {
   type ContactSource,
   channelTypes,
 } from "@chatbotx.io/database/partials"
+import {
+  buildContactWhere,
+  type ContactFilterCriteriaInput,
+  contactFilterHasPredicate,
+} from "@chatbotx.io/database/queries"
 import {
   contactInboxModel,
   contactModel,
@@ -26,11 +31,21 @@ import { uploadFileFromUrl } from "@chatbotx.io/filesystem"
 import { invalidateCacheByTags, withCache } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
+import { getContactInboxSinceTime } from "../contact-inbox/service"
 import { ChatbotXException, notFoundException } from "../errors"
+import { logger } from "../logger"
+import { messageCleanupService } from "../message-cleanup/service"
 import { quotaEnforcementService } from "../quota-enforcement/service"
+import { userQuotaService } from "../user-quota/service"
 import { workspaceService } from "../workspace/service"
+import { workspaceUsageService } from "../workspace-usage/service"
+import { emitContactInfoChangeEvents } from "./contact-info-changes"
 
 const NUMERIC_RE = /^\d+$/
+
+// One DELETE per chunk keeps each statement's lock scope and cascade work
+// bounded (mirrors CONTACT_CHUNK_SIZE in tag/service.ts).
+const CONTACT_DELETE_CHUNK_SIZE = 50
 
 type ContactWriteData = Partial<
   Pick<
@@ -45,7 +60,9 @@ type ContactWriteData = Partial<
     | "blockedAt"
     | "emailOptIn"
     | "timezone"
+    | "locale"
     | "avatar"
+    | "location"
   >
 >
 
@@ -129,6 +146,28 @@ class ContactService extends BaseService {
     return contact
   }
 
+  async matchesContactFilter(props: {
+    workspaceId: string
+    contactId: string
+    contactFilter: ContactFilterCriteriaInput
+  }): Promise<boolean> {
+    const { workspaceId, contactId, contactFilter } = props
+    if (
+      contactFilter.conditions.length > 0 &&
+      !contactFilterHasPredicate(contactFilter)
+    ) {
+      return false
+    }
+
+    const where = buildContactWhere({ workspaceId, contactFilter })
+    const match = await db.query.contactModel.findFirst({
+      columns: { id: true },
+      where: { ...where, id: contactId },
+    })
+
+    return Boolean(match)
+  }
+
   // ─── Reads (NO cache — write-path only) ─────────────────────────────────
   async findManyByIds(props: {
     workspaceId: string
@@ -176,7 +215,8 @@ class ContactService extends BaseService {
     data: ContactWriteData,
     tx: DatabaseClient = db,
   ): Promise<ContactModel> {
-    await this.findByIdOrFail({
+    const ownsTransaction = tx === db
+    const existing = await this.findByIdOrFail({
       workspaceId: ctx.workspaceId,
       id: ctx.id,
       accessScope: ctx.accessScope,
@@ -188,6 +228,14 @@ class ContactService extends BaseService {
       .where(eq(contactModel.id, ctx.id))
       .returning()
     await this.invalidate({ workspaceId: ctx.workspaceId, ids: [ctx.id] })
+    if (ownsTransaction) {
+      await emitContactInfoChangeEvents(
+        ctx.workspaceId,
+        ctx.id,
+        existing,
+        updated,
+      )
+    }
     return updated
   }
 
@@ -265,21 +313,142 @@ class ContactService extends BaseService {
       return []
     }
 
-    await db.delete(contactModel).where(
-      and(
+    // Fetched directly (not via the `conversation` "one" relation) because a
+    // contact can own multiple Conversation rows.
+    const conversations = await db
+      .select({
+        id: conversationModel.id,
+        contactId: conversationModel.contactId,
+      })
+      .from(conversationModel)
+      .where(
         inArray(
-          contactModel.id,
+          conversationModel.contactId,
           contacts.map((c) => c.id),
         ),
-      ),
-    )
+      )
+    const conversationIdsByContact = new Map<string, string[]>()
+    for (const conversation of conversations) {
+      const list = conversationIdsByContact.get(conversation.contactId) ?? []
+      list.push(conversation.id)
+      conversationIdsByContact.set(conversation.contactId, list)
+    }
+
+    // Message/Attachment no longer cascade from Contact (compressed TimescaleDB
+    // hypertables), so each chunk atomically records tombstones in
+    // MessageCleanup before deleting the contacts. Chunks are deliberately NOT
+    // wrapped in one outer transaction: each chunk stays bounded, and a
+    // mid-batch failure leaves every committed chunk with its tombstones.
+    for (let i = 0; i < contacts.length; i += CONTACT_DELETE_CHUNK_SIZE) {
+      const chunk = contacts.slice(i, i + CONTACT_DELETE_CHUNK_SIZE)
+      const entries = chunk.flatMap((contact) =>
+        contact.contactInboxes.map((contactInbox) => ({
+          contactId: contact.id,
+          contactInboxId: contactInbox.id,
+          inboxId: contactInbox.inboxId,
+          sourceId: contactInbox.sourceId,
+          conversationIds: conversationIdsByContact.get(contact.id) ?? [],
+          sinceTime: getContactInboxSinceTime(contactInbox),
+        })),
+      )
+
+      await db.transaction(async (tx) => {
+        await messageCleanupService.record({ workspaceId, entries, tx })
+        await tx.delete(contactModel).where(
+          inArray(
+            contactModel.id,
+            chunk.map((c) => c.id),
+          ),
+        )
+      })
+    }
 
     await this.invalidate({
       workspaceId,
       ids: contacts.map((c) => c.id),
     })
 
+    await this.releaseQuotaForDeletedContacts({ workspaceId, contacts })
+
     return contacts
+  }
+
+  /**
+   * Best-effort quota release for contacts just deleted. `contacts` is
+   * released for every deleted contact; `mac` is released only for a contact
+   * that has a `ContactActiveMonthly` row for the CURRENT billing period —
+   * releasing `mac` for a contact that was never MAC-active this period would
+   * over-release the pool. Never blocks/rolls back the delete: the nightly
+   * reconcile self-heals if this fails.
+   */
+  private async releaseQuotaForDeletedContacts(props: {
+    workspaceId: string
+    contacts: ContactWithInboxes[]
+  }): Promise<void> {
+    const { workspaceId, contacts } = props
+    try {
+      const workspace = await workspaceService.find({
+        where: { id: workspaceId },
+      })
+      if (!workspace) {
+        return
+      }
+
+      const quota = await userQuotaService.getForUser(workspace.ownerId)
+      const periodStart = quota?.periodStart ?? null
+
+      let macActiveContactCount = 0
+      if (periodStart) {
+        const contactInboxIds = contacts.flatMap((contact) =>
+          contact.contactInboxes.map((contactInbox) => contactInbox.id),
+        )
+        const activeContactInboxIds =
+          await macAnalyticsService.getActiveContactInboxIds({
+            workspaceId,
+            periodStart,
+            contactInboxIds,
+          })
+        macActiveContactCount = contacts.filter((contact) =>
+          contact.contactInboxes.some((contactInbox) =>
+            activeContactInboxIds.has(contactInbox.id),
+          ),
+        ).length
+      }
+
+      await quotaEnforcementService.releaseBy({
+        userId: workspace.ownerId,
+        metric: "contacts",
+        count: contacts.length,
+      })
+      // Display-only breakdown, mirroring the `contacts`/`mac` release above.
+      // Never let a failure here affect the authoritative counters.
+      await workspaceUsageService
+        .decrement(workspaceId, "contacts", contacts.length)
+        .catch((usageErr) => {
+          logger.warn(
+            { err: usageErr, workspaceId },
+            "contact delete: workspace usage contacts decrement failed",
+          )
+        })
+
+      if (macActiveContactCount > 0) {
+        await quotaEnforcementService.releaseBy({
+          userId: workspace.ownerId,
+          metric: "mac",
+          count: macActiveContactCount,
+        })
+        await workspaceUsageService
+          .decrement(workspaceId, "mac", macActiveContactCount)
+          .catch((usageErr) => {
+            logger.warn(
+              { err: usageErr, workspaceId },
+              "contact delete: workspace usage mac decrement failed",
+            )
+          })
+      }
+    } catch (err) {
+      logger.warn({ err, workspaceId }, "contact delete: quota release failed")
+    }
   }
 
   // ─── Cache ───────────────────────────────────────────────────────────────
@@ -383,55 +552,45 @@ class ContactService extends BaseService {
     const identifierData =
       prefix === "phone" ? { phoneNumber: value } : { email: value }
 
-    // MAC is the billing hard gate: gate + insert + consume run atomically so a
-    // new contact is rejected (and nothing inserted) once the limit is reached.
-    // The `ContactActiveMonthly` presence row written in the transaction keeps a
-    // later message event from double-counting; `contacts` stays info-only.
-    const result = await quotaEnforcementService.createNewContactWithMac({
-      ownerId: workspace.ownerId,
-      workspaceId,
-      create: async (tx) => {
-        const newContact = await this.insert({
-          workspaceId,
-          data: { ...identifierData, ...data },
-          tx,
-        })
-
-        const [newContactInbox] = await tx
-          .insert(contactInboxModel)
-          .values({
-            originalContactId: newContact.id,
-            contactId: newContact.id,
-            inboxId: inbox.id,
-            channel: channelTypes.enum.webchat,
-            source,
-            sourceId: createId(),
+    // This is a passive upsert (no message activity): it must not gate on or
+    // consume MAC. Only the info-only `contacts` metric is bumped.
+    const { contact, contactInbox } =
+      await quotaEnforcementService.createContactWithoutMac({
+        ownerId: workspace.ownerId,
+        workspaceId,
+        create: async (tx) => {
+          const newContact = await this.insert({
+            workspaceId,
+            data: { ...identifierData, ...data },
+            tx,
           })
-          .returning()
-        if (!newContactInbox) {
-          throw new ChatbotXException("Contact inbox not found")
-        }
 
-        await tx.insert(conversationModel).values({
-          workspaceId,
-          contactId: newContact.id,
-          id: createId(),
-        })
+          const [newContactInbox] = await tx
+            .insert(contactInboxModel)
+            .values({
+              originalContactId: newContact.id,
+              contactId: newContact.id,
+              inboxId: inbox.id,
+              channel: channelTypes.enum.webchat,
+              source,
+              sourceId: createId(),
+            })
+            .returning()
+          if (!newContactInbox) {
+            throw new ChatbotXException("Contact inbox not found")
+          }
 
-        return {
-          value: { contact: newContact, contactInbox: newContactInbox },
-          contactId: newContact.id,
-          contactInboxId: newContactInbox.id,
-          inboxId: inbox.id,
-        }
-      },
-    })
+          // No cancelByInboxSource here: this path mints a fresh random sourceId,
+          // so it can never collide with a MessageCleanup tombstone.
+          await tx.insert(conversationModel).values({
+            workspaceId,
+            contactId: newContact.id,
+            id: createId(),
+          })
 
-    if (!result.ok) {
-      throw new ChatbotXException("Contact limit reached", "quotaExceeded", 422)
-    }
-
-    const { contact, contactInbox } = result.value
+          return { contact: newContact, contactInbox: newContactInbox }
+        },
+      })
 
     if (avatar) {
       const avatarPath = await this.resolveAvatarPath(

@@ -19,8 +19,10 @@ import type {
 import { getPaginationWithDefaults } from "@chatbotx.io/database/utils"
 import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
-import { ChatbotXException } from "../errors"
+import { channelLimitReachedException } from "../errors"
+import { logger } from "../logger"
 import { quotaEnforcementService } from "../quota-enforcement/service"
+import { workspaceUsageService } from "../workspace-usage/service"
 import type { ListInboxesRequest, ListInboxesResponse } from "./schema"
 
 type InboxWhere = Partial<{ id: string; workspaceId: string }>
@@ -64,6 +66,18 @@ class InboxService extends BaseService {
     return { data, pageCount }
   }
 
+  async listWithIntegrationsByWorkspace(
+    workspaceId: string,
+    tx: DatabaseClient = db,
+  ): Promise<InboxWithIntegrations[]> {
+    return await tx.query.inboxModel.findMany({
+      where: {
+        workspaceId,
+      },
+      with: InboxService.withIntegrations,
+    })
+  }
+
   async find(props: { where: InboxWhere }): Promise<InboxModel | undefined> {
     const { where } = props
     // return await withCache(
@@ -85,6 +99,30 @@ class InboxService extends BaseService {
       where: { id: props.id },
       with: InboxService.withIntegrations,
     })
+  }
+
+  /**
+   * Distinct channel types the workspace has a connected inbox for. Used to
+   * grandfather already-connected channels back into the settings accordion
+   * even when a platform admin / white-label owner has since hidden that
+   * channel from *new* creation — hiding must never make an existing
+   * connection disappear from the UI.
+   */
+  async distinctConnectedChannels(workspaceId: string): Promise<ChannelType[]> {
+    const rows = await db
+      .selectDistinct({ channel: inboxModel.channel })
+      .from(inboxModel)
+      .where(
+        and(
+          eq(inboxModel.workspaceId, workspaceId),
+          eq(inboxModel.status, inboxStatuses.enum.connected),
+        ),
+      )
+    return rows
+      .map((row) => row.channel)
+      .filter((channel): channel is ChannelType =>
+        channelTypes.options.includes(channel as ChannelType),
+      )
   }
 
   async resolveBroadcastInboxIds(input: {
@@ -165,7 +203,7 @@ class InboxService extends BaseService {
       if (existing.status === inboxStatuses.enum.disconnected) {
         const [updated] = await tx
           .update(inboxModel)
-          .set({ status: inboxStatuses.enum.connected })
+          .set({ status: inboxStatuses.enum.connected, name: data.name })
           .where(eq(inboxModel.id, existing.id))
           .returning()
         return { inbox: updated, wasCreated: true }
@@ -178,7 +216,7 @@ class InboxService extends BaseService {
       metric: "channels",
     })
     if (!consumed.ok) {
-      throw new ChatbotXException("Channel limit reached for this plan")
+      throw channelLimitReachedException()
     }
 
     const [inbox] = await tx
@@ -186,8 +224,54 @@ class InboxService extends BaseService {
       .values({ id: data.id ?? createId(), ...data })
       .returning()
 
+    await workspaceUsageService
+      .increment(data.workspaceId, "channels")
+      .catch((err) => {
+        logger.warn(
+          { err, workspaceId: data.workspaceId },
+          "workspace usage channel increment failed",
+        )
+      })
+
     return { inbox, wasCreated: true }
   }
+
+  async disconnect(props: {
+    inboxId: string
+    ownerId: string
+    workspaceId: string
+    tx?: DatabaseClient
+  }): Promise<void> {
+    const client = props.tx ?? db
+
+    await client
+      .update(inboxModel)
+      .set({ status: inboxStatuses.enum.disconnected })
+      .where(eq(inboxModel.id, props.inboxId))
+
+    // Best-effort: never block/roll back the disconnect if release fails, the
+    // nightly reconcile self-heals.
+    await quotaEnforcementService
+      .release({ userId: props.ownerId, metric: "channels" })
+      .catch((err) => {
+        logger.warn(
+          { err, inboxId: props.inboxId, ownerId: props.ownerId },
+          "inbox disconnect: channel quota release failed",
+        )
+      })
+
+    // Display-only breakdown, mirroring the `contacts` release. Never let a
+    // failure here affect the authoritative counter released above.
+    await workspaceUsageService
+      .decrement(props.workspaceId, "channels")
+      .catch((err) => {
+        logger.warn(
+          { err, inboxId: props.inboxId, workspaceId: props.workspaceId },
+          "inbox disconnect: workspace usage channel decrement failed",
+        )
+      })
+  }
+
   async isConnected(props: {
     channel: string
     sourceId: string

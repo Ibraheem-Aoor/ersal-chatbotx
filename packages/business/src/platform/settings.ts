@@ -4,6 +4,7 @@ import type {
   TenantHelpItemModel,
   TenantModel,
 } from "@chatbotx.io/database/types"
+import { parseEnvBool } from "@chatbotx.io/utils"
 import { customDomainService } from "../enterprise/custom-domain/service"
 import { tenantService } from "../enterprise/tenant/service"
 import { tenantHelpItemService } from "../enterprise/tenant-help-item/service"
@@ -32,6 +33,7 @@ export type TenantSettings = {
   signupEmailTemplate: EmailTemplate | null
   forgotPasswordEmailTemplate: EmailTemplate | null
   magicLinkEmailTemplate: EmailTemplate | null
+  accountCredentialsEmailTemplate: EmailTemplate | null
   helpItems: TenantHelpItemModel[]
 }
 
@@ -40,6 +42,7 @@ const buildDefaults = (helpItems: TenantHelpItemModel[]): TenantSettings => {
   const derived = deriveUrls(
     env.NEXT_PUBLIC_BUILDER_URL,
     env.NEXT_PUBLIC_STORAGE_URL,
+    { forceHttps: parseEnvBool(env.FORCE_PUBLIC_HTTPS) },
   )
   return {
     appUrl: derived.appUrl,
@@ -57,6 +60,7 @@ const buildDefaults = (helpItems: TenantHelpItemModel[]): TenantSettings => {
     signupEmailTemplate: null,
     forgotPasswordEmailTemplate: null,
     magicLinkEmailTemplate: null,
+    accountCredentialsEmailTemplate: null,
     helpItems,
   }
 }
@@ -93,6 +97,9 @@ const applyCustomDomain = (
     appUrl: derived.appUrl,
     wsUrl: derived.wsUrl,
     storageUrl: derived.storageUrl,
+    logoLightUrl: `${derived.appUrl}/brand/logo_white.svg`,
+    logoDarkUrl: `${derived.appUrl}/brand/logo_black.svg`,
+    faviconUrl: `${derived.appUrl}/brand/icon_black.svg`,
   }
 }
 
@@ -105,28 +112,45 @@ const applyTenantSetting = (
   const storageUrl = setting.storageUrl
     ? `${setting.storageUrl.replace(TRAILING_SLASH_RE, "")}/`
     : defaults.storageUrl
+  // Branding (name, logos, favicon, theme), custom JS/CSS, and email
+  // templates are all gated to Enterprise/Cloud. Without a valid license the
+  // stored values are ignored and defaults apply (mail falls back to the
+  // built-in templates on null).
   return {
     ...defaults,
     storageUrl,
-    name: setting.brandName ?? defaults.name,
-    logoLightUrl: setting.logoLightPath
-      ? new URL(setting.logoLightPath, storageUrl).toString()
-      : defaults.logoLightUrl,
-    logoDarkUrl: setting.logoDarkPath
-      ? new URL(setting.logoDarkPath, storageUrl).toString()
-      : defaults.logoDarkUrl,
-    faviconUrl: setting.faviconPath
-      ? new URL(setting.faviconPath, storageUrl).toString()
-      : defaults.faviconUrl,
-    theme: setting.theme ?? null,
-    // customJs and customCSS are gated to Enterprise/Cloud only.
+    name: enterpriseFeaturesEnabled
+      ? (setting.brandName ?? defaults.name)
+      : defaults.name,
+    logoLightUrl:
+      enterpriseFeaturesEnabled && setting.logoLightPath
+        ? new URL(setting.logoLightPath, storageUrl).toString()
+        : defaults.logoLightUrl,
+    logoDarkUrl:
+      enterpriseFeaturesEnabled && setting.logoDarkPath
+        ? new URL(setting.logoDarkPath, storageUrl).toString()
+        : defaults.logoDarkUrl,
+    faviconUrl:
+      enterpriseFeaturesEnabled && setting.faviconPath
+        ? new URL(setting.faviconPath, storageUrl).toString()
+        : defaults.faviconUrl,
+    theme: enterpriseFeaturesEnabled ? (setting.theme ?? null) : null,
     customJS: enterpriseFeaturesEnabled ? (setting.customJs ?? null) : null,
     customCSS: enterpriseFeaturesEnabled ? (setting.customCss ?? null) : null,
     policyUrl: setting.policyUrl ?? defaults.policyUrl,
     termsOfServiceUrl: setting.termsOfServiceUrl ?? defaults.termsOfServiceUrl,
-    signupEmailTemplate: setting.signupEmailTemplate,
-    forgotPasswordEmailTemplate: setting.forgotPasswordEmailTemplate,
-    magicLinkEmailTemplate: setting.magicLinkEmailTemplate,
+    signupEmailTemplate: enterpriseFeaturesEnabled
+      ? setting.signupEmailTemplate
+      : null,
+    forgotPasswordEmailTemplate: enterpriseFeaturesEnabled
+      ? setting.forgotPasswordEmailTemplate
+      : null,
+    magicLinkEmailTemplate: enterpriseFeaturesEnabled
+      ? setting.magicLinkEmailTemplate
+      : null,
+    accountCredentialsEmailTemplate: enterpriseFeaturesEnabled
+      ? setting.accountCredentialsEmailTemplate
+      : null,
     helpItems,
   }
 }
@@ -161,6 +185,34 @@ export const resolveTenantSettings = async (args: {
     helpItems,
     await hasEnterpriseFeatures(),
   )
+}
+
+/**
+ * Resolve the app URL that should be embedded in workspace-generated public
+ * links. Unlike `resolveTenantSettings`, this applies an active custom domain
+ * when the workspace belongs to a non-root tenant.
+ */
+export const resolveWorkspaceAppUrl = async (args: {
+  workspaceId: string
+  tx?: DatabaseClient
+}): Promise<string> => {
+  const workspace = await workspaceService.findById({
+    id: args.workspaceId,
+    tx: args.tx,
+  })
+
+  if (workspace.tenantId !== ROOT_TENANT_ID) {
+    const domains = await customDomainService.findByTenantId(workspace.tenantId)
+    const activeDomain = domains.find((domain) => domain.status === "active")
+    if (activeDomain) {
+      return deriveUrls(`https://${activeDomain.domain}`).appUrl
+    }
+  }
+
+  const env = integrationContextEnv()
+  return deriveUrls(env.NEXT_PUBLIC_BUILDER_URL, undefined, {
+    forceHttps: parseEnvBool(env.FORCE_PUBLIC_HTTPS),
+  }).appUrl
 }
 
 /**

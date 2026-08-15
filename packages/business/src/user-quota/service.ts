@@ -1,19 +1,17 @@
 import {
   and,
   count,
+  countDistinct,
   db,
   eq,
   gt,
   lte,
-  ne,
   sql,
   sum,
 } from "@chatbotx.io/database/client"
 import { planStatuses } from "@chatbotx.io/database/partials"
 import {
-  broadcastModel,
   contactModel,
-  flowModel,
   inboxModel,
   ROOT_TENANT_ID,
   userQuotaModel,
@@ -23,12 +21,13 @@ import {
 } from "@chatbotx.io/database/schema"
 import type { UserQuotaModel } from "@chatbotx.io/database/types"
 import { cacheConnections, distributedStore } from "@chatbotx.io/redis"
+import { USER_QUOTA_LABEL } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
+import { isCloud } from "../keys"
 import { logger } from "../logger"
 import {
   LiveCounterStore,
   type QuotaMetric,
-  USER_QUOTA_LABEL,
 } from "../quota-shared/live-counter-store"
 
 export type { QuotaMetric } from "../quota-shared/live-counter-store"
@@ -56,18 +55,16 @@ const BOOTSTRAP_TRIAL_FALLBACK = {
   channelsLimit: 0,
   teamMembersLimit: 0,
   contactsLimit: 0,
-  flowsLimit: 0,
-  broadcastsLimit: 0,
-  aiAgentsEnabled: false,
+  botMessagesLimit: 0,
+  monthlyBotMessagesLimit: 0,
 } as const
 
 interface DefaultPlanSnapshot {
-  aiAgentsEnabled?: boolean
-  broadcastsLimit?: number | null
+  botMessagesLimit: number | null
   channelsLimit: number | null
   contactsLimit: number | null
-  flowsLimit?: number | null
   macLimit: number | null
+  monthlyBotMessagesLimit: number | null
   planName: string
   saasMode: boolean
   ssoSaml: boolean
@@ -79,26 +76,30 @@ interface DefaultPlanSnapshot {
 
 type BootstrapPlanSnapshot = Pick<
   DefaultPlanSnapshot,
-  | "broadcastsLimit"
   | "channelsLimit"
+  | "botMessagesLimit"
+  | "monthlyBotMessagesLimit"
   | "contactsLimit"
-  | "flowsLimit"
   | "macLimit"
   | "planName"
   | "teamMembersLimit"
   | "trialDays"
   | "workspacesLimit"
-> & { aiAgentsEnabled?: boolean }
+>
 
 /**
  * Result of evaluating whether a user may access the app. `blocked` is the only
  * field the gate needs; the rest drive the "trial ended / X days left" UI.
  *  - status mirrors UserQuota.planStatus (active|past_due|trial|expired).
  *  - a user with no quota row at all (pure OSS install) is never blocked.
+ *  - `reason` discriminates WHY `blocked` is true, so the UI can show the
+ *    right paywall copy ("plan inactive" vs "monthly active contact limit
+ *    reached") instead of a single generic message. `null` when not blocked.
  */
 export interface AccessState {
   blocked: boolean
   planName: string | null
+  reason: "status" | "mac" | null
   status: string | null
   trialEndsAt: Date | null
 }
@@ -116,8 +117,8 @@ class UserQuotaService extends BaseService {
       teamMembers: userQuotaModel.teamMembersUsed,
       contacts: userQuotaModel.contactsUsed,
       mac: userQuotaModel.macUsed,
-      flows: userQuotaModel.flowsUsed,
-      broadcasts: userQuotaModel.broadcastsUsed,
+      botMessages: userQuotaModel.botMessagesUsed,
+      monthlyBotMessages: userQuotaModel.monthlyBotMessagesUsed,
     },
     getUsed: (quota, metric) => this.getUsedValue(quota, metric),
     fetchRow: (userId) =>
@@ -144,10 +145,10 @@ class UserQuotaService extends BaseService {
         return quota.teamMembersUsed
       case "mac":
         return quota.macUsed
-      case "flows":
-        return quota.flowsUsed
-      case "broadcasts":
-        return quota.broadcastsUsed
+      case "botMessages":
+        return quota.botMessagesUsed
+      case "monthlyBotMessages":
+        return quota.monthlyBotMessagesUsed
       default:
         return 0
     }
@@ -155,61 +156,6 @@ class UserQuotaService extends BaseService {
 
   /** Invalidate the cached quota row (used by the reconcile worker after a sync). */
   async invalidate(userId: string): Promise<void> {
-    await this.store.invalidate(userId)
-  }
-
-  async applyPlanEntitlements(input: {
-    userId: string
-    planName: string
-    contactsLimit: number
-    macLimit: number
-    workspacesLimit: number
-    channelsLimit: number
-    teamMembersLimit: number
-    flowsLimit: number
-    broadcastsLimit: number
-    aiAgentsEnabled: boolean
-    periodStart: Date
-    periodEnd: Date
-  }): Promise<void> {
-    const { userId, ...limits } = input
-    await db
-      .insert(userQuotaModel)
-      .values({
-        userId,
-        contactsLimit: limits.contactsLimit,
-        macLimit: limits.macLimit,
-        workspacesLimit: limits.workspacesLimit,
-        channelsLimit: limits.channelsLimit,
-        teamMembersLimit: limits.teamMembersLimit,
-        flowsLimit: limits.flowsLimit,
-        broadcastsLimit: limits.broadcastsLimit,
-        aiAgentsEnabled: limits.aiAgentsEnabled,
-        planName: limits.planName,
-        planStatus: "active",
-        periodStart: limits.periodStart,
-        periodEnd: limits.periodEnd,
-        syncedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: userQuotaModel.userId,
-        set: {
-          contactsLimit: limits.contactsLimit,
-          macLimit: limits.macLimit,
-          workspacesLimit: limits.workspacesLimit,
-          channelsLimit: limits.channelsLimit,
-          teamMembersLimit: limits.teamMembersLimit,
-          flowsLimit: limits.flowsLimit,
-          broadcastsLimit: limits.broadcastsLimit,
-          aiAgentsEnabled: limits.aiAgentsEnabled,
-          planName: limits.planName,
-          planStatus: "active",
-          periodStart: limits.periodStart,
-          periodEnd: limits.periodEnd,
-          syncedAt: new Date(),
-          updatedAt: sql`CURRENT_TIMESTAMP`,
-        },
-      })
     await this.store.invalidate(userId)
   }
 
@@ -269,6 +215,10 @@ class UserQuotaService extends BaseService {
     tenantId?: string | null
     userId: string
   }): Promise<void> {
+    if (!isCloud()) {
+      return
+    }
+
     const { tenantId, userId } = input
 
     const snapshot: BootstrapPlanSnapshot =
@@ -295,9 +245,10 @@ class UserQuotaService extends BaseService {
         channelsLimit: snapshot.channelsLimit,
         teamMembersLimit: snapshot.teamMembersLimit,
         macLimit: snapshot.macLimit,
-        flowsLimit: snapshot.flowsLimit ?? null,
-        broadcastsLimit: snapshot.broadcastsLimit ?? null,
-        aiAgentsEnabled: snapshot.aiAgentsEnabled ?? true,
+        botMessagesLimit: snapshot.botMessagesLimit,
+        // Additive cross-repo field: an older snapshot omits it, which is
+        // deliberately unlimited (fail-open), never an implicit zero cap.
+        monthlyBotMessagesLimit: snapshot.monthlyBotMessagesLimit ?? null,
         whiteLabel: false,
         ssoSaml: false,
         saasMode: false,
@@ -359,6 +310,13 @@ class UserQuotaService extends BaseService {
     userId: string,
     quota: UserQuotaModel | null,
   ): Promise<UserQuotaModel | null> {
+    // Default-plan snapshots are a cloud concept. Off-cloud, a shared or
+    // stale Redis carrying `entitlements:default-plan` must never impose
+    // cloud limits on a self-hosted install.
+    if (!isCloud()) {
+      return null
+    }
+
     const snapshot = await this.resolveDefaultPlanSnapshot(userId)
     if (!snapshot) {
       return null
@@ -380,11 +338,12 @@ class UserQuotaService extends BaseService {
       teamMembersUsed: 0,
       macLimit: null,
       macUsed: 0,
-      flowsLimit: null,
-      flowsUsed: 0,
-      broadcastsLimit: null,
-      broadcastsUsed: 0,
-      aiAgentsEnabled: true,
+      botMessagesLimit: null,
+      botMessagesUsed: 0,
+      monthlyBotMessagesLimit: null,
+      monthlyBotMessagesUsed: 0,
+      monthlyBotMessagesPeriodStart: null,
+      botMessagesTopUpGranted: 0,
       whiteLabel: false,
       ssoSaml: false,
       saasMode: false,
@@ -393,6 +352,7 @@ class UserQuotaService extends BaseService {
       selectedTrialPlanId: null,
       periodStart: null,
       periodEnd: null,
+      channelsTornDownAt: null,
       syncedAt: now,
     }
 
@@ -401,14 +361,16 @@ class UserQuotaService extends BaseService {
       contactsLimit: base.contactsLimit ?? snapshot.contactsLimit,
       workspacesLimit: base.workspacesLimit ?? snapshot.workspacesLimit,
       channelsLimit: base.channelsLimit ?? snapshot.channelsLimit,
+      botMessagesLimit: base.botMessagesLimit ?? snapshot.botMessagesLimit,
+      monthlyBotMessagesLimit:
+        base.monthlyBotMessagesLimit ??
+        snapshot.monthlyBotMessagesLimit ??
+        null,
       teamMembersLimit: base.teamMembersLimit ?? snapshot.teamMembersLimit,
       // Monthly-active-contacts cap (`Plan.limits.monthlyActiveContacts`) maps to
       // `macLimit`, NOT `contactsLimit`; without this the free-tier overlay would
       // leave macLimit null (unlimited MAC) even when the default plan caps it.
       macLimit: base.macLimit ?? snapshot.macLimit,
-      flowsLimit: base.flowsLimit ?? snapshot.flowsLimit ?? null,
-      broadcastsLimit: base.broadcastsLimit ?? snapshot.broadcastsLimit ?? null,
-      aiAgentsEnabled: snapshot.aiAgentsEnabled ?? base.aiAgentsEnabled,
       whiteLabel: base.whiteLabel || snapshot.whiteLabel,
       ssoSaml: base.ssoSaml || snapshot.ssoSaml,
       saasMode: base.saasMode || snapshot.saasMode,
@@ -422,32 +384,72 @@ class UserQuotaService extends BaseService {
 
   /**
    * Whether the user may access the app, based on the entitlement snapshot.
-   * Blocked only when a self-managed trial has expired or was consumed:
-   *   - planStatus === "expired"  (trial consumed / churned)
-   *   - planStatus === "trial" and periodEnd has passed
-   * Everything else (active, past_due, no row) is allowed.
+   * Allow-list: only `active` and a non-expired `trial` may send/receive.
+   * `past_due`, `expired`, an expired `trial`, and any unrecognized status are
+   * blocked (`reason: "status"`). On top of the status check, this async
+   * variant also OR-in the **live** MAC count (`reason: "mac"`) — the live
+   * Redis counter is authoritative and can be ahead of the DB `macUsed`
+   * column (see {@link getAccessStateFromQuota} for the pure/DB-only variant).
    */
   async getAccessState(userId: string): Promise<AccessState> {
     const quota = await this.getForUser(userId)
-    return this.getAccessStateFromQuota(quota)
+    const state = this.getAccessStateFromQuota(quota)
+    if (state.blocked) {
+      return state
+    }
+
+    const macLimitReached = await this.isLimitReached(userId, "mac")
+    if (macLimitReached) {
+      return { ...state, blocked: true, reason: "mac" }
+    }
+
+    return state
   }
 
   /**
    * Pure derivation of {@link AccessState} from an already-fetched quota row.
    * Use this when the caller has already loaded the quota (e.g. an RSC that also
    * renders usage bars) to avoid a redundant `getForUser` round-trip.
+   *
+   * Allow-list: only `active` and a non-expired `trial` are allowed; every
+   * other status (`past_due`, `expired`, expired `trial`, unknown) is blocked
+   * with `reason: "status"`. A user with no quota row at all (pure OSS
+   * install / pre-bootstrap) is never blocked.
+   *
+   * Also blocks when the DB `macUsed` column has already reached `macLimit`
+   * (`reason: "mac"`) — a conservative fallback for synchronous/RSC callers
+   * that only have this row; it can lag the live Redis count, which
+   * {@link getAccessState} checks authoritatively.
    */
   getAccessStateFromQuota(quota: UserQuotaModel | null): AccessState {
     if (!quota) {
-      return { blocked: false, status: null, planName: null, trialEndsAt: null }
+      return {
+        blocked: false,
+        status: null,
+        planName: null,
+        trialEndsAt: null,
+        reason: null,
+      }
     }
 
     const trialExpired =
       quota.planStatus === planStatuses.enum.trial &&
       quota.periodEnd !== null &&
       new Date(quota.periodEnd).getTime() <= Date.now()
-    const blocked =
-      quota.planStatus === planStatuses.enum.expired || trialExpired
+    const trialActive =
+      quota.planStatus === planStatuses.enum.trial && !trialExpired
+    const statusAllowed =
+      quota.planStatus === planStatuses.enum.active || trialActive
+    const macLimitReached =
+      quota.macLimit !== null && quota.macUsed >= quota.macLimit
+
+    const blocked = !statusAllowed || macLimitReached
+    let reason: AccessState["reason"] = null
+    if (!statusAllowed) {
+      reason = "status"
+    } else if (macLimitReached) {
+      reason = "mac"
+    }
 
     return {
       blocked,
@@ -455,7 +457,39 @@ class UserQuotaService extends BaseService {
       planName: quota.planName,
       trialEndsAt:
         quota.planStatus === planStatuses.enum.trial ? quota.periodEnd : null,
+      reason,
     }
+  }
+
+  async listDueExpiredTrials(params: {
+    cutoff: Date
+    cursor?: string
+    limit: number
+  }): Promise<{ userIds: string[]; nextCursor?: string }> {
+    const rows = await db.query.userQuotaModel.findMany({
+      where: {
+        planStatus: planStatuses.enum.trial,
+        periodEnd: { isNotNull: true, lte: params.cutoff },
+        channelsTornDownAt: { isNull: true },
+        ...(params.cursor ? { userId: { gt: params.cursor } } : {}),
+      },
+      columns: { userId: true },
+      orderBy: { userId: "asc" },
+      limit: params.limit,
+    })
+
+    return {
+      userIds: rows.map((row) => row.userId),
+      nextCursor:
+        rows.length === params.limit ? rows.at(-1)?.userId : undefined,
+    }
+  }
+
+  async markChannelsTornDown(userId: string): Promise<void> {
+    await db
+      .update(userQuotaModel)
+      .set({ channelsTornDownAt: new Date() })
+      .where(eq(userQuotaModel.userId, userId))
   }
 
   /**
@@ -508,34 +542,67 @@ class UserQuotaService extends BaseService {
   }
 
   async isLimitReached(userId: string, metric: QuotaMetric): Promise<boolean> {
-    const quota = await this.getForUser(userId)
+    const [quota, liveCount] = await Promise.all([
+      this.getForUser(userId),
+      this.store.getLiveCount(userId, metric),
+    ])
     if (!quota) {
       return false
     }
     const { limit } = this.readMetricValues(quota, metric)
-    if (limit === null) {
+    return limit !== null && liveCount >= limit
+  }
+
+  /**
+   * Current distinct humans across an owner's workspaces or a reseller's
+   * tenant. `teamMembers` is intentionally read from its source tables: its
+   * counter is only a reconcile snapshot and can be stale between syncs.
+   */
+  private async countDistinctTeamMembers(
+    scope: { ownerId: string } | { tenantId: string },
+  ): Promise<number> {
+    const where =
+      "ownerId" in scope
+        ? eq(workspaceModel.ownerId, scope.ownerId)
+        : eq(workspaceModel.tenantId, scope.tenantId)
+    const rows = await db
+      .select({ count: countDistinct(workspaceMemberModel.userId) })
+      .from(workspaceMemberModel)
+      .innerJoin(
+        workspaceModel,
+        eq(workspaceMemberModel.workspaceId, workspaceModel.id),
+      )
+      .where(where)
+    return rows[0]?.count ?? 0
+  }
+
+  /** Source-of-truth team-member count for the per-owner reconcile. */
+  countDistinctTeamMembersForOwner(ownerId: string): Promise<number> {
+    return this.countDistinctTeamMembers({ ownerId })
+  }
+
+  /** Source-of-truth team-member count for a reseller tenant pool. */
+  countDistinctTeamMembersForTenant(tenantId: string): Promise<number> {
+    return this.countDistinctTeamMembers({ tenantId })
+  }
+
+  /**
+   * Live at-limit check for `teamMembers`; the quota row still supplies the
+   * plan limit while the distinct member count comes directly from the DB.
+   */
+  async isTeamMemberLimitReached(
+    scope: { ownerId: string } | { tenantId: string },
+    limitUserId: string,
+  ): Promise<boolean> {
+    const [quota, realCount] = await Promise.all([
+      this.getForUser(limitUserId),
+      this.countDistinctTeamMembers(scope),
+    ])
+    if (!quota) {
       return false
     }
-    if (metric === "workspaces") {
-      const [row] = await db
-        .select({ count: count() })
-        .from(workspaceModel)
-        .where(eq(workspaceModel.ownerId, userId))
-      return (row?.count ?? 0) >= limit
-    }
-    if (metric === "channels") {
-      const [row] = await db
-        .select({ count: count() })
-        .from(inboxModel)
-        .innerJoin(
-          workspaceModel,
-          eq(inboxModel.workspaceId, workspaceModel.id),
-        )
-        .where(eq(workspaceModel.ownerId, userId))
-      return (row?.count ?? 0) >= limit
-    }
-    const liveCount = await this.store.getLiveCount(userId, metric)
-    return liveCount >= limit
+    const { limit } = this.readMetricValues(quota, "teamMembers")
+    return limit !== null && realCount >= limit
   }
 
   async getRemainingSlots(
@@ -606,29 +673,8 @@ class UserQuotaService extends BaseService {
     if (!quota) {
       return true
     }
-    const { limit } = this.readMetricValues(quota, metric)
-    if (limit === null) {
-      return true
-    }
-    if (metric === "workspaces") {
-      const [row] = await db
-        .select({ count: count() })
-        .from(workspaceModel)
-        .where(eq(workspaceModel.ownerId, userId))
-      return (row?.count ?? 0) < limit
-    }
-    if (metric === "channels") {
-      const [row] = await db
-        .select({ count: count() })
-        .from(inboxModel)
-        .innerJoin(
-          workspaceModel,
-          eq(inboxModel.workspaceId, workspaceModel.id),
-        )
-        .where(eq(workspaceModel.ownerId, userId))
-      return (row?.count ?? 0) < limit
-    }
-    return this.readMetricValues(quota, metric).used < limit
+    const { limit, used } = this.readMetricValues(quota, metric)
+    return limit === null || used < limit
   }
 
   /**
@@ -639,6 +685,18 @@ class UserQuotaService extends BaseService {
    */
   async consume(userId: string, metric: QuotaMetric): Promise<void> {
     await this.store.consume(userId, metric, 1)
+  }
+
+  async release(userId: string, metric: QuotaMetric): Promise<void> {
+    await this.releaseBy(userId, metric, 1)
+  }
+
+  async releaseBy(
+    userId: string,
+    metric: QuotaMetric,
+    count: number,
+  ): Promise<void> {
+    await this.store.release(userId, metric, count)
   }
 
   async tryIncrement(userId: string, metric: QuotaMetric): Promise<boolean> {
@@ -654,8 +712,9 @@ class UserQuotaService extends BaseService {
    * counts aggregated across EVERY workspace under their tenant — the owner's row
    * is the pool (owner's own resources carry the reseller tenantId too, so the
    * tenant aggregate already includes them; no separate own-count is added). The
-   * recomputed `COUNT(*)` is authoritative (already reflects deletions) and is
+   * recomputed counts are authoritative (already reflect deletions) and are
    * assigned directly so freeing pooled resources frees pooled quota.
+   * `teamMembers` is `COUNT(DISTINCT userId)`; all other metrics are `COUNT(*)`.
    *
    * `mac` is summed from the `WorkspaceMac` rollup for the CURRENT period only,
    * so it resets naturally at period rollover (mirroring the contacts recount).
@@ -670,12 +729,10 @@ class UserQuotaService extends BaseService {
 
     const [
       [contactsResult],
-      [teamMembersResult],
+      teamMembersUsed,
       [workspacesResult],
       [channelsResult],
       [macResult],
-      [flowsResult],
-      [broadcastsResult],
     ] = await Promise.all([
       db
         .select({ count: count() })
@@ -686,19 +743,7 @@ class UserQuotaService extends BaseService {
         )
         .where(eq(workspaceModel.tenantId, tenantId)),
 
-      db
-        .select({ count: count() })
-        .from(workspaceMemberModel)
-        .innerJoin(
-          workspaceModel,
-          eq(workspaceMemberModel.workspaceId, workspaceModel.id),
-        )
-        .where(
-          and(
-            eq(workspaceModel.tenantId, tenantId),
-            ne(workspaceMemberModel.role, "owner"),
-          ),
-        ),
+      this.countDistinctTeamMembers({ tenantId }),
 
       db
         .select({ count: count() })
@@ -728,31 +773,13 @@ class UserQuotaService extends BaseService {
             gt(workspaceMacModel.periodEnd, sql`now()`),
           ),
         ),
-
-      db
-        .select({ count: count() })
-        .from(flowModel)
-        .innerJoin(workspaceModel, eq(flowModel.workspaceId, workspaceModel.id))
-        .where(eq(workspaceModel.tenantId, tenantId)),
-
-      db
-        .select({ count: count() })
-        .from(broadcastModel)
-        .innerJoin(
-          workspaceModel,
-          eq(broadcastModel.workspaceId, workspaceModel.id),
-        )
-        .where(eq(workspaceModel.tenantId, tenantId)),
     ])
 
     const contactsUsed = contactsResult?.count ?? 0
-    const teamMembersUsed = teamMembersResult?.count ?? 0
     const workspacesUsed = workspacesResult?.count ?? 0
     const channelsUsed = channelsResult?.count ?? 0
     // `sum()` returns a numeric string (or null when no rows match).
     const macUsed = Number(macResult?.total ?? 0)
-    const flowsUsed = flowsResult?.count ?? 0
-    const broadcastsUsed = broadcastsResult?.count ?? 0
 
     await db
       .insert(userQuotaModel)
@@ -763,20 +790,19 @@ class UserQuotaService extends BaseService {
         workspacesUsed,
         channelsUsed,
         macUsed,
-        flowsUsed,
-        broadcastsUsed,
         syncedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: userQuotaModel.userId,
         set: {
+          // Authoritative current counts — assigned directly, NOT GREATEST — so
+          // deletions across the pool free quota. Only `*Used` is touched; the
+          // owner's limits / plan identity are written by the billing layer.
           contactsUsed,
           teamMembersUsed,
           workspacesUsed,
           channelsUsed,
           macUsed,
-          flowsUsed,
-          broadcastsUsed,
           syncedAt: new Date(),
           updatedAt: sql`CURRENT_TIMESTAMP`,
         },
@@ -800,10 +826,6 @@ class UserQuotaService extends BaseService {
       String(channelsUsed),
       "mac",
       String(macUsed),
-      "flows",
-      String(flowsUsed),
-      "broadcasts",
-      String(broadcastsUsed),
     )
 
     await this.store.invalidate(ownerId)
@@ -839,24 +861,19 @@ class UserQuotaService extends BaseService {
         return { limit: quota.contactsLimit, used: quota.contactsUsed }
       case "mac":
         return { limit: quota.macLimit, used: quota.macUsed }
-      case "flows":
-        return { limit: quota.flowsLimit, used: quota.flowsUsed }
-      case "broadcasts":
-        return { limit: quota.broadcastsLimit, used: quota.broadcastsUsed }
+      case "botMessages":
+        return {
+          limit: quota.botMessagesLimit,
+          used: quota.botMessagesUsed,
+        }
+      case "monthlyBotMessages":
+        return {
+          limit: quota.monthlyBotMessagesLimit,
+          used: quota.monthlyBotMessagesUsed,
+        }
       default:
         return { limit: null, used: 0 }
     }
-  }
-
-  async isFeatureEnabled(
-    userId: string,
-    feature: "aiAgentsEnabled",
-  ): Promise<boolean> {
-    const quota = await this.getForUser(userId)
-    if (!quota) {
-      return true
-    }
-    return quota[feature]
   }
 }
 
