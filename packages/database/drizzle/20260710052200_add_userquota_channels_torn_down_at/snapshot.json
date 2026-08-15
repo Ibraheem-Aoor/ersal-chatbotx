@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "c99c52e7-fc64-4a5c-8d7d-b49922292274",
-  "prevIds": ["0a09c779-f0c9-4b76-b65e-0c4e615d0b8e"],
+  "id": "655697bf-15a9-45b4-9be7-fe98ff9f0a0d",
+  "prevIds": ["b7994885-807e-4aeb-b987-9c8eda2539ca"],
   "ddl": [
     {
       "values": ["pending", "success", "error", "processing"],
@@ -558,6 +558,12 @@
     {
       "isRlsEnabled": false,
       "name": "Tenant",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "TenantHelpItem",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1354,6 +1360,19 @@
       "generated": null,
       "identity": null,
       "name": "isDefault",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AIAgent"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "isRichResponse",
       "entityType": "columns",
       "schema": "public",
       "table": "AIAgent"
@@ -6042,6 +6061,19 @@
       "table": "ContactInbox"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "personaId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
       "type": "timestamp(6) with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -7797,6 +7829,110 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tenantId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "icon",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "position",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "UserQuota"
     },
     {
@@ -8068,6 +8204,19 @@
       "generated": null,
       "identity": null,
       "name": "periodEnd",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "channelsTornDownAt",
       "entityType": "columns",
       "schema": "public",
       "table": "UserQuota"
@@ -10928,6 +11077,19 @@
       "generated": null,
       "identity": null,
       "name": "welcomeFlowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationInstagram"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'instagram'",
+      "generated": null,
+      "identity": null,
+      "name": "type",
       "entityType": "columns",
       "schema": "public",
       "table": "IntegrationInstagram"
@@ -16370,6 +16532,45 @@
       "table": "Workspace"
     },
     {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "isActive",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "startTime",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "endTime",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": false,
@@ -16378,6 +16579,19 @@
       "generated": null,
       "identity": null,
       "name": "logo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "scheduledDeletionAt",
       "entityType": "columns",
       "schema": "public",
       "table": "Workspace"
@@ -18892,6 +19106,55 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "Tenant"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "tenantId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "position",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "TenantHelpItem_tenantId_position_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "channelsTornDownAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "UserQuota_channelsTornDownAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "UserQuota"
     },
     {
       "nameExplicit": true,
@@ -22261,6 +22524,27 @@
       "table": "Workspace"
     },
     {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "scheduledDeletionAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Workspace_scheduledDeletionAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
       "nameExplicit": false,
       "columns": ["shardId"],
       "schemaTo": "public",
@@ -23325,6 +23609,19 @@
       "entityType": "fks",
       "schema": "public",
       "table": "Tenant"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["tenantId"],
+      "schemaTo": "public",
+      "tableTo": "Tenant",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "TenantHelpItem_tenantId_Tenant_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "TenantHelpItem"
     },
     {
       "nameExplicit": false,
@@ -25515,6 +25812,14 @@
       "name": "Tenant_pkey",
       "schema": "public",
       "table": "Tenant",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "TenantHelpItem_pkey",
+      "schema": "public",
+      "table": "TenantHelpItem",
       "entityType": "pks"
     },
     {

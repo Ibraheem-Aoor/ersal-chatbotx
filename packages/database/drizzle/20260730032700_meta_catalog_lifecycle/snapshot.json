@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "c99c52e7-fc64-4a5c-8d7d-b49922292274",
-  "prevIds": ["0a09c779-f0c9-4b76-b65e-0c4e615d0b8e"],
+  "id": "cf9e3f5e-62c4-4d0c-accc-360cfec6a3bb",
+  "prevIds": ["9d810992-498d-4c59-bb8c-72debb5cbedc"],
   "ddl": [
     {
       "values": ["pending", "success", "error", "processing"],
@@ -111,7 +111,7 @@
       "schema": "public"
     },
     {
-      "values": ["scheduled", "sent", "sending"],
+      "values": ["scheduled", "sent", "sending", "cancelled"],
       "name": "broadcastStatus",
       "entityType": "enums",
       "schema": "public"
@@ -141,14 +141,35 @@
       "schema": "public"
     },
     {
-      "values": ["pending", "completed", "failed"],
+      "values": [
+        "text",
+        "location",
+        "refLink",
+        "image",
+        "video",
+        "audio",
+        "gif",
+        "file"
+      ],
+      "name": "lastUserInputType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["pending", "scheduled", "completed", "failed", "canceled"],
       "name": "ContactOnSmartDelayStatus",
       "entityType": "enums",
       "schema": "public"
     },
     {
-      "values": ["waitNode"],
+      "values": ["waitNode", "followUp"],
       "name": "ContactOnSmartDelayType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["active", "archived"],
+      "name": "couponTopicStatus",
       "entityType": "enums",
       "schema": "public"
     },
@@ -214,8 +235,32 @@
       "schema": "public"
     },
     {
-      "values": ["contacts"],
+      "values": ["contacts", "coupons", "products"],
       "name": "importType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["oauth", "fbe"],
+      "name": "metaCatalogAuthMode",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["active", "invalid"],
+      "name": "metaCatalogConnectionStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["idle", "queued", "running", "succeeded", "partial", "failed"],
+      "name": "metaCatalogImportStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["pending_verification", "registered", "failed"],
+      "name": "whatsappRegistrationStatus",
       "entityType": "enums",
       "schema": "public"
     },
@@ -244,14 +289,68 @@
       "schema": "public"
     },
     {
+      "values": ["pending", "processing", "completed", "failed"],
+      "name": "MessageCleanupStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["push", "import"],
+      "name": "metaCatalogItemDirection",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["all", "category", "selected"],
+      "name": "metaCatalogSyncScope",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["queued", "running", "succeeded", "partial", "failed"],
+      "name": "metaCatalogSyncStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
       "values": ["dont_track", "track"],
       "name": "inventoryPolicy",
       "entityType": "enums",
       "schema": "public"
     },
     {
+      "values": [
+        "text",
+        "number",
+        "email",
+        "phone",
+        "multipleChoice",
+        "date",
+        "datetime",
+        "image",
+        "file",
+        "location",
+        "websiteLink"
+      ],
+      "name": "questionnaireQuestionType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["inProgress", "completed", "cancelled", "failed", "timeout"],
+      "name": "questionnaireSubmissionStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
       "values": ["refLink", "qrCode"],
       "name": "ReflinkType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": ["me"],
+      "name": "SystemFieldType",
       "entityType": "enums",
       "schema": "public"
     },
@@ -533,6 +632,18 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "Coupon",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "CouponTopic",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "CustomField",
       "entityType": "tables",
       "schema": "public"
@@ -563,13 +674,43 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "TenantHelpItem",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "UserQuota",
       "entityType": "tables",
       "schema": "public"
     },
     {
       "isRlsEnabled": false,
+      "name": "WorkspaceUsage",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "ErrorLog",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "ExternalWebhook",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "FacebookLeadAdsAutomation",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "FacebookLeadAdsLead",
       "entityType": "tables",
       "schema": "public"
     },
@@ -689,6 +830,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "IntegrationFacebookAds",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "IntegrationGemini",
       "entityType": "tables",
       "schema": "public"
@@ -737,6 +884,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "IntegrationMetaCatalog",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "IntegrationMoosend",
       "entityType": "tables",
       "schema": "public"
@@ -744,6 +897,12 @@
     {
       "isRlsEnabled": false,
       "name": "IntegrationOpenai",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "IntegrationOpenaiCompatible",
       "entityType": "tables",
       "schema": "public"
     },
@@ -815,7 +974,25 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "MessageCleanup",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "MessengerMessageTemplate",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "MetaCatalogItem",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "MetaCatalogSyncRun",
       "entityType": "tables",
       "schema": "public"
     },
@@ -839,6 +1016,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "ProductCategory",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "ProductVariant",
       "entityType": "tables",
       "schema": "public"
@@ -846,6 +1029,30 @@
     {
       "isRlsEnabled": false,
       "name": "ProductVariantOption",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "QuestionnaireAnswer",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "Questionnaire",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "QuestionnaireQuestion",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "QuestionnaireSubmission",
       "entityType": "tables",
       "schema": "public"
     },
@@ -888,6 +1095,12 @@
     {
       "isRlsEnabled": false,
       "name": "Spreadsheet",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "SystemField",
       "entityType": "tables",
       "schema": "public"
     },
@@ -947,6 +1160,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "WebhookExecution",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "WhatsappCoexistStaging",
       "entityType": "tables",
       "schema": "public"
@@ -960,6 +1179,12 @@
     {
       "isRlsEnabled": false,
       "name": "WhatsappMessageTemplate",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "WhatsappSignupSession",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1354,6 +1579,19 @@
       "generated": null,
       "identity": null,
       "name": "isDefault",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AIAgent"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "isRichResponse",
       "entityType": "columns",
       "schema": "public",
       "table": "AIAgent"
@@ -4941,6 +5179,19 @@
       "default": null,
       "generated": null,
       "identity": null,
+      "name": "integrationMessengerId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Broadcast"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
       "name": "templateId",
       "entityType": "columns",
       "schema": "public",
@@ -6042,6 +6293,32 @@
       "table": "ContactInbox"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "language",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "personaId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
       "type": "timestamp(6) with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -6050,6 +6327,19 @@
       "generated": null,
       "identity": null,
       "name": "contactLastReadAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "firstInteractionAt",
       "entityType": "columns",
       "schema": "public",
       "table": "ContactInbox"
@@ -6076,6 +6366,149 @@
       "generated": null,
       "identity": null,
       "name": "lastIncomingMessageAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastOutboundMessageAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "referral",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastCommentMessageId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastCommentMessageAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "consecutiveFailedReply",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastInputFailure",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastErrorLog",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastBtnTitle",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastUserInput",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "lastUserInputType",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastUserInputType",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "webchatParentUrl",
       "entityType": "columns",
       "schema": "public",
       "table": "ContactInbox"
@@ -6617,6 +7050,19 @@
       "table": "ContactOnSmartDelay"
     },
     {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "metadata",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
       "type": "ContactOnSmartDelayType",
       "typeSchema": "public",
       "notNull": true,
@@ -6968,6 +7414,32 @@
       "table": "Conversation"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastStep",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Conversation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "currentStep",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Conversation"
+    },
+    {
       "type": "timestamp(6) with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -7070,6 +7542,266 @@
       "entityType": "columns",
       "schema": "public",
       "table": "ConversationParticipant"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "topicId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "issuedContactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "issuedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "usedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "expiresAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "couponTopicStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'active'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "hasEverHadCoupon",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "createdById",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CouponTopic"
     },
     {
       "type": "bigint",
@@ -7787,6 +8519,123 @@
       "table": "Tenant"
     },
     {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "accountCredentialsEmailTemplate",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Tenant"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tenantId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "icon",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "position",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": true,
@@ -7969,6 +8818,58 @@
       "table": "UserQuota"
     },
     {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "botMessagesLimit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "botMessagesUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "monthlyBotMessagesLimit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "monthlyBotMessagesUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
       "type": "boolean",
       "typeSchema": null,
       "notNull": true,
@@ -8075,6 +8976,19 @@
     {
       "type": "timestamp(6) with time zone",
       "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "channelsTornDownAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
       "default": "now()",
@@ -8084,6 +8998,136 @@
       "entityType": "columns",
       "schema": "public",
       "table": "UserQuota"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "contactsUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "channelsUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "teamMembersUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "botMessagesUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "macUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "syncedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WorkspaceUsage"
     },
     {
       "type": "bigint",
@@ -8188,6 +9232,331 @@
       "entityType": "columns",
       "schema": "public",
       "table": "ErrorLog"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'make'",
+      "generated": null,
+      "identity": null,
+      "name": "provider",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "event",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "pageId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "pageName",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "formId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "formName",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "fieldMapping",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "flowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "leadsHandledCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "automationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "leadgenId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
     },
     {
       "type": "bigint",
@@ -9518,7 +10887,7 @@
     {
       "type": "bigint",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -9667,6 +11036,19 @@
       "generated": null,
       "identity": null,
       "name": "errorMessage",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Import"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "errorSample",
       "entityType": "columns",
       "schema": "public",
       "table": "Import"
@@ -10475,6 +11857,110 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "auth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tokenExpiresAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'active'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "IntegrationGemini"
     },
     {
@@ -10816,6 +12302,19 @@
       "table": "IntegrationInstagram"
     },
     {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userInfo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationInstagram"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": true,
@@ -10933,6 +12432,19 @@
       "table": "IntegrationInstagram"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'instagram'",
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationInstagram"
+    },
+    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": true,
@@ -11214,6 +12726,19 @@
       "generated": null,
       "identity": null,
       "name": "auth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMessenger"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userInfo",
       "entityType": "columns",
       "schema": "public",
       "table": "IntegrationMessenger"
@@ -11360,6 +12885,279 @@
       "entityType": "columns",
       "schema": "public",
       "table": "IntegrationMessenger"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "catalogId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "catalogName",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "businessId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "encryptedAuth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "metaCatalogAuthMode",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'oauth'",
+      "generated": null,
+      "identity": null,
+      "name": "authMode",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tokenExpiresAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "metaCatalogConnectionStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'active'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "metaCatalogImportStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'idle'",
+      "generated": null,
+      "identity": null,
+      "name": "importStatus",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "importTotalCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "importedCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "importFailedCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "importError",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastImportedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'VND'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "storeUrl",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
     },
     {
       "type": "bigint",
@@ -11633,6 +13431,162 @@
       "entityType": "columns",
       "schema": "public",
       "table": "IntegrationOpenai"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "auth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "autoReply",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "baseURL",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "defaultModel",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "enabled",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "preset",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
     },
     {
       "type": "bigint",
@@ -12315,7 +14269,7 @@
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": "false",
+      "default": "true",
       "generated": null,
       "identity": null,
       "name": "showLogo",
@@ -12553,6 +14507,45 @@
       "generated": null,
       "identity": null,
       "name": "historyDeclined",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "type": "whatsappRegistrationStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'pending_verification'",
+      "generated": null,
+      "identity": null,
+      "name": "registrationStatus",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "registrationError",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "verificationCodeRequestedAt",
       "entityType": "columns",
       "schema": "public",
       "table": "IntegrationWhatsapp"
@@ -13101,6 +15094,201 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactInboxId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "inboxId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sourceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "conversationIds",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sinceTime",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "MessageCleanupStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'pending'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "attempts",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastError",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "processedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "MessengerMessageTemplate"
     },
     {
@@ -13232,6 +15420,435 @@
       "entityType": "columns",
       "schema": "public",
       "table": "MessengerMessageTemplate"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationMetaCatalogId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "productId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "catalogId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "metaCatalogItemDirection",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'push'",
+      "generated": null,
+      "identity": null,
+      "name": "direction",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "retailerId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastSyncedFingerprint",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastSyncedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationMetaCatalogId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "metaCatalogSyncStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'queued'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "metaCatalogItemDirection",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'push'",
+      "generated": null,
+      "identity": null,
+      "name": "direction",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "catalogId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "metaCatalogSyncScope",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'all'",
+      "generated": null,
+      "identity": null,
+      "name": "scope",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "categoryId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "selectedProductIds",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "handles",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "submissionLeaseId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "totalCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "succeededCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "failedCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "skippedCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "itemErrors",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "skippedItems",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "pollAttempt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "error",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "startedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "finishedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
     },
     {
       "type": "bigint",
@@ -13509,6 +16126,32 @@
     {
       "type": "text",
       "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'USD'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Product"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "productUrl",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Product"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
@@ -13611,27 +16254,27 @@
       "table": "Product"
     },
     {
-      "type": "text",
+      "type": "bigint",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "category",
+      "name": "categoryId",
       "entityType": "columns",
       "schema": "public",
       "table": "Product"
     },
     {
-      "type": "text",
+      "type": "bigint",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "subcategory",
+      "name": "subcategoryId",
       "entityType": "columns",
       "schema": "public",
       "table": "Product"
@@ -13791,6 +16434,97 @@
       "entityType": "columns",
       "schema": "public",
       "table": "ProductAddon"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "parentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "10",
+      "generated": null,
+      "identity": null,
+      "name": "rank",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ProductCategory"
     },
     {
       "type": "bigint",
@@ -13973,6 +16707,695 @@
       "entityType": "columns",
       "schema": "public",
       "table": "ProductVariantOption"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "submissionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionIdSnapshot",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionTitleSnapshot",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionTypeSnapshot",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "labelSnapshot",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "value",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "pointsEarned",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "name": "attemptCount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "answeredAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "enableScore",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "enableRetryMessages",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "enableCustomFieldMapping",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "triggerFlowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionnaireId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "questionnaireQuestionType",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "active",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "orderNo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "name": "point",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "retryMessage",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "customFieldId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "systemFieldKey",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "config",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "questionnaireId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "conversationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "questionnaireSubmissionStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'inProgress'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "totalPoints",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "currentQuestionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "currentQuestionSentAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lastAnsweredMessageId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "startedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "completedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cancelledAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
     },
     {
       "type": "bigint",
@@ -14976,6 +18399,71 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "SystemField"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "SystemField"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "SystemField"
+    },
+    {
+      "type": "SystemFieldType",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "SystemField"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payload",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "SystemField"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "Tag"
     },
     {
@@ -15886,6 +19374,97 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "executedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "webhookId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "WhatsappCoexistStaging"
     },
     {
@@ -16250,6 +19829,175 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "ownerId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "wabaId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "businessId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "encryptedAccessToken",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "apiVersion",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "candidatePhoneNumberIds",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "expiresAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "consumedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "Workspace"
     },
     {
@@ -16370,6 +20118,58 @@
       "table": "Workspace"
     },
     {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "smartResponseDelaySeconds",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "isActive",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "startTime",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "endTime",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": false,
@@ -16378,6 +20178,19 @@
       "generated": null,
       "identity": null,
       "name": "logo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "scheduledDeletionAt",
       "entityType": "columns",
       "schema": "public",
       "table": "Workspace"
@@ -16804,6 +20617,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "conversationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AIConversationEmbedding_conversationId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AIConversationEmbedding"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "workspaceId",
           "isExpression": false,
           "asc": true,
@@ -16894,6 +20728,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "AIConversationSource_messageId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AIConversationSource"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "conversationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AIConversationSource_conversationId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "AIConversationSource"
@@ -18155,6 +22010,130 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "createdAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_contact_workspace_created_at",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Contact"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "firstName",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": {
+            "name": "gin_trgm_ops",
+            "default": false
+          }
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "name": "Contact_firstName_trgm_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Contact"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "lastName",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": {
+            "name": "gin_trgm_ops",
+            "default": false
+          }
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "name": "Contact_lastName_trgm_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Contact"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "email",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": {
+            "name": "gin_trgm_ops",
+            "default": false
+          }
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "name": "Contact_email_trgm_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Contact"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "phoneNumber",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": {
+            "name": "gin_trgm_ops",
+            "default": false
+          }
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "name": "Contact_phoneNumber_trgm_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Contact"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "contactId",
           "isExpression": false,
           "asc": true,
@@ -18175,6 +22154,34 @@
       "method": "btree",
       "concurrently": false,
       "name": "ContactCustomField_contactId_customFieldId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactCustomField"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "customFieldId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactCustomField_customFieldId_id_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "ContactCustomField"
@@ -18234,6 +22241,55 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "ContactInbox"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "lastOutboundMessageAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactInbox_contactId_lastOutboundMessageAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactNote_contactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactNote"
     },
     {
       "nameExplicit": true,
@@ -18512,6 +22568,69 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "conversationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactOnSmartDelay_conversationId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "contactInboxId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "flowId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "stepId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"status\" NOT IN ('completed', 'failed', 'canceled') AND \"type\" = 'followUp'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactOnSmartDelay_followUp_active_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "contactInboxId",
           "isExpression": false,
           "asc": true,
@@ -18736,6 +22855,356 @@
           "opclass": null
         },
         {
+          "value": "code",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_code_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "topicId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "issuedContactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"issuedContactId\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_topicId_issuedContactId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "topicId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_topicId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "topicId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "issuedContactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_topicId_issuedContactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "issuedContactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_issuedContactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "issuedAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_issuedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "usedAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_usedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "code",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_code_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "topicId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "issuedContactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "usedAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Coupon_workspaceId_topicId_issuedContactId_usedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "deletedAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "CouponTopic_workspaceId_status_deletedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "expiresAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "CouponTopic_workspaceId_expiresAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "lower(\"name\")",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"deletedAt\" IS NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "CouponTopic_workspaceId_name_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
           "value": "type",
           "isExpression": false,
           "asc": true,
@@ -18897,6 +23366,223 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "tenantId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "position",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "TenantHelpItem_tenantId_position_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "channelsTornDownAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "UserQuota_channelsTornDownAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "userId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"channelsTornDownAt\" IS NULL AND \"planStatus\" = 'trial'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "UserQuota_due_expired_trial_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "event",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ExternalWebhook_workspaceId_event_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "event",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "url",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ExternalWebhook_workspaceId_event_url_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "pageId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "formId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "FacebookLeadAdsAutomation_workspaceId_pageId_formId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "automationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "leadgenId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "FacebookLeadAdsLead_automationId_leadgenId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "leadgenId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "FacebookLeadAdsLead_leadgenId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "workspaceId",
           "isExpression": false,
           "asc": true,
@@ -18966,6 +23652,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "FBCommentAutomationReply_dedup_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "FBCommentAutomationReply"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "FBCommentAutomationReply_contactId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "FBCommentAutomationReply"
@@ -19184,6 +23891,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "conversationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "FlowRun_conversationId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "FlowRun"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "workspaceId",
           "isExpression": false,
           "asc": true,
@@ -19323,6 +24051,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "Import_fileId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Import"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"type\" = 'products' AND \"status\" IN ('pending', 'processing')",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Import_products_active_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "Import"
@@ -19599,6 +24348,48 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationDrip"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationFacebookAds_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationFacebookAds_workspaceId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
     },
     {
       "nameExplicit": true,
@@ -20003,6 +24794,69 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "integrationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationMetaCatalog_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationMetaCatalog_workspaceId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "deletedAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationMetaCatalog_deletedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "workspaceId",
           "isExpression": false,
           "asc": true,
@@ -20061,6 +24915,76 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationOpenai"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationOpenaiCompatible_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationOpenaiCompatible_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "preset",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"preset\" <> 'custom'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationOpenaiCompatible_workspaceId_preset_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
     },
     {
       "nameExplicit": true,
@@ -20163,6 +25087,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "IntegrationSmtp_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationSmtp"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "inboxId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationSmtp_inboxId_key",
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationSmtp"
@@ -20394,6 +25339,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "IntegrationWhatsapp_inboxId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "phoneNumberId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationWhatsapp_phoneNumberId_key",
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationWhatsapp"
@@ -20738,6 +25704,83 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "inboxId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "sourceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MessageCleanup_inboxId_sourceId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "createdAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MessageCleanup_status_createdAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MessageCleanup_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MessageCleanup"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "integrationMessengerId",
           "isExpression": false,
           "asc": true,
@@ -20761,6 +25804,118 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "MessengerMessageTemplate"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationMetaCatalogId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "catalogId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "retailerId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MetaCatalogItem_integration_retailer_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationMetaCatalogId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "catalogId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "productId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MetaCatalogItem_integration_product_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "productId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MetaCatalogItem_productId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"status\" IN ('queued', 'running')",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "MetaCatalogSyncRun_active_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
     },
     {
       "nameExplicit": true,
@@ -20871,6 +26026,48 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "categoryId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Product_categoryId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Product"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "subcategoryId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Product_subcategoryId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Product"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "productId",
           "isExpression": false,
           "asc": true,
@@ -20887,6 +26084,48 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "ProductAddon"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ProductCategory_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "parentId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ProductCategory_parentId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ProductCategory"
     },
     {
       "nameExplicit": true,
@@ -20929,6 +26168,279 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "ProductVariantOption"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "submissionId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "questionIdSnapshot",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireAnswer_submissionId_questionIdSnapshot_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "questionId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireAnswer_questionId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Questionnaire_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "name",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "(\"deletedAt\" is null)",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Questionnaire_workspaceId_name_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "questionnaireId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "orderNo",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireQuestion_questionnaireId_orderNo_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "customFieldId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireQuestion_customFieldId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireSubmission_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "questionnaireId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireSubmission_questionnaireId_status_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "questionnaireId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireSubmission_questionnaireId_contactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"status\" = 'inProgress'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "QuestionnaireSubmission_workspaceId_contactId_active_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "RefLinkStat_contactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "RefLinkStat"
     },
     {
       "nameExplicit": true,
@@ -21242,6 +26754,48 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "sequenceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "stepId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "SequenceDispatch_workspace_sequence_step_id_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "SequenceDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "bucket",
           "isExpression": false,
           "asc": true,
@@ -21290,6 +26844,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "SequenceDispatch_terminal_updatedAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "SequenceDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "SequenceDispatch_contactId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "SequenceDispatch"
@@ -21942,6 +27517,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "TriggerExecution_contactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "TriggerExecution"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "triggerId",
           "isExpression": false,
           "asc": true,
@@ -22117,6 +27713,76 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "webhookId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "WebhookExecution_webhookId_contactId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "WebhookExecution_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "WebhookExecution_contactId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "phoneNumberId",
           "isExpression": false,
           "asc": true,
@@ -22243,6 +27909,48 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "userId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "WhatsappSignupSession_userId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "expiresAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "WhatsappSignupSession_expiresAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "tenantId",
           "isExpression": false,
           "asc": true,
@@ -22256,6 +27964,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "Workspace_tenantId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Workspace"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "scheduledDeletionAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Workspace_scheduledDeletionAt_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "Workspace"
@@ -22652,32 +28381,6 @@
     },
     {
       "nameExplicit": false,
-      "columns": ["workspaceId"],
-      "schemaTo": "public",
-      "tableTo": "Workspace",
-      "columnsTo": ["id"],
-      "onUpdate": "CASCADE",
-      "onDelete": "CASCADE",
-      "name": "Attachment_workspaceId_Workspace_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "Attachment"
-    },
-    {
-      "nameExplicit": false,
-      "columns": ["conversationId"],
-      "schemaTo": "public",
-      "tableTo": "Conversation",
-      "columnsTo": ["id"],
-      "onUpdate": "CASCADE",
-      "onDelete": "CASCADE",
-      "name": "Attachment_conversationId_Conversation_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "Attachment"
-    },
-    {
-      "nameExplicit": false,
       "columns": ["userId"],
       "schemaTo": "public",
       "tableTo": "User",
@@ -22854,6 +28557,19 @@
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
       "name": "Broadcast_integrationWhatsappId_IntegrationWhatsapp_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Broadcast"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["integrationMessengerId"],
+      "schemaTo": "public",
+      "tableTo": "IntegrationMessenger",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Broadcast_integrationMessengerId_IntegrationMessenger_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "Broadcast"
@@ -23224,6 +28940,71 @@
     },
     {
       "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "Coupon_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["topicId"],
+      "schemaTo": "public",
+      "tableTo": "CouponTopic",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "Coupon_topicId_CouponTopic_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["issuedContactId"],
+      "schemaTo": "public",
+      "tableTo": "Contact",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Coupon_issuedContactId_Contact_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Coupon"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "CouponTopic_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["createdById"],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "CouponTopic_createdById_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "CouponTopic"
+    },
+    {
+      "nameExplicit": false,
       "columns": ["folderId"],
       "schemaTo": "public",
       "tableTo": "Folder",
@@ -23328,6 +29109,19 @@
     },
     {
       "nameExplicit": false,
+      "columns": ["tenantId"],
+      "schemaTo": "public",
+      "tableTo": "Tenant",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "TenantHelpItem_tenantId_Tenant_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "TenantHelpItem"
+    },
+    {
+      "nameExplicit": false,
       "columns": ["userId"],
       "schemaTo": "public",
       "tableTo": "User",
@@ -23338,6 +29132,19 @@
       "entityType": "fks",
       "schema": "public",
       "table": "UserQuota"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "WorkspaceUsage_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WorkspaceUsage"
     },
     {
       "nameExplicit": false,
@@ -23364,6 +29171,71 @@
       "entityType": "fks",
       "schema": "public",
       "table": "ErrorLog"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "ExternalWebhook_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ExternalWebhook"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "FacebookLeadAdsAutomation_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["flowId"],
+      "schemaTo": "public",
+      "tableTo": "Flow",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "FacebookLeadAdsAutomation_flowId_Flow_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["automationId"],
+      "schemaTo": "public",
+      "tableTo": "FacebookLeadAdsAutomation",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "FacebookLeadAdsLead_n8swD949nr3L_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["contactId"],
+      "schemaTo": "public",
+      "tableTo": "Contact",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "FacebookLeadAdsLead_contactId_Contact_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead"
     },
     {
       "nameExplicit": false,
@@ -23828,6 +29700,32 @@
       "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
+      "name": "IntegrationFacebookAds_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["integrationId"],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationFacebookAds_integrationId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationFacebookAds"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
       "name": "IntegrationGemini_workspaceId_Workspace_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -24062,6 +29960,32 @@
       "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
+      "name": "IntegrationMetaCatalog_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["integrationId"],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationMetaCatalog_integrationId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
       "name": "IntegrationMoosend_workspaceId_Workspace_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -24131,6 +30055,32 @@
       "entityType": "fks",
       "schema": "public",
       "table": "IntegrationOpenai"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["integrationId"],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationOpenaiCompatible_integrationId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationOpenaiCompatible_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible"
     },
     {
       "nameExplicit": false,
@@ -24407,45 +30357,6 @@
     },
     {
       "nameExplicit": false,
-      "columns": ["conversationId"],
-      "schemaTo": "public",
-      "tableTo": "Conversation",
-      "columnsTo": ["id"],
-      "onUpdate": "CASCADE",
-      "onDelete": "CASCADE",
-      "name": "Message_conversationId_Conversation_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "Message"
-    },
-    {
-      "nameExplicit": false,
-      "columns": ["contactInboxId"],
-      "schemaTo": "public",
-      "tableTo": "ContactInbox",
-      "columnsTo": ["id"],
-      "onUpdate": "CASCADE",
-      "onDelete": "CASCADE",
-      "name": "Message_contactInboxId_ContactInbox_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "Message"
-    },
-    {
-      "nameExplicit": false,
-      "columns": ["workspaceId"],
-      "schemaTo": "public",
-      "tableTo": "Workspace",
-      "columnsTo": ["id"],
-      "onUpdate": "CASCADE",
-      "onDelete": "CASCADE",
-      "name": "Message_workspaceId_Workspace_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "Message"
-    },
-    {
-      "nameExplicit": false,
       "columns": ["integrationMessengerId"],
       "schemaTo": "public",
       "tableTo": "IntegrationMessenger",
@@ -24459,6 +30370,71 @@
     },
     {
       "nameExplicit": false,
+      "columns": ["integrationMetaCatalogId"],
+      "schemaTo": "public",
+      "tableTo": "IntegrationMetaCatalog",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "MetaCatalogItem_wJXyKUssR08y_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["productId"],
+      "schemaTo": "public",
+      "tableTo": "Product",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "MetaCatalogItem_productId_Product_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "MetaCatalogItem"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "MetaCatalogSyncRun_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["integrationMetaCatalogId"],
+      "schemaTo": "public",
+      "tableTo": "IntegrationMetaCatalog",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "MetaCatalogSyncRun_8PnmCJ0uISUd_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["categoryId"],
+      "schemaTo": "public",
+      "tableTo": "ProductCategory",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "MetaCatalogSyncRun_categoryId_ProductCategory_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun"
+    },
+    {
+      "nameExplicit": false,
       "columns": ["userId"],
       "schemaTo": "public",
       "tableTo": "User",
@@ -24469,6 +30445,32 @@
       "entityType": "fks",
       "schema": "public",
       "table": "PlatformCredential"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["categoryId"],
+      "schemaTo": "public",
+      "tableTo": "ProductCategory",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Product_categoryId_ProductCategory_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Product"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["subcategoryId"],
+      "schemaTo": "public",
+      "tableTo": "ProductCategory",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Product_subcategoryId_ProductCategory_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Product"
     },
     {
       "nameExplicit": false,
@@ -24498,6 +30500,32 @@
     },
     {
       "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "ProductCategory_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["parentId"],
+      "schemaTo": "public",
+      "tableTo": "ProductCategory",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "ProductCategory_parentId_ProductCategory_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "nameExplicit": false,
       "columns": ["productId"],
       "schemaTo": "public",
       "tableTo": "Product",
@@ -24521,6 +30549,149 @@
       "entityType": "fks",
       "schema": "public",
       "table": "ProductVariantOption"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["submissionId"],
+      "schemaTo": "public",
+      "tableTo": "QuestionnaireSubmission",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireAnswer_l8clOEM7NsPl_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["questionId"],
+      "schemaTo": "public",
+      "tableTo": "QuestionnaireQuestion",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireAnswer_questionId_QuestionnaireQuestion_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireAnswer"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["triggerFlowId"],
+      "schemaTo": "public",
+      "tableTo": "Flow",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Questionnaire_triggerFlowId_Flow_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "Questionnaire_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Questionnaire"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["questionnaireId"],
+      "schemaTo": "public",
+      "tableTo": "Questionnaire",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireQuestion_questionnaireId_Questionnaire_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["customFieldId"],
+      "schemaTo": "public",
+      "tableTo": "CustomField",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "QuestionnaireQuestion_customFieldId_CustomField_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireSubmission_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["questionnaireId"],
+      "schemaTo": "public",
+      "tableTo": "Questionnaire",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireSubmission_questionnaireId_Questionnaire_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["contactId"],
+      "schemaTo": "public",
+      "tableTo": "Contact",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "QuestionnaireSubmission_contactId_Contact_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["conversationId"],
+      "schemaTo": "public",
+      "tableTo": "Conversation",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "QuestionnaireSubmission_conversationId_Conversation_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["currentQuestionId"],
+      "schemaTo": "public",
+      "tableTo": "QuestionnaireQuestion",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "QuestionnaireSubmission_mha0bYFxcV7A_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "QuestionnaireSubmission"
     },
     {
       "nameExplicit": false,
@@ -24992,6 +31163,45 @@
     },
     {
       "nameExplicit": false,
+      "columns": ["webhookId"],
+      "schemaTo": "public",
+      "tableTo": "Webhook",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WebhookExecution_webhookId_Webhook_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["contactId"],
+      "schemaTo": "public",
+      "tableTo": "Contact",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WebhookExecution_contactId_Contact_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WebhookExecution_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WebhookExecution"
+    },
+    {
+      "nameExplicit": false,
       "columns": ["integrationWhatsappId"],
       "schemaTo": "public",
       "tableTo": "IntegrationWhatsapp",
@@ -25015,6 +31225,45 @@
       "entityType": "fks",
       "schema": "public",
       "table": "WhatsappMessageTemplate"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["userId"],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WhatsappSignupSession_userId_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["ownerId"],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WhatsappSignupSession_ownerId_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": ["id"],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "WhatsappSignupSession_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
     },
     {
       "nameExplicit": false,
@@ -25480,6 +31729,22 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "Coupon_pkey",
+      "schema": "public",
+      "table": "Coupon",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "CouponTopic_pkey",
+      "schema": "public",
+      "table": "CouponTopic",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "CustomField_pkey",
       "schema": "public",
       "table": "CustomField",
@@ -25520,6 +31785,14 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "TenantHelpItem_pkey",
+      "schema": "public",
+      "table": "TenantHelpItem",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "UserQuota_pkey",
       "schema": "public",
       "table": "UserQuota",
@@ -25528,9 +31801,41 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "WorkspaceUsage_pkey",
+      "schema": "public",
+      "table": "WorkspaceUsage",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "ErrorLog_pkey",
       "schema": "public",
       "table": "ErrorLog",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "ExternalWebhook_pkey",
+      "schema": "public",
+      "table": "ExternalWebhook",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "FacebookLeadAdsAutomation_pkey",
+      "schema": "public",
+      "table": "FacebookLeadAdsAutomation",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "FacebookLeadAdsLead_pkey",
+      "schema": "public",
+      "table": "FacebookLeadAdsLead",
       "entityType": "pks"
     },
     {
@@ -25688,6 +31993,14 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "IntegrationFacebookAds_pkey",
+      "schema": "public",
+      "table": "IntegrationFacebookAds",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "IntegrationGemini_pkey",
       "schema": "public",
       "table": "IntegrationGemini",
@@ -25752,6 +32065,14 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "IntegrationMetaCatalog_pkey",
+      "schema": "public",
+      "table": "IntegrationMetaCatalog",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "IntegrationMoosend_pkey",
       "schema": "public",
       "table": "IntegrationMoosend",
@@ -25763,6 +32084,14 @@
       "name": "IntegrationOpenai_pkey",
       "schema": "public",
       "table": "IntegrationOpenai",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "IntegrationOpenaiCompatible_pkey",
+      "schema": "public",
+      "table": "IntegrationOpenaiCompatible",
       "entityType": "pks"
     },
     {
@@ -25840,9 +32169,33 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "MessageCleanup_pkey",
+      "schema": "public",
+      "table": "MessageCleanup",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "MessengerMessageTemplate_pkey",
       "schema": "public",
       "table": "MessengerMessageTemplate",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "MetaCatalogItem_pkey",
+      "schema": "public",
+      "table": "MetaCatalogItem",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "MetaCatalogSyncRun_pkey",
+      "schema": "public",
+      "table": "MetaCatalogSyncRun",
       "entityType": "pks"
     },
     {
@@ -25872,6 +32225,14 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "ProductCategory_pkey",
+      "schema": "public",
+      "table": "ProductCategory",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "ProductVariant_pkey",
       "schema": "public",
       "table": "ProductVariant",
@@ -25883,6 +32244,38 @@
       "name": "ProductVariantOption_pkey",
       "schema": "public",
       "table": "ProductVariantOption",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "QuestionnaireAnswer_pkey",
+      "schema": "public",
+      "table": "QuestionnaireAnswer",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "Questionnaire_pkey",
+      "schema": "public",
+      "table": "Questionnaire",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "QuestionnaireQuestion_pkey",
+      "schema": "public",
+      "table": "QuestionnaireQuestion",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "QuestionnaireSubmission_pkey",
+      "schema": "public",
+      "table": "QuestionnaireSubmission",
       "entityType": "pks"
     },
     {
@@ -25923,6 +32316,14 @@
       "name": "Spreadsheet_pkey",
       "schema": "public",
       "table": "Spreadsheet",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "SystemField_pkey",
+      "schema": "public",
+      "table": "SystemField",
       "entityType": "pks"
     },
     {
@@ -25992,6 +32393,14 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
+      "name": "WebhookExecution_pkey",
+      "schema": "public",
+      "table": "WebhookExecution",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
       "name": "WhatsappCoexistStaging_pkey",
       "schema": "public",
       "table": "WhatsappCoexistStaging",
@@ -26011,6 +32420,14 @@
       "name": "WhatsappMessageTemplate_pkey",
       "schema": "public",
       "table": "WhatsappMessageTemplate",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "WhatsappSignupSession_pkey",
+      "schema": "public",
+      "table": "WhatsappSignupSession",
       "entityType": "pks"
     },
     {
@@ -26048,6 +32465,15 @@
     },
     {
       "nameExplicit": true,
+      "columns": ["workspaceId", "parentId", "name"],
+      "nullsNotDistinct": true,
+      "name": "ProductCategory_workspaceId_parent_name_key",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "ProductCategory"
+    },
+    {
+      "nameExplicit": true,
       "columns": ["workspaceId", "periodStart", "periodEnd"],
       "nullsNotDistinct": false,
       "name": "WorkspaceMac_workspaceId_periodStart_periodEnd_unique",
@@ -26063,6 +32489,36 @@
       "schema": "public",
       "table": "UserQuota",
       "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": ["workspaceId"],
+      "nullsNotDistinct": false,
+      "name": "WorkspaceUsage_workspaceId_key",
+      "schema": "public",
+      "table": "WorkspaceUsage",
+      "entityType": "uniques"
+    },
+    {
+      "value": "(\"registrationStatus\" <> 'failed' OR \"registrationError\" IS NOT NULL)\n      AND (\"registrationStatus\" <> 'registered' OR \"registrationError\" IS NULL)",
+      "name": "IntegrationWhatsapp_registrationStatus_error_consistent",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "value": "(\"customFieldId\" IS NULL) OR (\"systemFieldKey\" IS NULL)",
+      "name": "QuestionnaireQuestion_customFieldId_systemFieldKey_exclusive",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "QuestionnaireQuestion"
+    },
+    {
+      "value": "cardinality(\"candidatePhoneNumberIds\") > 0",
+      "name": "WhatsappSignupSession_candidates_not_empty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "WhatsappSignupSession"
     }
   ],
   "renames": []
