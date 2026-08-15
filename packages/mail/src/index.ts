@@ -36,6 +36,7 @@ import { createSmtpTransporter, type SmtpTransportOptions } from "./transport"
 
 export type EmailTemplate = { subject?: string; body?: string }
 export {
+  DEFAULT_ACCOUNT_CREDENTIALS_TEMPLATE,
   DEFAULT_FORGOT_PASSWORD_SUBJECT,
   DEFAULT_FORGOT_PASSWORD_TEMPLATE,
   DEFAULT_MAGIC_LINK_SUBJECT,
@@ -137,6 +138,7 @@ async function sendEmailWithTemplate(
 export const sendMagicLink = async (
   email: string,
   props: SignInMagicLinkProps & { customTemplate?: EmailTemplate | null },
+  transport?: SmtpTransportOptions & { fromEmail: string; fromName?: string },
 ) => {
   const { customTemplate, ...templateProps } = props
   await sendEmailWithTemplate(
@@ -151,12 +153,14 @@ export const sendMagicLink = async (
       brandLogoUrl: templateProps.brandLogoUrl,
       brandUrl: templateProps.brandUrl,
     },
+    transport ? { from: formatFrom(transport), transport } : undefined,
   )
 }
 
 export const sendSignUpVerification = async (
   email: string,
   props: SignUpVerificationProps & { customTemplate?: EmailTemplate | null },
+  transport?: SmtpTransportOptions & { fromEmail: string; fromName?: string },
 ) => {
   const { customTemplate, ...templateProps } = props
   await sendEmailWithTemplate(
@@ -171,12 +175,14 @@ export const sendSignUpVerification = async (
       brandLogoUrl: templateProps.brandLogoUrl,
       brandUrl: templateProps.brandUrl,
     },
+    transport ? { from: formatFrom(transport), transport } : undefined,
   )
 }
 
 export const sendResetPassword = async (
   email: string,
   props: ResetPasswordProps & { customTemplate?: EmailTemplate | null },
+  transport?: SmtpTransportOptions & { fromEmail: string; fromName?: string },
 ) => {
   const { customTemplate, ...templateProps } = props
   await sendEmailWithTemplate(
@@ -191,6 +197,7 @@ export const sendResetPassword = async (
       brandLogoUrl: templateProps.brandLogoUrl,
       brandUrl: templateProps.brandUrl,
     },
+    transport ? { from: formatFrom(transport), transport } : undefined,
   )
 }
 
@@ -223,30 +230,6 @@ export const sendAccountCredentials = async (
   )
 }
 
-export const sendRenewalReminder = async (
-  email: string,
-  props: BillingReminderProps,
-) => {
-  const html = await compileMjml(buildRenewalReminderMjml(props))
-  await sendMail(email, props.subject, html)
-}
-
-export const sendPaymentFailed = async (
-  email: string,
-  props: PaymentFailedProps,
-) => {
-  const html = await compileMjml(buildPaymentFailedMjml(props))
-  await sendMail(email, props.subject, html)
-}
-
-export const sendSubscriptionExpired = async (
-  email: string,
-  props: SubscriptionExpiredProps,
-) => {
-  const html = await compileMjml(buildSubscriptionExpiredMjml(props))
-  await sendMail(email, props.subject, html)
-}
-
 export const sendTrialExpiryReminder = async (
   email: string,
   props: TrialExpiryProps,
@@ -268,5 +251,29 @@ export const sendPaymentConfirmation = async (
   props: PaymentConfirmationProps,
 ) => {
   const html = await compileMjml(buildPaymentConfirmationMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendRenewalReminder = async (
+  email: string,
+  props: BillingReminderProps,
+) => {
+  const html = await compileMjml(buildRenewalReminderMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendPaymentFailed = async (
+  email: string,
+  props: PaymentFailedProps,
+) => {
+  const html = await compileMjml(buildPaymentFailedMjml(props))
+  await sendMail(email, props.subject, html)
+}
+
+export const sendSubscriptionExpired = async (
+  email: string,
+  props: SubscriptionExpiredProps,
+) => {
+  const html = await compileMjml(buildSubscriptionExpiredMjml(props))
   await sendMail(email, props.subject, html)
 }
