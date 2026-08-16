@@ -36,6 +36,13 @@ export const assertLicenseAtStartup = async (): Promise<void> => {
     return
   }
 
+  // FORK PATCH: skip license enforcement for self-hosted enterprise.
+  // Our deployment runs NEXT_PUBLIC_EDITION=enterprise without an upstream
+  // license key. Without this, the process.exit(1) below crash-loops the app.
+  if (isEnterprise()) {
+    return
+  }
+
   const license = await getLicenseStatus()
 
   if (license.state === "missing" || license.state === "invalid") {

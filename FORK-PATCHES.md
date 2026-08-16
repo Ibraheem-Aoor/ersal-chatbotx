@@ -72,6 +72,57 @@ which hides branding, email templates, and blocks the admin enterprise layout.
 
 ---
 
+## 3. Startup License Enforcement Bypass
+
+**File:** `packages/business/src/enterprise/license/startup.ts`
+
+**What:** `assertLicenseAtStartup()` early-returns when `isEnterprise()`, skipping
+the `getLicenseStatus()` check and `process.exit(1)` path.
+
+**Upstream code:**
+```typescript
+export const assertLicenseAtStartup = async (): Promise<void> => {
+  if (!(isEnterprise() || isCloud())) {
+    return
+  }
+  const license = await getLicenseStatus()
+  if (license.state === "missing" || license.state === "invalid") {
+    logLicenseError(license.state, license.error)
+    process.exit(1)
+    return
+  }
+  // ... expired warning, valid info log
+}
+```
+
+**Our code:**
+```typescript
+export const assertLicenseAtStartup = async (): Promise<void> => {
+  if (!(isEnterprise() || isCloud())) {
+    return
+  }
+  // FORK PATCH: skip license enforcement for self-hosted enterprise.
+  if (isEnterprise()) {
+    return
+  }
+  const license = await getLicenseStatus()
+  // ... rest unchanged (only runs for isCloud())
+}
+```
+
+**Why:** With `NEXT_PUBLIC_EDITION=enterprise`, the upstream code calls
+`getLicenseStatus()` which finds no `LICENSE_KEY` → state `"missing"` →
+`process.exit(1)` → container crash-loops. This patch makes the function
+silently return for enterprise edition, matching patch #2's entitlement bypass.
+
+**Call sites (both bypass cleanly):**
+- `apps/builder/src/instrumentation.ts:16-19` — Next.js instrumentation hook
+- `apps/worker/src/lib/bootstrap.ts:1-4` — worker startup
+
+**Verify after sync:** App boots without `LICENSE_KEY` when `NEXT_PUBLIC_EDITION=enterprise`.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
