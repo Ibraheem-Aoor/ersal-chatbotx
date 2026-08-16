@@ -61,8 +61,9 @@ export function AdminSidebar({
       url: "/admin/platform-channels",
       icon: RadioTowerIcon,
     },
-    ...(showEnterpriseItems && !isCloud()
-      ? [
+    ...(isCloud()
+      ? []
+      : [
           {
             title: t("platformBranding.title"),
             url: "/admin/branding",
@@ -73,8 +74,7 @@ export function AdminSidebar({
             url: "/admin/email-templates",
             icon: MailIcon,
           },
-        ]
-      : []),
+        ]),
     ...(showEnterpriseItems
       ? [
           {
@@ -85,17 +85,17 @@ export function AdminSidebar({
         ]
       : []),
     {
-      title: t("platformAdmin.plans.title"),
+      title: t("plans.title"),
       url: "/admin/plans",
       icon: BanknoteIcon,
     },
     {
-      title: t("platformAdmin.subscriptions.title"),
+      title: t("subscriptions.title"),
       url: "/admin/subscriptions",
       icon: ReceiptTextIcon,
     },
     {
-      title: t("platformAdmin.paymentHistory.title"),
+      title: t("billing.manage.paymentHistory"),
       url: "/admin/payment-history",
       icon: HistoryIcon,
     },

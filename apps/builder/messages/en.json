@@ -305,7 +305,9 @@
       "monthlyBotMessages": "Bot messages (monthly)",
       "workspaces": "Workspaces",
       "channels": "Channels",
-      "teamMembers": "Team members"
+      "teamMembers": "Team members",
+      "flows": "Flows",
+      "broadcasts": "Broadcasts"
     },
     "limitReached": {
       "workspaces": "You've reached your workspace limit. Upgrade your plan to create more.",
@@ -315,7 +317,8 @@
       "mac": "You've reached your monthly active contact limit. Upgrade your plan to reach more."
     },
     "pastDue": {
-      "message": "Your last payment failed. Update your payment method to keep your workspace active."
+      "message": "Your last payment failed. Update your payment method to keep your workspace active.",
+      "gracePeriod": "You have {days} days to update your payment before your subscription is suspended."
     },
     "trial": {
       "daysLeft": "Trial: {days} days left",
@@ -994,7 +997,8 @@
     },
     "authType": {
       "headers": "Custom Header",
-      "token": "Token"
+      "token": "Token",
+      "none": "None"
     },
     "automatedResponse": {
       "label": "Automated Response"
@@ -1296,7 +1300,10 @@
     "language": {
       "description": "Contacts are assigned the default language when the contact language is unknown.",
       "label": "Language",
-      "placeholder": "Select language"
+      "placeholder": "Select language",
+      "arabic": "العربية",
+      "english": "English",
+      "vietnamese": "Tiếng Việt"
     },
     "lastName": {
       "label": "Last name",
@@ -2315,7 +2322,8 @@
     },
     "openaiCompatible": {
       "empty": "Connect an OpenAI-compatible provider in integration settings before using this step.",
-      "integration": "OpenAI-compatible provider"
+      "integration": "OpenAI-compatible provider",
+      "none": "None"
     },
     "actions": {
       "addContactNotes": "Add Contact Notes",
@@ -3050,7 +3058,15 @@
     "title": "Platform Settings",
     "errors": {
       "giphyApiKeyRequired": "API Key is required to configure GIPHY.",
-      "giphyApiKeyInvalid": "Invalid GIPHY API key"
+      "giphyApiKeyInvalid": "Invalid GIPHY API key",
+      "googleClientSecretRequired": "Client Secret is required to configure Google.",
+      "googleVerifyTokenRequired": "Verify Token is required to configure Google.",
+      "messengerAppSecretRequired": "App Secret is required to configure Messenger.",
+      "stripeSecretKeyRequired": "Secret Key is required to configure Stripe.",
+      "tiktokAppSecretRequired": "App Secret is required to configure TikTok.",
+      "whatsappAppSecretRequired": "App Secret is required to configure WhatsApp.",
+      "whatsappSystemUserTokenRequired": "System User Token is required to configure WhatsApp.",
+      "zaloAppSecretRequired": "App Secret is required to configure Zalo."
     }
   },
   "home": {
@@ -3602,7 +3618,10 @@
         "locationName": "Location name (optional)",
         "locationAddress": "Address (optional)",
         "enterFormatUrl": "Enter {format} URL"
-      }
+      },
+      "createTitle": "Create Message Template",
+      "label": "Message Template",
+      "nameHint": "Lowercase letters, numbers and underscores only (e.g. order_update)"
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"

@@ -24,6 +24,13 @@ export const locales = [
 export type Locale = (typeof locales)[number]
 export const defaultLocale: Locale = "ar"
 
+/**
+ * Locales displayed in the language selector. The full `locales` array is kept
+ * for upstream compatibility (message files, routing, etc.), but only these
+ * appear in the UI. Add more entries here to expose additional languages.
+ */
+export const enabledLocales: Locale[] = ["ar", "en"]
+
 export const localeMeta: Record<
   Locale,
   { nativeLabel: string; dir: "ltr" | "rtl" }
