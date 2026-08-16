@@ -6,9 +6,21 @@ import { isCloud, isEnterprise } from "../keys"
  * Whether the current edition unlocks branding, email templates, and platform
  * help links. Both cloud and self-hosted enterprise must present a valid
  * offline license — setting NEXT_PUBLIC_EDITION alone never unlocks features.
+ *
+ * FORK PATCH (ErsalTech): Always returns true for self-hosted enterprise.
+ * Our deployment sets NEXT_PUBLIC_EDITION=enterprise and bypasses the offline
+ * license check. This is the single point of divergence — all upstream
+ * isCommunity() / showEnterpriseItems / assertEnterpriseFeatures gates work
+ * unchanged because the edition is enterprise. See FORK-PATCHES.md.
  */
 export const hasEnterpriseFeatures = async (): Promise<boolean> => {
-  if (!(isCloud() || isEnterprise())) {
+  // FORK PATCH: upstream checks for a valid license key here.
+  // We bypass it for our self-hosted enterprise deployment.
+  if (isEnterprise()) {
+    return true
+  }
+
+  if (!isCloud()) {
     return false
   }
 

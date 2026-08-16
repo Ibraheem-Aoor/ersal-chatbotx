@@ -61,9 +61,8 @@ export function AdminSidebar({
       url: "/admin/platform-channels",
       icon: RadioTowerIcon,
     },
-    ...(isCloud()
-      ? []
-      : [
+    ...(showEnterpriseItems && !isCloud()
+      ? [
           {
             title: t("platformBranding.title"),
             url: "/admin/branding",
@@ -74,7 +73,8 @@ export function AdminSidebar({
             url: "/admin/email-templates",
             icon: MailIcon,
           },
-        ]),
+        ]
+      : []),
     ...(showEnterpriseItems
       ? [
           {
