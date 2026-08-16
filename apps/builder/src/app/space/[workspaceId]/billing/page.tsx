@@ -175,18 +175,12 @@ export default async function BillingPage({
                 </>
               )}
               {subscription.status === "expired" && (
-                <Button
-                  render={<Link href="/pricing" />}
-                  variant="destructive"
-                >
+                <Button render={<Link href="/pricing" />} variant="destructive">
                   {t("billing.manage.resubscribe")}
                 </Button>
               )}
               {subscription.status === "active" && (
-                <Button
-                  render={<Link href="/pricing" />}
-                  variant="outline"
-                >
+                <Button render={<Link href="/pricing" />} variant="outline">
                   {t("billing.manage.changePlan")}
                 </Button>
               )}
@@ -205,10 +199,7 @@ export default async function BillingPage({
             <p className="mt-1 text-muted-foreground text-sm">
               {t("billing.manage.noPlanDescription")}
             </p>
-            <Button
-              className="mt-4"
-              render={<Link href="/pricing" />}
-            >
+            <Button className="mt-4" render={<Link href="/pricing" />}>
               {t("billing.manage.viewPlans")}
             </Button>
           </CardContent>

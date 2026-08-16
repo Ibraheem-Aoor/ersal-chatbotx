@@ -30,7 +30,9 @@ export function addSystemUser({
   whatsappSettings: WhatsappSettings
 }) {
   if (process.env.SKIP_WABA_USER_ASSIGNMENT === "true") {
-    logger.info("Skipping WABA user assignment (SKIP_WABA_USER_ASSIGNMENT=true)")
+    logger.info(
+      "Skipping WABA user assignment (SKIP_WABA_USER_ASSIGNMENT=true)",
+    )
     return Promise.resolve()
   }
 
@@ -168,7 +170,9 @@ export function registerPhoneNumber({
   phoneNumberId: string
 }): Promise<RegisterPhoneNumberResult> {
   if (process.env.SKIP_WABA_PHONE_REGISTRATION === "true") {
-    logger.info("Skipping WABA phone registration (SKIP_WABA_PHONE_REGISTRATION=true)")
+    logger.info(
+      "Skipping WABA phone registration (SKIP_WABA_PHONE_REGISTRATION=true)",
+    )
     return Promise.resolve({ status: "registered" })
   }
 

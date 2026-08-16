@@ -4,13 +4,13 @@ import type {
   Handler,
   Oauth2AuthValue,
 } from "@chatbotx.io/sdk"
-import type { CreateMessageTemplateProps } from "./api/waba"
 import type { ServerMessage } from "whatsapp-api-js/types"
 import z from "zod"
 import type {
   ConversationalAutomation,
   WhatsappPhoneNumber,
 } from "./api/phone-number"
+import type { CreateMessageTemplateProps } from "./api/waba"
 
 export type WhatsappConfig = BaseConfig & {
   verifyToken?: string

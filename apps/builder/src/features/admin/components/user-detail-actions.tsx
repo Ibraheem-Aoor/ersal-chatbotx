@@ -174,7 +174,10 @@ export function UserDetailActions({
             <span className="text-muted-foreground text-xs">
               {t("platformAdmin.users.actions.changePlan")}
             </span>
-            <Select onValueChange={(value) => setSelectedPlanId(String(value))} value={selectedPlanId}>
+            <Select
+              onValueChange={(value) => setSelectedPlanId(String(value))}
+              value={selectedPlanId}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue
                   placeholder={t("platformAdmin.users.actions.selectPlan")}

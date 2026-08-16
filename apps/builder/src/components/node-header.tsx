@@ -55,15 +55,13 @@ export const NodeHeaderTitle = ({
   ...props
 }: NodeHeaderTitleProps & {
   ref: React.RefObject<HTMLHeadingElement>
-}) => {
-  return (
-    <h3
-      ref={ref}
-      {...props}
-      className={cn(className, "user-select-none flex-1 font-semibold")}
-    />
-  )
-}
+}) => (
+  <h3
+    ref={ref}
+    {...props}
+    className={cn(className, "user-select-none flex-1 font-semibold")}
+  />
+)
 
 NodeHeaderTitle.displayName = "NodeHeaderTitle"
 

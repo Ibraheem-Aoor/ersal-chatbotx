@@ -1,4 +1,5 @@
 export * from "./api/verification"
+export type { CreateMessageTemplateProps } from "./api/waba"
 export * from "./api/waba-setup"
 export { getWhatsappClient } from "./client"
 export * from "./integration"
@@ -10,7 +11,6 @@ export {
   readWhatsappOriginErrorDetail,
   type WhatsappOriginErrorDetail,
 } from "./lib/origin-error"
-export type { CreateMessageTemplateProps } from "./api/waba"
 export type {
   WhatsappAuthValue,
   WhatsappFlowScreen,

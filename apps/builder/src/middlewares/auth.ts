@@ -1,8 +1,8 @@
 import {
+  isSuperAdmin,
   isWorkspaceScheduledForDeletion,
   workspaceMemberService,
 } from "@chatbotx.io/business"
-import { isSuperAdmin } from "@chatbotx.io/business"
 import { ORPCError } from "@orpc/server"
 import { auth } from "@/lib/auth/auth"
 import { base } from "./context"

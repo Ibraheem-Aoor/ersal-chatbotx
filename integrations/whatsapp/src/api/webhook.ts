@@ -26,7 +26,9 @@ export function subscribeWebhook({
   overrideCallbackUrl?: boolean
 }) {
   if (process.env.SKIP_WABA_WEBHOOK_SUBSCRIBE === "true") {
-    logger.info("Skipping WABA webhook subscribe (SKIP_WABA_WEBHOOK_SUBSCRIBE=true)")
+    logger.info(
+      "Skipping WABA webhook subscribe (SKIP_WABA_WEBHOOK_SUBSCRIBE=true)",
+    )
     return Promise.resolve()
   }
 
