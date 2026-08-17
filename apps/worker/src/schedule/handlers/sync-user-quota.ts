@@ -6,10 +6,11 @@ import {
   WORKSPACE_USAGE_LABEL,
   workspaceUsageService,
 } from "@chatbotx.io/business"
-import { count, db, eq, sql } from "@chatbotx.io/database/client"
+import { count, db, eq, inArray, sql } from "@chatbotx.io/database/client"
 import {
   contactModel,
   inboxModel,
+  userModel,
   userQuotaModel,
   workspaceMemberModel,
   workspaceModel,
@@ -70,15 +71,52 @@ export const syncUserQuota = async (): Promise<void> => {
     return
   }
 
+  // Filter out ghost users — userIds present in Redis but deleted from the
+  // User table. Without this, the reconciler INSERT into UserQuota fails with
+  // an FK violation on every sync cycle (every 60 s) until someone manually
+  // cleans Redis. We batch the existence check to avoid a single huge IN (...).
+  const EXISTENCE_BATCH = 200
+  const existingUserIds = new Set<string>()
+  for (let i = 0; i < allUserIds.length; i += EXISTENCE_BATCH) {
+    const batch = allUserIds.slice(i, i + EXISTENCE_BATCH)
+    const rows = await db
+      .select({ id: userModel.id })
+      .from(userModel)
+      .where(inArray(userModel.id, batch))
+    for (const row of rows) {
+      existingUserIds.add(row.id)
+    }
+  }
+
+  // Clean up orphaned Redis keys for deleted users so they never reappear.
+  const ghostIds = allUserIds.filter((id) => !existingUserIds.has(id))
+  if (ghostIds.length > 0) {
+    logger.warn(
+      { count: ghostIds.length, userIds: ghostIds },
+      "user-quota: removing orphaned live-counter keys for deleted users",
+    )
+    const pipeline = client.pipeline()
+    for (const ghostId of ghostIds) {
+      pipeline.del(liveKeyFor(USER_QUOTA_LABEL, ghostId))
+    }
+    await pipeline.exec()
+  }
+
+  const validUserIds = allUserIds.filter((id) => existingUserIds.has(id))
+
+  if (validUserIds.length === 0) {
+    return
+  }
+
   logger.info(
-    { count: allUserIds.length },
+    { count: validUserIds.length },
     "user-quota: syncing quota for users",
   )
 
   // Process in batches to avoid overwhelming the DB
   const BATCH_SIZE = 50
-  for (let i = 0; i < allUserIds.length; i += BATCH_SIZE) {
-    const batch = allUserIds.slice(i, i + BATCH_SIZE)
+  for (let i = 0; i < validUserIds.length; i += BATCH_SIZE) {
+    const batch = validUserIds.slice(i, i + BATCH_SIZE)
     await Promise.all(batch.map(reconcileUser))
   }
 }
