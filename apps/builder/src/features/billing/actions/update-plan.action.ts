@@ -21,5 +21,11 @@ export const updatePlanAction = platformAdminActionClient
     if (parsedInput.isDefault) {
       await billingPlanService.setDefault({ id: planId })
     }
+    // Propagate updated limits to all active/trial subscribers on this plan.
+    // Fixes stale-limits bug: without this, existing users keep old limits
+    // until their next renewal cycle.
+    if (parsedInput.limits) {
+      await billingPlanService.propagatePlanLimits({ planId })
+    }
     return plan
   })

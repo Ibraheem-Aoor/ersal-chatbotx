@@ -1,9 +1,19 @@
-import { type DatabaseClient, db, desc, eq } from "@chatbotx.io/database/client"
+import {
+  type DatabaseClient,
+  and,
+  db,
+  desc,
+  eq,
+  inArray,
+} from "@chatbotx.io/database/client"
 import {
   type BillingCycle,
   type BillingPlanLimits,
   billingPlanModel,
+  subscriptionModel,
 } from "@chatbotx.io/database/schema"
+import { userQuotaService } from "../user-quota/service"
+import { logger } from "../logger"
 
 export class BillingPlanService {
   async list(props?: { tx?: DatabaseClient; activeOnly?: boolean }) {
@@ -116,6 +126,65 @@ export class BillingPlanService {
   async delete(props: { tx?: DatabaseClient; id: string }) {
     const { tx = db, id } = props
     await tx.delete(billingPlanModel).where(eq(billingPlanModel.id, id))
+  }
+
+  /**
+   * Re-apply a plan's limits to every active/trial subscriber on that plan.
+   * Fixes the "stale limits" bug: when an admin edits a plan's limits, existing
+   * users keep the old values until this propagation runs. Direct DB writes —
+   * no portal or queue dependency, suitable for our self-hosted scale.
+   */
+  async propagatePlanLimits(props: {
+    tx?: DatabaseClient
+    planId: string
+  }): Promise<number> {
+    const { tx = db, planId } = props
+    const plan = await this.findById({ tx, id: planId })
+    if (!plan) {
+      return 0
+    }
+
+    const subscribers = await tx
+      .select({
+        userId: subscriptionModel.userId,
+        currentPeriodStart: subscriptionModel.currentPeriodStart,
+        currentPeriodEnd: subscriptionModel.currentPeriodEnd,
+      })
+      .from(subscriptionModel)
+      .where(
+        and(
+          eq(subscriptionModel.planId, planId),
+          inArray(subscriptionModel.status, ["active", "trial"]),
+        ),
+      )
+
+    let updated = 0
+    for (const sub of subscribers) {
+      try {
+        await userQuotaService.applyPlanEntitlements({
+          userId: sub.userId,
+          planName: plan.name,
+          contactsLimit: plan.limits.contacts,
+          macLimit: plan.limits.mac,
+          workspacesLimit: plan.limits.workspaces,
+          channelsLimit: plan.limits.channels,
+          teamMembersLimit: plan.limits.teamMembers,
+          flowsLimit: plan.limits.flows,
+          broadcastsLimit: plan.limits.broadcasts,
+          aiAgentsEnabled: plan.limits.aiAgents,
+          periodStart: sub.currentPeriodStart,
+          periodEnd: sub.currentPeriodEnd,
+        })
+        updated++
+      } catch (err) {
+        logger.error(
+          { err, userId: sub.userId, planId },
+          "billing: failed to propagate plan limits to user",
+        )
+      }
+    }
+
+    return updated
   }
 }
 

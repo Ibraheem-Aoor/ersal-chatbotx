@@ -123,6 +123,78 @@ silently return for enterprise edition, matching patch #2's entitlement bypass.
 
 ---
 
+## 4. syncUserQuota Enabled for Enterprise Edition
+
+**File:** `apps/worker/src/schedule/handlers/register-schedules.ts`
+
+**What:** Moved `syncUserQuota` from the cloud-only scheduler list to a new
+`CLOUD_OR_ENTERPRISE_SCHEDULERS` list. The scheduler now registers when
+`NEXT_PUBLIC_EDITION` is `"cloud"` **or** `"enterprise"`.
+
+**Upstream code (gates to cloud only):**
+```typescript
+const CLOUD_ONLY_SCHEDULERS = [
+  ScheduleJobData.syncUserQuota,
+  ScheduleJobData.reconcileTenants,
+  ScheduleJobData.unsubscribeExpiredTrials,
+] as const
+
+// Registration:
+if (isCloud) { /* register syncUserQuota, reconcileTenants */ }
+```
+
+**Our code:**
+```typescript
+const CLOUD_ONLY_SCHEDULERS = [
+  ScheduleJobData.reconcileTenants,
+  ScheduleJobData.unsubscribeExpiredTrials,
+] as const
+
+const CLOUD_OR_ENTERPRISE_SCHEDULERS = [
+  ScheduleJobData.syncUserQuota,
+] as const
+
+// Registration:
+if (isCloud || isEnterprise) { /* register syncUserQuota */ }
+if (isCloud) { /* register reconcileTenants */ }
+```
+
+**Why:** syncUserQuota recounts contacts, workspaces, channels, and team members
+from the source DB tables and writes corrected values to `UserQuota` + Redis.
+It has **no portal dependency** — unlike `publishEntitlements`/`backfillDefaultPlan`
+which call the private billing portal. Without this, enterprise deployments
+accumulate counter drift (e.g., `workspacesUsed=2` when only 1 workspace exists).
+
+**Portal-safe / portal-dependent classification:**
+- ✅ `syncUserQuota` — DB-only, safe for enterprise
+- ❌ `reconcileTenants` — reseller-specific, cloud-only
+- ❌ `unsubscribeExpiredTrials` — disconnects all channels, dangerous off-cloud
+- ❌ `publishEntitlements` / `backfillDefaultPlan` — private portal dependency
+
+**Verify after sync:** Worker logs show `syncUserQuota` job registering. Run
+`ScheduleJobData.syncUserQuota` → UserQuota counters match actual DB counts.
+
+---
+
+## 5. Plan Limit Propagation
+
+**File:** `packages/business/src/billing/plan-service.ts` + `apps/builder/src/features/billing/actions/update-plan.action.ts`
+
+**What:** Added `propagatePlanLimits()` method to `BillingPlanService` that
+re-applies a plan's limits to all active/trial subscribers when an admin edits
+the plan. Called automatically from `updatePlanAction` when `parsedInput.limits`
+is present.
+
+**Why:** Without this, when an admin changes a plan's contact or workspace limit,
+existing subscribers keep the old limits until their next renewal cycle. This
+bridges a gap in our self-hosted billing: upstream's cloud edition re-anchors
+limits via the private portal `publishEntitlements` job, which we can't use.
+
+**Verify after sync:** Edit a plan's limits in admin → existing subscribers' `UserQuota`
+rows update immediately.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

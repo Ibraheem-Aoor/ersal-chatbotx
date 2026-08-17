@@ -7,14 +7,24 @@ import { Queue } from "bullmq"
 import { env } from "../../env"
 
 /**
- * Quota/billing schedulers only make sense on the cloud edition. The trial
- * teardown is the dangerous one: it disconnects every channel of an expired
- * trial owner, and off-cloud there is no billing path to recover from that.
+ * Trial teardown disconnects every channel of an expired trial owner, and
+ * off-cloud there is no billing path to recover from that. These schedulers
+ * must remain cloud-only.
  */
 const CLOUD_ONLY_SCHEDULERS = [
-  ScheduleJobData.syncUserQuota,
   ScheduleJobData.reconcileTenants,
   ScheduleJobData.unsubscribeExpiredTrials,
+] as const
+
+/**
+ * Quota reconciliation runs on both cloud and enterprise editions. The
+ * syncUserQuota job recounts workspaces/channels/contacts/teamMembers from
+ * the source DB tables, healing any counter drift — no private portal
+ * dependency. FORK PATCH: upstream gates this to cloud-only; we enable it
+ * for enterprise so self-hosted quota enforcement stays accurate.
+ */
+const CLOUD_OR_ENTERPRISE_SCHEDULERS = [
+  ScheduleJobData.syncUserQuota,
 ] as const
 
 export const registerSchedules = async () => {
@@ -23,10 +33,16 @@ export const registerSchedules = async () => {
   }
 
   const isCloud = env.NEXT_PUBLIC_EDITION === "cloud"
+  const isEnterprise = env.NEXT_PUBLIC_EDITION === "enterprise"
   if (!isCloud) {
     // upsertJobScheduler persists in Redis: a scheduler registered by an
     // earlier cloud boot (or a shared Redis) keeps firing until removed.
     for (const name of CLOUD_ONLY_SCHEDULERS) {
+      await scheduleQueue.removeJobScheduler(name)
+    }
+  }
+  if (!isCloud && !isEnterprise) {
+    for (const name of CLOUD_OR_ENTERPRISE_SCHEDULERS) {
       await scheduleQueue.removeJobScheduler(name)
     }
   }
@@ -162,7 +178,9 @@ export const registerSchedules = async () => {
     },
   )
 
-  if (isCloud) {
+  // FORK PATCH: syncUserQuota runs on cloud AND enterprise editions.
+  // It only reads our own DB tables — no private portal dependency.
+  if (isCloud || isEnterprise) {
     await scheduleQueue.upsertJobScheduler(
       ScheduleJobData.syncUserQuota,
       { every: env.QUOTA_SYNC_INTERVAL_SECONDS * 1000 },
@@ -171,7 +189,9 @@ export const registerSchedules = async () => {
         data: { type: ScheduleJobData.syncUserQuota, data: {} },
       },
     )
+  }
 
+  if (isCloud) {
     await scheduleQueue.upsertJobScheduler(
       ScheduleJobData.reconcileTenants,
       { every: env.QUOTA_SYNC_INTERVAL_SECONDS * 1000 },
