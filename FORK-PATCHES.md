@@ -207,6 +207,7 @@ if upstream modifies the same files.
 | D3 | `apps/builder/src/features/admin/components/admin-sidebar.tsx` | Plans/Subscriptions/PaymentHistory use staging translation keys (`plans.title`, `subscriptions.title`, `billing.manage.paymentHistory`) | Upstream renamed to `platformAdmin.*` keys that don't exist in our translation files |
 | D4 | `apps/builder/messages/en.json` | 20 restored translation keys (billing, fields, flows, platformSettings, whatsapp) | Lost during Phase 4 merge |
 | D5 | `apps/builder/messages/ar.json` | `fields.wabaId.label` = `"معرّف WABA"` | Overwritten with English during merge |
+| D6 | `packages/database/drizzle/20260711114121_billing-plans/migration.sql` | Removed duplicate IntegrationOpenaiCompatible + IntegrationInstagram DDL (already in upstream migrations 20260705000000 and 20260624063603). Hardened Subscription replacement: conditional DROP detects upstream's Stripe schema via `stripeCustomerId` column before dropping, `CREATE TABLE IF NOT EXISTS` guards re-runs. | Fixes fresh-migrate-from-zero failure: "relation already exists" |
 
 ---
 
