@@ -79,6 +79,52 @@ class FlowService extends BaseService {
       return newFlowId
     })
   }
+  /**
+   * Import a flow from an export payload. Creates a new flow + draft version
+   * with the provided nodes/edges (same transaction pattern as `duplicate`).
+   */
+  importFlow(input: {
+    workspaceId: string
+    name: string
+    active: boolean
+    enableInInbox: boolean
+    nodes: { id: string; [x: string]: unknown }[]
+    edges: { id: string; [x: string]: unknown }[]
+    startNodeId: string
+    folderId?: string | null
+  }): Promise<string> {
+    return db.transaction(async (tx) => {
+      const newFlowId = createId()
+      const draftVersionId = createId()
+      await tx.insert(flowModel).values({
+        id: newFlowId,
+        name: input.name,
+        active: input.active,
+        enableInInbox: input.enableInInbox,
+        workspaceId: input.workspaceId,
+        folderId: input.folderId ?? null,
+        currentVersionId: null,
+        draftVersionId,
+      })
+      await tx.insert(flowAnalyticsSessionModel).values({
+        id: createId(),
+        flowId: newFlowId,
+        workspaceId: input.workspaceId,
+      })
+      await tx.insert(flowVersionModel).values({
+        id: draftVersionId,
+        workspaceId: input.workspaceId,
+        flowId: newFlowId,
+        nodes: input.nodes,
+        edges: input.edges,
+        isDraft: true,
+        isLatest: false,
+        startNodeId: input.startNodeId,
+      })
+
+      return newFlowId
+    })
+  }
 }
 
 export const flowService = new FlowService()

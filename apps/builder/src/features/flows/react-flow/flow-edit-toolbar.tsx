@@ -30,6 +30,7 @@ import { type Edge, MarkerType, type Node, useReactFlow } from "@xyflow/react"
 import {
   ChartNoAxesCombinedIcon,
   CopyIcon,
+  DownloadIcon,
   EllipsisIcon,
   HistoryIcon,
   LinkIcon,
@@ -47,6 +48,7 @@ import { useAction } from "next-safe-action/hooks"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { GetInboxUrlDialog } from "@/features/inboxes/components/get-inbox-url"
+import { exportFlowAction } from "../actions/export-flow.action"
 import { publishFlowAction } from "../actions/publish-flow-action"
 import { revertToPublishedAction } from "../actions/revert-to-published-action"
 import { DeleteFlowsDialog } from "../delete-flow-dialog"
@@ -88,6 +90,7 @@ export function FlowEditToolbar({
   const lastBranchClearedCountRef = useRef(0)
 
   const [isValidating, setIsValidating] = useState<boolean>(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [action, setAction] = useState<
     | "publish"
     | "rename"
@@ -230,6 +233,34 @@ export function FlowEditToolbar({
     setAction("getMessengerAdsJson")
   }
 
+  const onClickExport = async () => {
+    setIsExporting(true)
+    try {
+      const result = await exportFlowAction.bind(
+        null,
+        workspaceId,
+        flow.id,
+      )()
+      if (result?.data) {
+        const json = JSON.stringify(result.data, null, 2)
+        const blob = new Blob([json], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `${flow.name.replace(/[^a-zA-Z0-9_\-؀-ۿ ]/g, "_")}.flow.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success(t("messages.exportSuccess"))
+      }
+    } catch {
+      toast.error(t("messages.exportFailed"))
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="flex gap-2">
       <Tooltip>
@@ -318,6 +349,10 @@ export function FlowEditToolbar({
             <DropdownMenuItem onClick={() => setAction("duplicate")}>
               <CopyIcon />
               {t("actions.duplicate")}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isExporting} onClick={onClickExport}>
+              <DownloadIcon />
+              {t("actions.export")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAction("getDraftLink")}>
               <LinkIcon />

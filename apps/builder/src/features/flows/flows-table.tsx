@@ -17,6 +17,7 @@ import { ChangeFolderDialog } from "../folders/change-folder"
 import { CreateFlowDialog } from "./create-flow-dialog"
 import { DeleteFlowsDialog } from "./delete-flow-dialog"
 import { DuplicateFlowDialog } from "./duplicate-flow-dialog"
+import { ImportFlowDialog } from "./import-flow-dialog"
 import { getFlowColumns } from "./flows-table-columns"
 import { FlowsTableToolbarActions } from "./flows-table-toolbar-actions"
 import type { listFlowsRSC } from "./queries"
@@ -73,6 +74,7 @@ export function FlowsTable({
               table={table}
               workspaceId={workspaceId}
             />
+            <ImportFlowDialog folderId={folderId} workspaceId={workspaceId} />
             <CreateFlowDialog folderId={folderId} workspaceId={workspaceId} />
           </DataTableToolbar>
         </DataTable>
