@@ -574,11 +574,15 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         icon: GlobeIcon,
         stepType: stepTypes.enum.callApi,
       },
-      {
-        label: t("flows.actions.executeJavascript"),
-        icon: CodeIcon,
-        stepType: stepTypes.enum.executeJavascript,
-      },
+      // FORK PATCH: executeJavascript hidden — the javascript-executor sandbox
+      // service (apps/javascript-executor/) does not exist yet. Adding this step
+      // to a flow would cause a runtime failure (POST to JAVASCRIPT_EXECUTOR_URL
+      // with nothing listening). Re-enable when the executor is built.
+      // {
+      //   label: t("flows.actions.executeJavascript"),
+      //   icon: CodeIcon,
+      //   stepType: stepTypes.enum.executeJavascript,
+      // },
     ],
   },
   {

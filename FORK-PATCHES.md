@@ -298,6 +298,29 @@ demo user's ID, not NULL.
 
 ---
 
+## 8. JavaScript Executor Step Hidden
+
+**File:** `apps/builder/src/features/flows/react-flow/nodes/perform-action/menu.tsx`
+
+**What:** The `executeJavascript` menu item in the flow editor's "Tools" step
+picker is commented out so users cannot add it to new flows.
+
+**Why:** The `executeJavascript` step POSTs user code to `JAVASCRIPT_EXECUTOR_URL`
+(a sandboxed Docker service at `apps/javascript-executor/`). That service does
+not exist in our deployment — the directory is missing and no container image is
+built. Adding the step to a flow would cause a silent runtime failure. The
+underlying step code (schema, editor/viewer UI, worker handler) is preserved
+intact so re-enabling is a one-line uncomment when the executor is built.
+
+**Not hidden:** The `generateCode` step is independent (uses `@faker-js/faker`
+locally, no external service) and remains available.
+
+**Verify after sync:** Open the flow editor → Add Step → Tools → confirm
+"Execute Javascript" does not appear. Existing flows that already use the step
+still render and display in the editor (the step definition remains registered).
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
