@@ -1,7 +1,10 @@
+import { eq } from "drizzle-orm"
 import { createId } from "@chatbotx.io/utils"
 import { db } from "../client"
+import { ROOT_TENANT_ID } from "../partials/shared"
 import {
   accountModel,
+  tenantModel,
   userModel,
   workspaceMemberModel,
   workspaceModel,
@@ -33,6 +36,18 @@ async function main() {
       "641c52171319d3ae13b238da41318493:90d5458996d391675ebdea8d4902afb94acdbad160f555b0bc7fe68d70ace03dc3cf903b8a21fa8433e9a016d52741d2fb2d444ed20b329dd7effbf8d5341d87",
     userId: user?.id ?? "",
   })
+
+  // FORK PATCH: Link the root tenant (id 1) to the platform owner.
+  // The migration seeds Tenant(1) with ownerId NULL because no user exists at
+  // migration time. On seed, stamp it with the first admin user so that
+  // `tenantService.findByOwner()` resolves for the platform operator and
+  // admin branding/settings work end-to-end.
+  if (user?.id) {
+    await db
+      .update(tenantModel)
+      .set({ ownerId: user.id })
+      .where(eq(tenantModel.id, ROOT_TENANT_ID))
+  }
 
   // Create workspace
   const workspacesCount = await db.$count(workspaceModel)

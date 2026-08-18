@@ -240,40 +240,64 @@ export const resolveTenantSettingsByOwner = async (
 }
 
 /**
+ * FORK PATCH: Fall back to the root tenant's branding when the upstream
+ * CustomDomain path does not resolve. Self-hosted deployments have no
+ * CustomDomain rows, so without this the admin-configured branding (brand
+ * name, logos, favicon, theme, custom CSS/JS, email templates) would never
+ * surface. This helper is NOT gated by `hasEnterpriseFeatures()` so that
+ * branding resolves regardless of edition.
+ */
+const resolveRootTenantFallback = async (): Promise<TenantSettings> => {
+  const rootTenant = await tenantService.findById(ROOT_TENANT_ID)
+  if (rootTenant?.status === "active") {
+    const [defaults, helpItems] = await Promise.all([
+      getDefaultSettings(),
+      tenantHelpItemService.listByTenant(ROOT_TENANT_ID),
+    ])
+    return applyTenantSetting(defaults, rootTenant, helpItems, true)
+  }
+  return getDefaultSettings()
+}
+
+/**
  * Resolve tenant settings by request hostname (from the `x-domain` header set by
  * the builder proxy). On enterprise/cloud, maps the active CustomDomain to its
- * `Tenant` and applies that tenant's branding. On community, returns env defaults.
+ * `Tenant` and applies that tenant's branding.
+ *
+ * FORK PATCH: When the CustomDomain path does not resolve (no domain, no
+ * enterprise features, or no matching active CustomDomain row), falls back to
+ * the root tenant's branding instead of bare env defaults. This makes
+ * admin-configured branding work on self-hosted deployments that have no
+ * CustomDomain rows.
  */
 export const resolveTenantSettingsByDomain = async (
   domain: string | null | undefined,
 ): Promise<TenantSettings> => {
-  if (!(domain && (await hasEnterpriseFeatures()))) {
-    return getDefaultSettings()
+  // Upstream path: enterprise + custom domain → branded tenant settings
+  if (domain && (await hasEnterpriseFeatures())) {
+    const customDomain = await customDomainService.findActiveByDomain(domain)
+    if (customDomain) {
+      const tenant = await tenantService.findById(customDomain.tenantId)
+      if (tenant?.status === "active") {
+        const [defaults, helpItems] = await Promise.all([
+          getDefaultSettings(),
+          tenantHelpItemService.listByTenant(tenant.id),
+        ])
+        const env = integrationContextEnv()
+        return applyTenantSetting(
+          applyCustomDomain(
+            defaults,
+            customDomain.domain,
+            env.NEXT_PUBLIC_STORAGE_URL,
+          ),
+          tenant,
+          helpItems,
+          true,
+        )
+      }
+    }
   }
 
-  const customDomain = await customDomainService.findActiveByDomain(domain)
-  if (!customDomain) {
-    return getDefaultSettings()
-  }
-
-  const tenant = await tenantService.findById(customDomain.tenantId)
-  if (!tenant?.status || tenant.status !== "active") {
-    return getDefaultSettings()
-  }
-
-  const [defaults, helpItems] = await Promise.all([
-    getDefaultSettings(),
-    tenantHelpItemService.listByTenant(tenant.id),
-  ])
-  const env = integrationContextEnv()
-  return applyTenantSetting(
-    applyCustomDomain(
-      defaults,
-      customDomain.domain,
-      env.NEXT_PUBLIC_STORAGE_URL,
-    ),
-    tenant,
-    helpItems,
-    true,
-  )
+  // FORK PATCH: fall back to root tenant branding (self-hosted fix)
+  return resolveRootTenantFallback()
 }

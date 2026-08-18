@@ -195,6 +195,109 @@ rows update immediately.
 
 ---
 
+## 6. Branding Root-Tenant Fallback (Self-Hosted Fix)
+
+**File:** `packages/business/src/platform/settings.ts`
+
+**What:** `resolveTenantSettingsByDomain()` falls back to the root tenant's
+branding when the upstream CustomDomain → Tenant path does not resolve, instead
+of returning bare env defaults.
+
+**Upstream code:**
+```typescript
+export const resolveTenantSettingsByDomain = async (
+  domain: string | null | undefined,
+): Promise<TenantSettings> => {
+  if (!(domain && (await hasEnterpriseFeatures()))) {
+    return getDefaultSettings()         // ← bare defaults
+  }
+  const customDomain = await customDomainService.findActiveByDomain(domain)
+  if (!customDomain) {
+    return getDefaultSettings()         // ← bare defaults
+  }
+  // ... apply custom domain branding
+}
+```
+
+**Our code:**
+```typescript
+const resolveRootTenantFallback = async (): Promise<TenantSettings> => {
+  // FORK PATCH: not gated by hasEnterpriseFeatures()
+  const rootTenant = await tenantService.findById(ROOT_TENANT_ID)
+  if (rootTenant?.status === "active") {
+    const [defaults, helpItems] = await Promise.all([
+      getDefaultSettings(),
+      tenantHelpItemService.listByTenant(ROOT_TENANT_ID),
+    ])
+    return applyTenantSetting(defaults, rootTenant, helpItems, true)
+  }
+  return getDefaultSettings()
+}
+
+export const resolveTenantSettingsByDomain = async (
+  domain: string | null | undefined,
+): Promise<TenantSettings> => {
+  // Upstream CustomDomain path (unchanged)
+  if (domain && (await hasEnterpriseFeatures())) {
+    const customDomain = await customDomainService.findActiveByDomain(domain)
+    if (customDomain) { /* ... apply custom domain branding ... */ }
+  }
+  // FORK PATCH: fall back to root tenant branding
+  return resolveRootTenantFallback()
+}
+```
+
+**Why:** Self-hosted deployments have no `CustomDomain` rows (that table is for
+upstream's cloud multi-tenancy). Without this patch, the admin's branding
+configuration (brand name, logos, favicon, theme, custom CSS/JS, email
+templates) set on the root tenant is silently ignored — the function returns
+hardcoded defaults ("ChatbotX" name, generic logo paths, chatbotx.io URLs).
+
+The fallback is deliberately **not** gated by `hasEnterpriseFeatures()` so that
+branding resolves regardless of edition. The root tenant's branding columns are
+NULL by default (set by the migration), so when no admin branding is configured
+the result is identical to the old behavior — `applyTenantSetting` uses
+`setting.brandName ?? defaults.name` and similar `??` chains.
+
+**Verify after sync:** Set a brand name on the root tenant via Admin → Branding,
+then reload any page — the configured brand name appears instead of "ChatbotX".
+
+---
+
+## 7. Seed Sets Root Tenant ownerId
+
+**File:** `packages/database/src/seed/index.ts`
+
+**What:** After creating the demo user, the seed updates the root tenant's
+`ownerId` to point to that user.
+
+**Upstream seed:** Does not touch the Tenant table (root tenant is created by
+migration `20260614163529_add_tenant_tables` with `ownerId = NULL`).
+
+**Our code (added after account creation):**
+```typescript
+// FORK PATCH: Link the root tenant (id 1) to the platform owner.
+if (user?.id) {
+  await db
+    .update(tenantModel)
+    .set({ ownerId: user.id })
+    .where(eq(tenantModel.id, ROOT_TENANT_ID))
+}
+```
+
+**Why:** The migration cannot set `ownerId` because no user exists at migration
+time. On a fresh self-hosted install, the seed creates the first admin user —
+this patch links that user as the root tenant's owner so that:
+- `tenantService.findByOwner(userId)` resolves for the platform operator
+- `resolveTenantSettingsByOwner()` returns the root tenant's branding
+- Admin panel tenant management works end-to-end
+
+**Verify after sync:** Run `db:setup` (migrate + seed) on a fresh database, then
+query `SELECT "ownerId" FROM "Tenant" WHERE id = 1` — it should return the
+demo user's ID, not NULL.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
