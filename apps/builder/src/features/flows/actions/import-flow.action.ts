@@ -1,6 +1,11 @@
 "use server"
 
-import { flowService } from "@chatbotx.io/business"
+import {
+  flowService,
+  userQuotaService,
+  workspaceService,
+} from "@chatbotx.io/business"
+import { flowLimitReachedException } from "@chatbotx.io/business/errors"
 import { edgeSchema } from "@chatbotx.io/flow-config"
 import {
   type WorkspaceIdRequestParams,
@@ -34,6 +39,15 @@ export const importFlowAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: ImportFlowSchema
     }) => {
+      // FORK PATCH: Enforce flow quota before importing
+      const workspace = await workspaceService.findById({ id: workspaceId })
+      const canCreate = await userQuotaService.tryConsumeFlow(
+        workspace.ownerId,
+      )
+      if (!canCreate) {
+        throw flowLimitReachedException()
+      }
+
       // Validate startNodeId references an existing node
       const startNodeExists = parsedInput.nodes.some(
         (node) => node.id === parsedInput.startNodeId,

@@ -942,6 +942,90 @@ class UserQuotaService extends BaseService {
         return { limit: null, used: 0 }
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // FORK PATCH: Flow & AI agent quota helpers (fork-only columns, not in
+  // the upstream `QuotaMetric` / `LiveCounterStore` system).
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Atomic check-and-increment for the flow quota. Returns `true` when a new
+   * flow can be created (and increments `flowsUsed`), `false` when the limit
+   * has been reached. A `null` limit or absent quota row means unlimited.
+   *
+   * Uses a conditional SQL UPDATE so concurrent requests cannot both pass the
+   * gate — only the first to reach the limit wins the row lock.
+   */
+  async tryConsumeFlow(ownerId: string): Promise<boolean> {
+    const quota = await this.getForUser(ownerId)
+    if (!quota || quota.flowsLimit === null) {
+      return true // no quota row or null limit → unlimited
+    }
+
+    const [updated] = await db
+      .update(userQuotaModel)
+      .set({ flowsUsed: sql`"flowsUsed" + 1` })
+      .where(
+        and(
+          eq(userQuotaModel.userId, ownerId),
+          sql`"flowsLimit" IS NOT NULL AND "flowsUsed" < "flowsLimit"`,
+        ),
+      )
+      .returning({ userId: userQuotaModel.userId })
+
+    if (!updated) {
+      return false // at limit
+    }
+    await this.invalidate(ownerId)
+    return true
+  }
+
+  /**
+   * Release one flow quota unit (e.g. on deletion). Mirrors the consume side.
+   */
+  async releaseFlow(ownerId: string): Promise<void> {
+    await db
+      .update(userQuotaModel)
+      .set({ flowsUsed: sql`GREATEST("flowsUsed" - 1, 0)` })
+      .where(eq(userQuotaModel.userId, ownerId))
+    await this.invalidate(ownerId)
+  }
+
+  /**
+   * Whether AI agents are enabled for this user's plan. A missing quota row
+   * or `null` → enabled (default-open).
+   */
+  async isAiAgentEnabled(ownerId: string): Promise<boolean> {
+    const quota = await this.getForUser(ownerId)
+    if (!quota) {
+      return true
+    }
+    return quota.aiAgentsEnabled
+  }
+
+  /**
+   * Flow quota values for display purposes.
+   */
+  flowQuotaValues(
+    quota: UserQuotaModel | null,
+  ): { limit: number | null; used: number } {
+    if (!quota) {
+      return { limit: null, used: 0 }
+    }
+    return { limit: quota.flowsLimit, used: quota.flowsUsed }
+  }
+
+  /**
+   * Broadcast quota values for display purposes.
+   */
+  broadcastQuotaValues(
+    quota: UserQuotaModel | null,
+  ): { limit: number | null; used: number } {
+    if (!quota) {
+      return { limit: null, used: 0 }
+    }
+    return { limit: quota.broadcastsLimit, used: quota.broadcastsUsed }
+  }
 }
 
 export const userQuotaService = new UserQuotaService()

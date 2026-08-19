@@ -1,5 +1,10 @@
 "use server"
 
+import {
+  userQuotaService,
+  workspaceService,
+} from "@chatbotx.io/business"
+import { flowLimitReachedException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
 import {
   flowAnalyticsSessionModel,
@@ -27,6 +32,15 @@ export const createFlowAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: CreateFlowSchema
     }) => {
+      // FORK PATCH: Enforce flow quota before creating
+      const workspace = await workspaceService.findById({ id: workspaceId })
+      const canCreate = await userQuotaService.tryConsumeFlow(
+        workspace.ownerId,
+      )
+      if (!canCreate) {
+        throw flowLimitReachedException()
+      }
+
       if (parsedInput.folderId) {
         await ensureFolderIsExists(parsedInput.folderId, workspaceId, "flow")
       }

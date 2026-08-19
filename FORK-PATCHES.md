@@ -399,6 +399,64 @@ without validation errors.
 
 ---
 
+## 13. Flow Quota Enforcement at Creation Time
+
+**Files:** `apps/builder/src/features/flows/actions/create-flow-action.ts`,
+`packages/business/src/user-quota/service.ts`
+
+**What:** Before creating a flow, the action looks up the workspace owner's
+`UserQuota` row and checks `flowsUsed < flowsLimit`. If at limit, creation
+is blocked with a `flowLimitReached` error. On success, `flowsUsed` is
+atomically incremented via a conditional SQL UPDATE (race-safe without
+distributed locks).
+
+**Why:** The `flowsLimit` and `flowsUsed` columns already exist (added in
+migration `20260712153647`) and are set by `applyPlanEntitlements`, but
+there was no enforcement gate — any user could create unlimited flows
+regardless of their plan's configured limit.
+
+**Verify after sync:** Set a plan with `flowsLimit: 2`, create 2 flows →
+third creation is blocked with "Flow limit reached for this plan".
+
+---
+
+## 14. AI Agent Quota Enforcement at Creation Time
+
+**File:** `apps/builder/src/features/ai-agents/actions/create.action.ts`
+
+**What:** Before creating an AI agent, the action looks up the workspace
+owner's `UserQuota.aiAgentsEnabled` flag. If `false`, creation is blocked
+with an `aiAgentNotEnabled` error.
+
+**Why:** The `aiAgentsEnabled` column exists and is set by
+`applyPlanEntitlements`, but there was no enforcement — users on plans
+with AI agents disabled could still create them.
+
+**Verify after sync:** Set a plan with `aiAgents: false`, attempt to create
+an AI agent → blocked with "AI agents are not available on this plan".
+
+---
+
+## 15. Quota Usage Display — Flows & Broadcasts
+
+**File:** `apps/builder/src/app/space/[workspaceId]/billing/page.tsx`
+
+**What:** The billing page's "Usage Summary" section now shows flows and
+broadcasts alongside the 5 upstream metrics (contacts, MAC, workspaces,
+channels, team members). Each shows "X of Y used" with a progress bar
+when a limit is configured, or "Unlimited" when the limit is null.
+
+**Why:** The fork-only `flowsUsed`/`flowsLimit` and
+`broadcastsUsed`/`broadcastsLimit` columns were never wired into the
+display. Users had no way to see how many flows or broadcasts they had
+used against their plan's limits.
+
+**Verify after sync:** Navigate to `/space/{workspaceId}/billing` →
+"Usage Summary" card shows flows and broadcasts with their current
+used/limit values.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

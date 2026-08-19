@@ -3,6 +3,7 @@ import {
   paymentHistoryService,
   quotaEnforcementService,
   subscriptionService,
+  userQuotaService,
 } from "@chatbotx.io/business"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -82,12 +83,18 @@ export default async function BillingPage({
   const fmtDate = (d: Date | string) =>
     format(new Date(d), "dd MMM yyyy", { locale: dateLocale })
 
-  const [subscription, usage, payments, billingInfo] = await Promise.all([
-    subscriptionService.findByUserId({ userId: user.id }),
-    quotaEnforcementService.getUsageSummary(user.id),
-    paymentHistoryService.listByUserId({ userId: user.id }),
-    billingInfoService.findByUserId({ userId: user.id }),
-  ])
+  const [subscription, usage, payments, billingInfo, quota] =
+    await Promise.all([
+      subscriptionService.findByUserId({ userId: user.id }),
+      quotaEnforcementService.getUsageSummary(user.id),
+      paymentHistoryService.listByUserId({ userId: user.id }),
+      billingInfoService.findByUserId({ userId: user.id }),
+      userQuotaService.getForUser(user.id),
+    ])
+
+  // FORK PATCH: include fork-only quota metrics (flows, broadcasts)
+  const flowQuota = userQuotaService.flowQuotaValues(quota)
+  const broadcastQuota = userQuotaService.broadcastQuotaValues(quota)
 
   const usageMetrics = [
     { key: "contacts", label: t("billing.usage.contacts") },
@@ -95,6 +102,8 @@ export default async function BillingPage({
     { key: "workspaces", label: t("billing.usage.workspaces") },
     { key: "channels", label: t("billing.usage.channels") },
     { key: "teamMembers", label: t("billing.usage.teamMembers") },
+    { key: "flows", label: t("billing.usage.flows") },
+    { key: "broadcasts", label: t("billing.usage.broadcasts") },
   ] as const
 
   return (
@@ -215,7 +224,13 @@ export default async function BillingPage({
         <CardContent>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {usageMetrics.map(({ key, label }) => {
-              const m = usage[key]
+              // FORK PATCH: merge fork-only metrics with upstream usage
+              const m =
+                key === "flows"
+                  ? flowQuota
+                  : key === "broadcasts"
+                    ? broadcastQuota
+                    : usage[key]
               return (
                 <div className="rounded-lg border p-3 text-center" key={key}>
                   <p className="text-muted-foreground text-xs">{label}</p>

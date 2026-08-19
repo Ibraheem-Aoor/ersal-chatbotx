@@ -9,6 +9,9 @@ const QUOTA_ERROR_MAP: Record<string, string> = {
     "channelDuplicated",
   "Phone number already exists": "phoneNumberExists",
   "Contact inbox not found": "contactInboxNotFound",
+  "Flow limit reached for this plan": "flowLimitReached",
+  "Broadcast limit reached for this plan": "broadcastLimitReached",
+  "AI agents are not available on this plan": "aiAgentsNotEnabled",
 }
 
 export async function translateQuotaError(

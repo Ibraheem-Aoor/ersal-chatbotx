@@ -314,7 +314,9 @@
       "channels": "You've reached your channel limit. Upgrade your plan to connect more.",
       "teamMembers": "You've reached your team member limit. Upgrade your plan to invite more.",
       "contacts": "You've reached your contact limit. Upgrade your plan to add more.",
-      "mac": "You've reached your monthly active contact limit. Upgrade your plan to reach more."
+      "mac": "You've reached your monthly active contact limit. Upgrade your plan to reach more.",
+      "flows": "You've reached your flow limit. Upgrade your plan to create more.",
+      "aiAgents": "AI agents are disabled for your plan. Upgrade to enable this feature."
     },
     "pastDue": {
       "message": "Your last payment failed. Update your payment method to keep your workspace active.",

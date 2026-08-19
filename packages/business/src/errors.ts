@@ -152,3 +152,21 @@ export const workspaceLimitReachedException = () =>
     "Workspace limit reached for this plan",
     "workspaceLimitReached",
   )
+
+export const flowLimitReachedException = () =>
+  new ChatbotXException(
+    "Flow limit reached for this plan",
+    "flowLimitReached",
+  )
+
+export const broadcastLimitReachedException = () =>
+  new ChatbotXException(
+    "Broadcast limit reached for this plan",
+    "broadcastLimitReached",
+  )
+
+export const aiAgentDisabledException = () =>
+  new ChatbotXException(
+    "AI agents are not available on this plan",
+    "aiAgentNotEnabled",
+  )
