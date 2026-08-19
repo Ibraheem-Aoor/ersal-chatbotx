@@ -321,6 +321,84 @@ still render and display in the editor (the step definition remains registered).
 
 ---
 
+## 9. Email Branding — Use Tenant Brand Name
+
+**File:** `packages/mail/src/emails/dynamic-template.ts`
+
+**What:** The dynamic email template footer uses `props.brandName` instead of
+the hardcoded "⚡ Built with chatbotx.io".
+
+**Upstream code:**
+```html
+<mj-text ...>⚡ Built with chatbotx.io</mj-text>
+```
+
+**Our code:**
+```html
+<mj-text ...>${esc(props.brandName)}</mj-text>
+```
+
+**Why:** All transactional emails should show our tenant's configured brand name,
+not upstream's "ChatbotX" branding. The `brandName` prop is already passed to
+`buildMjmlTemplate()` from every call site — this just uses it.
+
+**Also:** `packages/mail/src/preview.ts` — preview sample `brandName` changed
+from `"ChatbotX"` to `"Ersal"`.
+
+**Verify after sync:** Send a test email → footer shows the configured brand
+name, not "Built with chatbotx.io".
+
+---
+
+## 10. Thmanyah Sans Font
+
+**Files:** `apps/builder/src/app/layout.tsx`, `apps/builder/src/app/globals.css`,
+`apps/builder/public/fonts/thmanyah/` (5 woff2 files)
+
+**What:** Thmanyah Sans (Arabic-native typeface) is loaded via `next/font/local`
+and set as the default font via `--font-sans` CSS variable override.
+
+**Why:** The app's default font (Inter) has limited Arabic support. Thmanyah Sans
+is designed for Arabic text and provides proper glyph coverage for RTL content.
+Falls back to Inter for Latin characters.
+
+**Verify after sync:** Arabic text renders in Thmanyah Sans. Font loads without
+CDN dependency (self-hosted woff2).
+
+---
+
+## 11. Arabic Zod Validation Messages
+
+**File:** `apps/builder/src/components/zod-error-map-provider.tsx`
+
+**What:** A client provider component sets Zod v4's built-in Arabic error map
+(`zod/locales/ar`) when the app locale is `"ar"`. Rendered once in the root
+layout.
+
+**Why:** Without this, all form validation messages (required, invalid email,
+min length, etc.) render in English regardless of the app locale. Zod v4 ships
+with a complete Arabic locale that maps all standard issue codes.
+
+**Verify after sync:** Set app locale to `ar` → submit an empty form → error
+messages appear in Arabic (e.g., "حقل مطلوب" instead of "Required").
+
+---
+
+## 12. VAT Number Validation Removed
+
+**File:** `apps/builder/src/features/billing/schema/billing-info.ts`
+
+**What:** Removed the `regex(/^\d{15}$/)` constraint from the `vatNumber` field.
+Now accepts any string (or empty).
+
+**Why:** The 15-digit regex rejected valid Saudi VAT numbers and international
+tax IDs that don't follow that exact format.
+
+**Verify after sync:** Billing info form → enter any VAT number → saves
+without validation errors.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

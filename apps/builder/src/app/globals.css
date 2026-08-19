@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "@chatbotx.io/ui/styles/default.css";
 
+/* FORK PATCH: Thmanyah Sans as the default font (Arabic-native typeface) */
+@layer base {
+  :root {
+    --font-sans: var(--font-thmanyah), Inter, sans-serif;
+  }
+}
+
 /**
  * Tailwind CSS official document:
  * https://tailwindcss.com/docs/detecting-classes-in-source-files
