@@ -83,18 +83,22 @@ export default async function BillingPage({
   const fmtDate = (d: Date | string) =>
     format(new Date(d), "dd MMM yyyy", { locale: dateLocale })
 
-  const [subscription, usage, payments, billingInfo, quota] =
-    await Promise.all([
+  const [subscription, usage, payments, billingInfo, quota] = await Promise.all(
+    [
       subscriptionService.findByUserId({ userId: user.id }),
       quotaEnforcementService.getUsageSummary(user.id),
       paymentHistoryService.listByUserId({ userId: user.id }),
       billingInfoService.findByUserId({ userId: user.id }),
       userQuotaService.getForUser(user.id),
-    ])
+    ],
+  )
 
-  // FORK PATCH: include fork-only quota metrics (flows, broadcasts)
-  const flowQuota = userQuotaService.flowQuotaValues(quota)
-  const broadcastQuota = userQuotaService.broadcastQuotaValues(quota)
+  // FORK PATCH: merge fork-only quota metrics (flows, broadcasts) into one map
+  const allUsage: Record<string, { used: number; limit: number | null }> = {
+    ...usage,
+    flows: userQuotaService.flowQuotaValues(quota),
+    broadcasts: userQuotaService.broadcastQuotaValues(quota),
+  }
 
   const usageMetrics = [
     { key: "contacts", label: t("billing.usage.contacts") },
@@ -104,7 +108,7 @@ export default async function BillingPage({
     { key: "teamMembers", label: t("billing.usage.teamMembers") },
     { key: "flows", label: t("billing.usage.flows") },
     { key: "broadcasts", label: t("billing.usage.broadcasts") },
-  ] as const
+  ]
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -224,13 +228,7 @@ export default async function BillingPage({
         <CardContent>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {usageMetrics.map(({ key, label }) => {
-              // FORK PATCH: merge fork-only metrics with upstream usage
-              const m =
-                key === "flows"
-                  ? flowQuota
-                  : key === "broadcasts"
-                    ? broadcastQuota
-                    : usage[key]
+              const m = allUsage[key]
               return (
                 <div className="rounded-lg border p-3 text-center" key={key}>
                   <p className="text-muted-foreground text-xs">{label}</p>

@@ -7,12 +7,12 @@ import {
 } from "@chatbotx.io/business"
 import { flowLimitReachedException } from "@chatbotx.io/business/errors"
 import { edgeSchema } from "@chatbotx.io/flow-config"
+import { z } from "zod"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { z } from "zod"
 
 export const importFlowSchema = z.object({
   version: z.number().int().min(1).max(1),
@@ -41,9 +41,7 @@ export const importFlowAction = workspaceActionClient
     }) => {
       // FORK PATCH: Enforce flow quota before importing
       const workspace = await workspaceService.findById({ id: workspaceId })
-      const canCreate = await userQuotaService.tryConsumeFlow(
-        workspace.ownerId,
-      )
+      const canCreate = await userQuotaService.tryConsumeFlow(workspace.ownerId)
       if (!canCreate) {
         throw flowLimitReachedException()
       }

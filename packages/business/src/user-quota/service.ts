@@ -1006,9 +1006,10 @@ class UserQuotaService extends BaseService {
   /**
    * Flow quota values for display purposes.
    */
-  flowQuotaValues(
-    quota: UserQuotaModel | null,
-  ): { limit: number | null; used: number } {
+  flowQuotaValues(quota: UserQuotaModel | null): {
+    limit: number | null
+    used: number
+  } {
     if (!quota) {
       return { limit: null, used: 0 }
     }
@@ -1018,9 +1019,10 @@ class UserQuotaService extends BaseService {
   /**
    * Broadcast quota values for display purposes.
    */
-  broadcastQuotaValues(
-    quota: UserQuotaModel | null,
-  ): { limit: number | null; used: number } {
+  broadcastQuotaValues(quota: UserQuotaModel | null): {
+    limit: number | null
+    used: number
+  } {
     if (!quota) {
       return { limit: null, used: 0 }
     }

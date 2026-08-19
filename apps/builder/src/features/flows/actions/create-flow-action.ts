@@ -1,9 +1,6 @@
 "use server"
 
-import {
-  userQuotaService,
-  workspaceService,
-} from "@chatbotx.io/business"
+import { userQuotaService, workspaceService } from "@chatbotx.io/business"
 import { flowLimitReachedException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
 import {
@@ -34,9 +31,7 @@ export const createFlowAction = workspaceActionClient
     }) => {
       // FORK PATCH: Enforce flow quota before creating
       const workspace = await workspaceService.findById({ id: workspaceId })
-      const canCreate = await userQuotaService.tryConsumeFlow(
-        workspace.ownerId,
-      )
+      const canCreate = await userQuotaService.tryConsumeFlow(workspace.ownerId)
       if (!canCreate) {
         throw flowLimitReachedException()
       }

@@ -154,10 +154,7 @@ export const workspaceLimitReachedException = () =>
   )
 
 export const flowLimitReachedException = () =>
-  new ChatbotXException(
-    "Flow limit reached for this plan",
-    "flowLimitReached",
-  )
+  new ChatbotXException("Flow limit reached for this plan", "flowLimitReached")
 
 export const broadcastLimitReachedException = () =>
   new ChatbotXException(
