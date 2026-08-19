@@ -17,29 +17,28 @@ export interface WorkspaceBlockState {
  * Resolves the entitlement state for a workspace. Quota is owner-anchored: the
  * workspace owner's UserQuota row is the tenant pool, including for invited
  * members (AGENTS.md invariant #12).
+ *
+ * FORK PATCH: Always fetch the UserQuota row so `planName` is available for
+ * the sidebar regardless of edition. Blocking logic stays cloud-only.
  */
 export async function resolveWorkspaceBlockState(
   ownerId: string,
 ): Promise<WorkspaceBlockState> {
-  if (!isCloud()) {
-    return {
-      blocked: false,
-      blockReason: null,
-      quota: null,
-      trialEndsAt: null,
-    }
-  }
+  const cloud = isCloud()
 
   const [quota, atLimit] = await Promise.all([
     userQuotaService.getForUser(ownerId),
-    quotaEnforcementService.getAtLimitMap(ownerId),
+    cloud ? quotaEnforcementService.getAtLimitMap(ownerId) : null,
   ])
+
   const trialEndsAt = resolveTrialEndsAt(quota)
-  const blockReason = resolveBlockReason(
-    quota?.planStatus ?? null,
-    trialEndsAt,
-    atLimit.mac,
-  )
+  const blockReason = cloud
+    ? resolveBlockReason(
+        quota?.planStatus ?? null,
+        trialEndsAt,
+        atLimit?.mac ?? false,
+      )
+    : null
 
   return {
     blocked: blockReason !== null,

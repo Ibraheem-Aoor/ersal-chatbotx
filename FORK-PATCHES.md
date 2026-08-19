@@ -457,6 +457,28 @@ used/limit values.
 
 ---
 
+## 16. Always Fetch UserQuota for Plan Name Display
+
+**File:** `apps/builder/src/lib/workspace-quota.ts`
+
+**What:** `resolveWorkspaceBlockState()` previously short-circuited on
+`!isCloud()`, returning `quota: null`. This meant `planName` was always
+null for non-cloud editions, causing NavUser to show "Subscribe now"
+instead of "Manage subscription" even when the user has an active plan
+assigned by admin. Now the `UserQuota` row is always fetched so
+`planName` flows through to the sidebar. Blocking logic (trial expiry,
+MAC limit) remains cloud-only.
+
+**Why:** The fork runs as `enterprise`, not `cloud`. Without this patch
+the admin-assigned plan is invisible in the sidebar — users can't access
+the manage-subscription page or see their current plan badge.
+
+**Verify after sync:** Assign a plan to a user via admin panel → their
+NavUser dropdown shows the plan badge and "Manage subscription" link
+(not "Subscribe now").
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
@@ -478,7 +500,7 @@ if upstream modifies the same files.
 These upstream gates work correctly with `NEXT_PUBLIC_EDITION=enterprise`:
 
 - `isCommunity()` → `false` — create workspace card, superAdmin toggles, OAuth providers all enabled
-- `isCloud()` → `false` — cloud-only Stripe scoping, manage layout, platform credentials stay hidden (correct)
+- `isCloud()` → `false` — cloud-only Stripe scoping, manage layout, action-level blocking stay hidden (correct); quota *read* for planName is now always-on (patch #16)
 - `showEnterpriseItems` → `true` — branding, email templates, help items shown in admin sidebar
 - `assertEnterpriseFeatures()` → passes — branding/email template mutations succeed
 - `app/admin/(enterprise)/layout.tsx` → passes — enterprise admin pages load
