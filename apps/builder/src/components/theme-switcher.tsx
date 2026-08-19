@@ -1,42 +1,43 @@
 "use client"
 
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@chatbotx.io/ui/components/ui/dropdown-menu"
-import { Moon, Sun } from "lucide-react"
+import { Monitor, Moon, Sun } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useTheme } from "next-themes"
 
+/**
+ * Inline theme switcher — renders three small icon buttons (light / dark /
+ * system) instead of a nested DropdownMenu. Base UI forbids nesting a Menu
+ * inside a Menu.Item, so the old nested-dropdown approach crashed with error
+ * #31 after the Radix → Base UI migration.
+ */
 export function ThemeSwitcher() {
-  const { setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const t = useTranslations()
 
+  const themes = [
+    { value: "light", icon: Sun, label: t("theme.light") },
+    { value: "dark", icon: Moon, label: t("theme.dark") },
+    { value: "system", icon: Monitor, label: t("theme.system") },
+  ] as const
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button size="icon" variant="outline">
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">{t("actions.toggleTheme")}</span>
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          {t("theme.light")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          {t("theme.dark")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          {t("theme.system")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex gap-1">
+      {themes.map(({ value, icon: Icon, label }) => (
+        <Button
+          aria-label={label}
+          className="h-7 w-7"
+          key={value}
+          onClick={(e) => {
+            e.stopPropagation()
+            setTheme(value)
+          }}
+          size="icon"
+          variant={theme === value ? "default" : "ghost"}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </Button>
+      ))}
+    </div>
   )
 }

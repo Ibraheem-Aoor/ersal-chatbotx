@@ -34,16 +34,31 @@ type EditProfileDialogProps = {
   user: { name: string | null; email: string; image: string | null }
   className?: string
   triggerClassName?: string
+  /** Controlled open state — when provided, the component omits its own trigger. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function EditProfileDialog({
   user,
   className,
   triggerClassName,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: EditProfileDialogProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (next: boolean) => {
+    if (isControlled) {
+      controlledOnOpenChange?.(next)
+    } else {
+      setInternalOpen(next)
+    }
+  }
 
   const form = useForm({
     resolver: zodResolver(editProfileSchema),
@@ -86,18 +101,20 @@ export function EditProfileDialog({
       }}
       open={open}
     >
-      <DialogTrigger
-        render={
-          <Button
-            className={cn(className, triggerClassName)}
-            size="icon"
-            variant="outline"
-          >
-            <PencilIcon aria-hidden className="size-4" />
-            <span className="sr-only">{t("actions.edit")}</span>
-          </Button>
-        }
-      />
+      {!isControlled && (
+        <DialogTrigger
+          render={
+            <Button
+              className={cn(className, triggerClassName)}
+              size="icon"
+              variant="outline"
+            >
+              <PencilIcon aria-hidden className="size-4" />
+              <span className="sr-only">{t("actions.edit")}</span>
+            </Button>
+          }
+        />
+      )}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("editProfile.title")}</DialogTitle>

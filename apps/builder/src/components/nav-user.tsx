@@ -6,6 +6,15 @@ import {
   AvatarImage,
 } from "@chatbotx.io/ui/components/ui/avatar"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@chatbotx.io/ui/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,22 +31,33 @@ import {
   useSidebar,
 } from "@chatbotx.io/ui/components/ui/sidebar"
 import {
+  Check,
   CreditCard,
   Crown,
+  Loader2Icon,
+  LogOutIcon,
+  PencilIcon,
   Settings2,
   ShieldCheck,
   SparklesIcon,
 } from "lucide-react"
 import Link from "next/link"
-import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useLocale, useTranslations } from "next-intl"
+import { useState, useTransition } from "react"
 import { UpgradePlanDialog } from "@/enterprise/features/billing/upgrade-plan-dialog"
 import { isCloud } from "@/env"
-import { SignOut } from "@/features/auth/sign-out"
 import { EditProfileDialog } from "@/features/workspaces/components/edit-profile-dialog"
 import { RefreshAllChannelTokensButton } from "@/features/workspaces/components/refresh-all-channel-tokens-button"
+import {
+  enabledLocales,
+  isLocale,
+  localeMeta,
+  resolveLocale,
+} from "@/i18n/config"
+import { authClient } from "@/lib/auth/auth-client"
 import { useUserAvatarUrl } from "@/lib/auth/avatar"
-import { LangSelector } from "./lang-selector"
+import { setUserLocale } from "@/lib/locale"
 import { ThemeSwitcher } from "./theme-switcher"
 
 export function NavUser({
@@ -59,15 +79,90 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const t = useTranslations()
-  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const router = useRouter()
   const avatarUrl = useUserAvatarUrl(user.avatar)
+
+  // Controlled state for dialogs rendered OUTSIDE the DropdownMenu tree.
+  // Base UI forbids nesting interactive floating primitives (Dialog, Popover,
+  // nested Menu) inside Menu.Item — doing so triggers production error #31.
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  // Locale switching — inlined because there are only 2 enabled locales,
+  // no need for the Popover+Command that LangSelector uses.
+  const locale = resolveLocale(useLocale())
+  const [isLocalePending, startLocaleTransition] = useTransition()
+
+  function onChangeLocale(value: string) {
+    if (!isLocale(value)) {
+      return
+    }
+    startLocaleTransition(async () => {
+      await setUserLocale(value)
+      router.refresh()
+    })
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
+        {/* ---- Dialogs rendered OUTSIDE the menu tree ---- */}
         {isCloud() && (
-          <UpgradePlanDialog onOpenChange={setUpgradeOpen} open={upgradeOpen} />
+          <UpgradePlanDialog
+            onOpenChange={setUpgradeOpen}
+            open={upgradeOpen}
+          />
         )}
+        <EditProfileDialog
+          onOpenChange={setEditProfileOpen}
+          open={editProfileOpen}
+          user={{
+            name: user.name,
+            email: user.email,
+            image: user.avatar,
+          }}
+        />
+        <Dialog onOpenChange={setSignOutOpen} open={signOutOpen}>
+          <DialogContent className="max-h-screen max-w-xl overflow-y-scroll">
+            <DialogHeader>
+              <DialogTitle>{t("actions.signOut")}</DialogTitle>
+              <DialogDescription>
+                {t("messages.signOutConfirmation")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-end gap-2">
+              <DialogClose
+                render={
+                  <Button size="sm" type="button" variant="ghost">
+                    {t("actions.cancel")}
+                  </Button>
+                }
+              />
+              <Button
+                disabled={isSigningOut}
+                onClick={async () => {
+                  setIsSigningOut(true)
+                  await authClient.signOut({
+                    fetchOptions: {
+                      onSuccess: () => {
+                        router.push("/auth/sign-in")
+                      },
+                    },
+                  })
+                }}
+                size="sm"
+                variant="destructive"
+              >
+                {isSigningOut && <Loader2Icon className="animate-spin" />}
+                {t("actions.signOut")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ---- The dropdown menu itself ---- */}
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -111,14 +206,16 @@ export function NavUser({
                       {user.email}
                     </span>
                   </div>
-                  <EditProfileDialog
+                  {/* Plain button — opens the controlled EditProfileDialog above */}
+                  <Button
                     className="ms-auto shrink-0"
-                    user={{
-                      name: user.name,
-                      email: user.email,
-                      image: user.avatar,
-                    }}
-                  />
+                    onClick={() => setEditProfileOpen(true)}
+                    size="icon"
+                    variant="outline"
+                  >
+                    <PencilIcon aria-hidden className="size-4" />
+                    <span className="sr-only">{t("actions.edit")}</span>
+                  </Button>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
@@ -186,13 +283,26 @@ export function NavUser({
                 <DropdownMenuSeparator />
               </>
             )}
+            {/* Language — inline items (only 2 locales, no need for Popover) */}
             <DropdownMenuGroup>
-              <DropdownMenuItem closeOnClick={false}>
+              <DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
                 {t("fields.language.label")}
-                <LangSelector />
-              </DropdownMenuItem>
+              </DropdownMenuLabel>
+              {enabledLocales.map((loc) => (
+                <DropdownMenuItem
+                  disabled={isLocalePending}
+                  key={loc}
+                  onClick={() => onChangeLocale(loc)}
+                >
+                  {localeMeta[loc].nativeLabel}
+                  {locale === loc && (
+                    <Check className="ms-auto h-4 w-4 opacity-100" />
+                  )}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            {/* Theme — inline icon buttons (no nested menu) */}
             <DropdownMenuGroup>
               <DropdownMenuItem
                 className="justify-between"
@@ -231,7 +341,13 @@ export function NavUser({
               </>
             )}
             <DropdownMenuItem render={<RefreshAllChannelTokensButton />} />
-            <DropdownMenuItem render={<SignOut />} />
+            {/* SignOut — plain menu item, opens the controlled Dialog above */}
+            <DropdownMenuItem
+              onClick={() => setSignOutOpen(true)}
+            >
+              <LogOutIcon className="h-4 w-4" />
+              {t("actions.signOut")}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
