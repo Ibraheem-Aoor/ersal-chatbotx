@@ -479,6 +479,47 @@ NavUser dropdown shows the plan badge and "Manage subscription" link
 
 ---
 
+## 17. SKIP_WABA_* Attempt-and-Skip Pattern (Restored)
+
+**Files:**
+- `integrations/whatsapp/src/api/waba-setup.ts` — flags 1–3
+- `integrations/whatsapp/src/api/webhook.ts` — flag 4
+
+**What:** Restores the pre-sync attempt-and-skip pattern for four
+SKIP_WABA_* env flags. The upstream sync changed them from error-recovery
+guards (try → catch → skip if flag set) to early-return guards (skip
+before calling). The pre-sync pattern is better for non-BSP self-hosted
+deployments because it **attempts** the call (which may succeed) and only
+skips on failure. Also restores specific Facebook API error subcode
+handling in `shareCreditLine` (1752244 = same business; 1752294 =
+invoicing policy) that was lost in the sync.
+
+| Flag | Function | File |
+|------|----------|------|
+| `SKIP_WABA_USER_ASSIGNMENT` | `addSystemUser` | `waba-setup.ts` |
+| `SKIP_WABA_CREDIT_SHARING` | `shareCreditLine` | `waba-setup.ts` |
+| `SKIP_WABA_PHONE_REGISTRATION` | `registerPhoneNumber` | `waba-setup.ts` |
+| `SKIP_WABA_WEBHOOK_SUBSCRIBE` | `subscribeWebhook` | `webhook.ts` |
+
+**Why:** Non-BSP self-hosted deployments (like ours) don't have the Meta
+BSP system-user setup. Without the try-catch-skip pattern,
+`connectWhatsappAction` fails fatally on `addSystemUser` with
+"(#100) Param user does not accept global user IDs".
+
+**Env vars to set (staging + production `.env`):**
+```
+SKIP_WABA_USER_ASSIGNMENT=true
+SKIP_WABA_CREDIT_SHARING=true
+SKIP_WABA_PHONE_REGISTRATION=true
+SKIP_WABA_WEBHOOK_SUBSCRIBE=true
+```
+
+**Verify after sync:** grep for `SKIP_WABA` in `integrations/whatsapp/`
+and confirm each function has the outer try-catch-skip wrapper (not
+early-return). Verify WhatsApp connect completes with all four flags set.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
