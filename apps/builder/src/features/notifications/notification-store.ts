@@ -29,19 +29,61 @@ type NotificationStore = NotificationState & NotificationActions
 // ---------------------------------------------------------------------------
 
 let cachedAudio: HTMLAudioElement | null = null
+let audioUnlocked = false
+
+function ensureAudioElement(): HTMLAudioElement | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+  if (!cachedAudio) {
+    cachedAudio = new Audio("/sounds/notification.wav")
+    cachedAudio.volume = 0.5
+  }
+  return cachedAudio
+}
+
+/**
+ * Unlock the notification Audio element by playing it silently during a user
+ * gesture. Browsers block `HTMLAudioElement.play()` until the page has
+ * received a user-activation event (click, key press, tap). Calling this
+ * once on the first interaction satisfies that requirement so subsequent
+ * `playNotificationSound()` calls work without restrictions.
+ *
+ * Attach to `pointerdown` / `keydown` / `touchstart` with `{ once: true }`.
+ */
+export function unlockNotificationAudio() {
+  if (audioUnlocked) {
+    return
+  }
+  const audio = ensureAudioElement()
+  if (!audio) {
+    return
+  }
+  const vol = audio.volume
+  audio.volume = 0
+  audio
+    .play()
+    .then(() => {
+      audio.pause()
+      audio.currentTime = 0
+      audio.volume = vol
+      audioUnlocked = true
+    })
+    .catch(() => {
+      // Still blocked — will retry on the next gesture naturally
+      audio.volume = vol
+    })
+}
 
 function playNotificationSound() {
   try {
-    if (typeof window === "undefined") {
+    const audio = ensureAudioElement()
+    if (!audio) {
       return
     }
-    if (!cachedAudio) {
-      cachedAudio = new Audio("/sounds/notification.wav")
-      cachedAudio.volume = 0.5
-    }
     // Reset to the beginning in case a previous play is still going
-    cachedAudio.currentTime = 0
-    cachedAudio.play().catch(() => {
+    audio.currentTime = 0
+    audio.play().catch(() => {
       // Autoplay blocked — ignore silently
     })
   } catch {

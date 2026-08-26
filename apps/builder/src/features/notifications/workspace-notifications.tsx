@@ -5,9 +5,13 @@ import {
   RealtimeEventType,
 } from "@chatbotx.io/partysocket-config"
 import usePartySocket from "partysocket/react"
+import { useEffect } from "react"
 import { useTenantSettings } from "@/features/tenant"
 import { authClient } from "@/lib/auth/auth-client"
-import { notificationStore } from "./notification-store"
+import {
+  notificationStore,
+  unlockNotificationAudio,
+} from "./notification-store"
 
 /**
  * Lightweight workspace-level realtime listener.
@@ -24,6 +28,24 @@ export function WorkspaceNotifications({
   workspaceId: string
 }) {
   const { wsUrl } = useTenantSettings()
+
+  // Unlock the notification Audio element on the first user interaction so
+  // subsequent playNotificationSound() calls aren't blocked by the browser's
+  // autoplay policy. The listeners auto-remove after firing ({ once: true }).
+  useEffect(() => {
+    const events = ["pointerdown", "keydown", "touchstart"] as const
+    for (const event of events) {
+      document.addEventListener(event, unlockNotificationAudio, {
+        once: true,
+        passive: true,
+      })
+    }
+    return () => {
+      for (const event of events) {
+        document.removeEventListener(event, unlockNotificationAudio)
+      }
+    }
+  }, [])
 
   usePartySocket({
     host: wsUrl,

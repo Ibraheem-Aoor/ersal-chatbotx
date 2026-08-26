@@ -23,6 +23,11 @@ const publicRoutes = [
   "/extensions",
   "/booking",
   "/portal/redeem",
+  // FORK PATCH: static assets served from public/ must be accessible without
+  // auth — the browser may fetch them without session cookies (Audio elements,
+  // font-face requests on unauthenticated pages like /auth/sign-in).
+  "/sounds",
+  "/fonts",
 ]
 const signinPath = "/auth/sign-in"
 
@@ -116,7 +121,7 @@ function isPublicRoute(pathname: string) {
 
 export const config = {
   matcher: [
-    "/((?!webchat|zalo_verifier|pricing|chat-widget|assets|ws|storage|_next/static|_next/image|favicon.ico|avatars|.*.svg|brand|openapi.json).*)",
+    "/((?!webchat|zalo_verifier|pricing|chat-widget|assets|ws|storage|_next/static|_next/image|favicon.ico|avatars|.*.svg|brand|sounds|fonts|openapi.json).*)",
     "/api/presigned-upload",
     "/api/whatsapp/:path*",
   ],

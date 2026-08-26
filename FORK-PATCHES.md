@@ -520,6 +520,47 @@ early-return). Verify WhatsApp connect completes with all four flags set.
 
 ---
 
+## 18. Public Asset Paths in Middleware (sounds, fonts)
+
+**Files:** `apps/builder/src/proxy.ts`
+
+**What:** Added `/sounds` and `/fonts` to BOTH the `publicRoutes` array AND the
+matcher negative-lookahead regex. Without this, requests to static assets in
+`apps/builder/public/sounds/` and `public/fonts/` pass through the auth middleware
+and may be redirected to `/auth/sign-in` instead of being served directly.
+
+**Why:** The notification sound (`/sounds/notification.wav`) is loaded by an
+`HTMLAudioElement` that may not carry session cookies in all contexts. Fonts
+loaded via `@font-face` fail on unauthenticated pages like `/auth/sign-in`.
+Other public dirs (`brand/`, `chat-widget/`) were already excluded.
+
+**Verify after sync:** `GET /sounds/notification.wav` returns 200 (audio data),
+not 307 to `/auth/sign-in`. Font files load on the sign-in page.
+
+---
+
+## 19. Notification Audio Unlock on User Gesture
+
+**Files:**
+- `apps/builder/src/features/notifications/notification-store.ts`
+- `apps/builder/src/features/notifications/workspace-notifications.tsx`
+
+**What:** Added `unlockNotificationAudio()` function that plays the notification
+audio element silently (volume 0) during the first user interaction (pointerdown,
+keydown, touchstart). `WorkspaceNotifications` attaches these listeners with
+`{ once: true }` at the workspace layout level.
+
+**Why:** Browser autoplay policy blocks `HTMLAudioElement.play()` until a page has
+received a user-activation event. Without priming, `playNotificationSound()` is
+silently rejected on fresh/incognito sessions. This pattern satisfies the browser
+requirement on the very first interaction, so all subsequent notification sounds
+play reliably — no user configuration needed.
+
+**Verify after sync:** In an incognito window, sign in, click anywhere once, then
+receive an incoming message — notification sound should play.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
