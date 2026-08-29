@@ -17,11 +17,8 @@ import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { type ChangeEvent, useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
-import {
-  type ImportFlowSchema,
-  importFlowAction,
-  importFlowSchema,
-} from "./actions/import-flow.action"
+import { importFlowAction } from "./actions/import-flow.action"
+import { type ImportFlowSchema, importFlowSchema } from "./schema/action"
 
 export function ImportFlowDialog({
   workspaceId,

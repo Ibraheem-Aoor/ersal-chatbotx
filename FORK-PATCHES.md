@@ -561,6 +561,32 @@ receive an incoming message — notification sound should play.
 
 ---
 
+## 20. Flow Import Schema Extraction ("use server" Compliance)
+
+**Files:**
+- `apps/builder/src/features/flows/schema/action.ts` (NEW)
+- `apps/builder/src/features/flows/actions/import-flow.action.ts`
+- `apps/builder/src/features/flows/import-flow-dialog.tsx`
+
+**What:** Moved `importFlowSchema` (zod object) and `ImportFlowSchema` (inferred
+type) out of the `"use server"` action file into a new `schema/action.ts` file.
+The action file now imports them; `import-flow-dialog.tsx` imports the schema from
+`./schema/action` and the action from `./actions/import-flow.action`.
+
+**Why:** Next.js 16 forbids non-async-function exports from `"use server"` modules.
+The exported zod schema object caused a runtime error:
+`A "use server" file can only export async functions, found object (digest 87439518@E352)`.
+This poisoned the entire flows action chunk, breaking server actions app-wide.
+
+**Upstream convention:** Upstream keeps action schemas in `features/<name>/schema/action.ts`
+(26 features use `schema/`, 53 use `schemas/`). Flows' adjacent features (`flow-versions`,
+`folders`) use `schema/`, so this patch matches.
+
+**Verify after sync:** Flow import dialog opens without runtime errors. Importing a
+valid `.json` file creates the flow.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
