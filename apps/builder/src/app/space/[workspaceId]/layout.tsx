@@ -23,6 +23,7 @@ import { TokenRefreshErrorDialog } from "@/components/token-refresh-error-dialog
 import { WorkspaceDeletionTabSync } from "@/components/workspace-deletion-tab-sync"
 import { isCloud } from "@/env"
 import { BillingBannerServer } from "@/features/billing/components/billing-banner-server"
+import { listIntegrationWhatsapps } from "@/features/integration-whatsapp/queries"
 import { CouponTopicStoreProvider } from "@/features/coupons/provider/coupon-topic-store-context"
 import { WorkspaceNotifications } from "@/features/notifications/workspace-notifications"
 import { getTenantSettings } from "@/features/tenant/utils"
@@ -81,6 +82,7 @@ export default async function WorkspaceLayout({
     { blocked, blockReason, quota, trialEndsAt },
     usage,
     tokenRefreshErrors,
+    whatsappIntegrations,
   ] = await Promise.all([
     resolveWorkspaceBlockState(targetWorkspaceMember.workspace.ownerId),
     // FORK PATCH: Fetch usage summary for ALL editions (not just cloud) so the
@@ -93,6 +95,10 @@ export default async function WorkspaceLayout({
       workspaceId,
     }),
     integrationService.findTokenRefreshErrorsByWorkspaceId(workspaceId),
+    // FORK PATCH: Fetch WhatsApp integrations for sidebar quick-access link.
+    listIntegrationWhatsapps({ workspaceId }).then((res) =>
+      res.data.map((wa) => ({ id: wa.id })),
+    ),
   ])
 
   await enforceWorkspaceNotScheduledForDeletionFromRequest(
@@ -130,6 +136,7 @@ export default async function WorkspaceLayout({
         permissions={targetWorkspaceMember.permissions}
         quota={quotaSummary}
         scheduledForDeletion={scheduledForDeletion}
+        whatsappIntegrationIds={whatsappIntegrations.map((wa) => wa.id)}
         workspaceId={workspaceId}
       />
       <WorkspaceNotifications workspaceId={workspaceId} />

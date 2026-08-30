@@ -12,6 +12,7 @@ import {
   BrainIcon,
   ChartPieIcon,
   ChevronsRight,
+  LayoutTemplateIcon,
   LightbulbIcon,
   type LucideIcon,
   MegaphoneIcon,
@@ -61,6 +62,7 @@ export function AppSidebar({
   permissions,
   quota,
   scheduledForDeletion = false,
+  whatsappIntegrationIds = [],
   ...props
 }: ComponentProps<typeof Sidebar> & {
   workspaceId: string
@@ -72,6 +74,8 @@ export function AppSidebar({
   permissions: WorkspaceMemberPermissions
   quota: QuotaSummary
   scheduledForDeletion?: boolean
+  /** FORK PATCH: WhatsApp integration IDs for the templates quick-access link. */
+  whatsappIntegrationIds?: string[]
 }) {
   const t = useTranslations()
   const { data: session } = authClient.useSession()
@@ -139,6 +143,19 @@ export function AppSidebar({
         title: t("webhooks.title"),
         url: `/space/${workspaceId}/webhooks`,
         icon: WebhookIcon,
+      },
+      // FORK PATCH: WhatsApp Templates quick-access. URL resolves based on
+      // how many WA integrations the workspace has:
+      //  - 1 integration → link directly to its templates page
+      //  - 0 or 2+ → link to the WA channel settings (connect / pick one)
+      {
+        title: t("whatsapp.tabs.messageTemplates"),
+        url:
+          whatsappIntegrationIds.length === 1
+            ? `/space/${workspaceId}/whatsapps/${whatsappIntegrationIds[0]}/message-templates`
+            : `/space/${workspaceId}/settings/channels/whatsapp`,
+        icon: LayoutTemplateIcon,
+        permission: "superAdmin",
       },
       {
         title: t("tools.title"),

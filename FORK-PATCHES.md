@@ -743,6 +743,35 @@ footer toggles (switches not checkboxes). Submit → template appears in the lis
 
 ---
 
+## 26. WhatsApp Templates sidebar quick-access nav item
+
+**Files:**
+- `apps/builder/src/app/space/[workspaceId]/layout.tsx`
+- `apps/builder/src/components/app-sidebar.tsx`
+
+**What:** Adds a "Message Templates" item to the workspace sidebar for quick access to
+WhatsApp template management. The layout fetches the workspace's WhatsApp integrations
+and passes their IDs to the sidebar. The nav item's URL resolves based on how many WA
+integrations the workspace has:
+
+- **1 integration** → links directly to `/whatsapps/{id}/message-templates`
+- **0 or 2+ integrations** → links to `/settings/channels/whatsapp` (connect or pick one)
+
+The item is gated behind `superAdmin` permission, consistent with other settings-level
+nav items.
+
+**Why:** WhatsApp template management is a frequent workflow for users sending broadcast
+campaigns. Without a sidebar item, the user has to navigate Settings → Channels →
+WhatsApp → select integration → Message Templates tab — five clicks. The sidebar link
+reduces this to one click.
+
+**Verify after sync:** Open any workspace sidebar. "Message Templates" item appears
+(with a LayoutTemplate icon) between Webhooks and Tools. With 1 WA integration: click
+goes to that integration's templates page. With 0 or 2+: click goes to WA channel
+settings page. Non-superAdmin users do not see the item.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
