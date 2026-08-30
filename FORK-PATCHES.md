@@ -700,6 +700,49 @@ NOT appear for enterprise users.
 
 ---
 
+## 25. Restore WhatsApp template creation — button, validation, multi-WA safety
+
+**Files:**
+- `apps/builder/src/features/integration-whatsapp/message-templates/message-templates-table-toolbar-actions.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/actions/create-message-template.action.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/schema/mutation.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/button/edit-button-dialog.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/{text,image,video,document,catalog,product}/partial.tsx`
+- `apps/builder/messages/en.json`, `apps/builder/messages/ar.json`
+
+**What:** The "Create Template" button was silently dropped during the Phase 4 Base UI
+sync (commit `6211e702d`), along with two earlier bugfix commits (`97403aaae`,
+`0a8a8c0b7`). This patch restores everything:
+
+1. **Re-wired Create button** in the toolbar actions (next to Synchronize).
+2. **Thread `integrationWhatsappId`** through dialog → action → DB lookup. The action
+   previously looked up the WhatsApp integration by `workspaceId` only — silently
+   picking an arbitrary integration when a workspace has multiple WhatsApp numbers.
+   Now scoped to both `workspaceId` + `id` using `workspaceIdAndIdRequestParams`.
+3. **Latin-only name validation** (`/^[a-z0-9_]+$/`) on the template name field. Meta
+   rejects non-latin names; without this, the form submits and the API returns an error.
+4. **SwitchField instead of CheckboxGroupField** for boolean toggles (show header /
+   show footer) across 6 template partials. CheckboxGroupField renders a checkbox list
+   which is wrong UX for a single boolean.
+5. **useWatch with `control: form.control`** in `edit-button-dialog.tsx`. Without the
+   explicit `control`, `useWatch` reads from the parent form context instead of the
+   dialog's own form, causing the button type dropdown to malfunction.
+6. **Category descriptions** in en.json and ar.json — replaced placeholder strings.
+7. **Deleted 3 dead files** (`._ts`/`._tsx` extensions, unreferenced predecessors).
+
+**Why:** The Base UI migration commit adapted the `integrationWhatsapp` prop type from
+`IntegrationWhatsappModel` to `IntegrationWhatsappLinkable` but dropped the dialog
+import and JSX as collateral damage. The Phase 4 audit checked file existence but not
+the render tree, so the regression went unnoticed.
+
+**Verify after sync:** Navigate to WhatsApp channel → Message Templates tab. "Create"
+button appears next to "Synchronize". Click Create → type selector opens → select Text
+→ form shows name (latin-only), language, category (with real descriptions), header/
+footer toggles (switches not checkboxes). Submit → template appears in the list.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

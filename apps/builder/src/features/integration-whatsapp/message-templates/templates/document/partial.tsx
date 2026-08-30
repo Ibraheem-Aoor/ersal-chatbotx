@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckboxGroupField } from "@chatbotx.io/ui/components/form/checkbox-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
@@ -48,14 +48,9 @@ const TemplateDocumentPartialComponent = (props: { parentName?: string }) => {
   return (
     <div className="w-full flex-1" {...rest}>
       <div className="flex gap-4">
-        <CheckboxGroupField
+        <SwitchField
+          label={t("whatsapp.showFooter.label")}
           name={`${parentName}.showFooter`}
-          options={[
-            {
-              label: t("whatsapp.showFooter.label"),
-              value: "showFooter",
-            },
-          ]}
         />
       </div>
       {bodyVariables.length > 0 && (

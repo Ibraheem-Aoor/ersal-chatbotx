@@ -12,8 +12,8 @@ import type {
 } from "@chatbotx.io/integration-whatsapp"
 import { createId } from "@chatbotx.io/utils"
 import {
-  type WorkspaceIdRequestParams,
-  workspaceIdrequestParams,
+  type WorkspaceIdAndIdRequestParams,
+  workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
 import { integrations } from "@/integration"
 import { workspaceActionClient } from "@/lib/safe-action"
@@ -24,19 +24,19 @@ import {
 import { parseComponents } from "./utils"
 
 export const createMessageTemplateAction = workspaceActionClient
-  .bindArgsSchemas(workspaceIdrequestParams)
+  .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .inputSchema(createMessageTemplateRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [workspaceId],
+      bindArgsParsedInputs: [workspaceId, integrationWhatsappId],
       parsedInput,
     }: {
-      bindArgsParsedInputs: WorkspaceIdRequestParams
+      bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
       parsedInput: CreateMessageTemplateRequest
     }) => {
       const integrationWhatsapp = await findOrFail({
         table: integrationWhatsappModel,
-        where: { workspaceId },
+        where: { workspaceId, id: integrationWhatsappId },
         message: "Whatsapp integration not found",
       })
 

@@ -3492,11 +3492,11 @@
   "whatsapp": {
     "category": {
       "marketing": {
-        "description": "Marketing category description",
+        "description": "Send promotions, offers, and updates to increase awareness and engagement.",
         "label": "Marketing"
       },
       "utility": {
-        "description": "Utility category description",
+        "description": "Send account updates, order notifications, and other transactional messages.",
         "label": "Utility"
       }
     },

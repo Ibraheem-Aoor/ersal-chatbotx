@@ -80,9 +80,11 @@ const partials: Record<TemplateType, ComponentType<PartialProps> | undefined> =
 
 function CreateMessageTemplateDialogContent({
   workspaceId,
+  integrationWhatsappId,
   onSuccess,
 }: {
   workspaceId: string
+  integrationWhatsappId: string
   onSuccess: () => void
 }) {
   const t = useTranslations()
@@ -94,7 +96,7 @@ function CreateMessageTemplateDialogContent({
     resetFormAndAction,
     form: { setValue },
   } = useHookFormAction(
-    createMessageTemplateAction.bind(null, workspaceId),
+    createMessageTemplateAction.bind(null, workspaceId, integrationWhatsappId),
     zodResolver(createMessageTemplateRequest),
     {
       actionProps: {
@@ -270,8 +272,10 @@ function CreateMessageTemplateDialogContent({
 export const CreateMessageTemplateDialog = memo(
   function CreateMessageTemplateDialog({
     workspaceId,
+    integrationWhatsappId,
   }: {
     workspaceId: string
+    integrationWhatsappId: string
   }) {
     const t = useTranslations()
     const router = useRouter()
@@ -293,6 +297,7 @@ export const CreateMessageTemplateDialog = memo(
           </SheetHeader>
           {open && (
             <CreateMessageTemplateDialogContent
+              integrationWhatsappId={integrationWhatsappId}
               onSuccess={() => {
                 setOpen(false)
                 router.refresh()
