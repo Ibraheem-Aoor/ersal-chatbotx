@@ -267,12 +267,12 @@ export function NavUser({
             )}
             {workspaceId && (
               <>
-                {planName && (
-                  <DropdownMenuLabel className="flex items-center gap-2 py-1">
-                    <Badge variant="secondary">{planName}</Badge>
-                  </DropdownMenuLabel>
-                )}
                 <DropdownMenuGroup>
+                  {planName && (
+                    <DropdownMenuLabel className="flex items-center gap-2 py-1">
+                      <Badge variant="secondary">{planName}</Badge>
+                    </DropdownMenuLabel>
+                  )}
                   {planName ? (
                     <DropdownMenuItem
                       render={

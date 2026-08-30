@@ -638,6 +638,42 @@ theme switcher (standalone) still works.
 
 ---
 
+## 23. Fix Base UI error #31 — DropdownMenuLabel outside DropdownMenuGroup + RefreshAllChannelTokensButton prop forwarding
+
+**Files:** `apps/builder/src/components/nav-user.tsx`,
+`apps/builder/src/features/workspaces/components/refresh-all-channel-tokens-button.tsx`
+
+**What (nav-user):** The `{workspaceId && ...}` block rendered a `<DropdownMenuLabel>`
+(plan `<Badge>`) as a sibling of `<DropdownMenuGroup>` rather than inside it. Since
+`DropdownMenuLabel` wraps `MenuPrimitive.GroupLabel`, it requires a parent
+`MenuPrimitive.Group` (= `DropdownMenuGroup`) for `MenuGroupContext`. Without it,
+Base UI throws production error #31 ("MenuGroupContext is missing"). The fix moves the
+label inside the `DropdownMenuGroup` alongside the billing/subscribe menu items.
+
+This error only triggered for workspace users (where `workspaceId` is set and
+`planName` is present). Admin-only menus had no orphan labels, so they never crashed.
+
+**What (RefreshAllChannelTokensButton):** The component is used as
+`render={<RefreshAllChannelTokensButton />}` inside a `DropdownMenuItem`. Base UI
+clones the element via `React.cloneElement` and merges its own props (role, tabIndex,
+keyboard handlers, ref). The original component ignored all incoming props — it
+rendered a hardcoded `<button>` with its own styles. This meant Base UI's menu
+keyboard navigation, focus management, and ARIA attributes never reached the DOM.
+
+Fixed by accepting `ComponentProps<"button">` with `ref` and spreading `...rest` onto
+the root `<button>`, so Base UI's merged props reach the DOM element.
+
+**Why:** Base UI `MenuPrimitive.GroupLabel` requires `MenuGroupContext` from a parent
+`MenuPrimitive.Group`. Without it, accessing the context throws error #31 on any mouse
+event. The `RefreshAllChannelTokensButton` fix ensures proper render-prop composition
+so the menu item is keyboard-navigable and accessible.
+
+**Verify after sync:** Open the user avatar menu while logged in as a workspace user
+with a plan. Menu opens without crash, plan badge displays, keyboard navigation works
+on all items including "Refresh all channel tokens".
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

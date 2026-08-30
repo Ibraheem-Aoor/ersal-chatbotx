@@ -3,10 +3,21 @@
 import { Loader2Icon, RefreshCwIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
+import type { ComponentProps } from "react"
 import { toast } from "sonner"
 import { refreshAllChannelTokensAction } from "../actions/refresh-all-channel-tokens.action"
 
-export function RefreshAllChannelTokensButton() {
+/**
+ * Used as a `render` element inside `DropdownMenuItem`. Base UI clones the
+ * element and merges its own props (role, tabIndex, keyboard handlers, ref)
+ * via `React.cloneElement`. Spreading `...rest` onto the root `<button>`
+ * ensures those props reach the DOM; without it, menu keyboard navigation
+ * and ARIA attributes break silently.
+ */
+export function RefreshAllChannelTokensButton({
+  ref,
+  ...rest
+}: ComponentProps<"button">) {
   const t = useTranslations()
 
   const { execute, isPending } = useAction(refreshAllChannelTokensAction, {
@@ -38,7 +49,8 @@ export function RefreshAllChannelTokensButton() {
 
   return (
     <button
-      className="relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-start text-sm outline-hidden transition-colors focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0"
+      {...rest}
+      ref={ref}
       disabled={isPending}
       onClick={() => execute()}
       type="button"
