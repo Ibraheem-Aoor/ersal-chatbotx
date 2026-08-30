@@ -772,6 +772,30 @@ settings page. Non-superAdmin users do not see the item.
 
 ---
 
+## 27. Official provider icons on integrations settings page
+
+**Files:**
+- `apps/builder/src/features/integrations/integration-icons.tsx` (new)
+- `apps/builder/src/features/integrations/settings-registry.ts`
+
+**What:** Replaces generic lucide icons (BotIcon, MailIcon, TableIcon) with official
+provider logos on the integrations settings page. Uses `@icons-pack/react-simple-icons`
+with brand hex colors where available (Anthropic/Claude, Google Gemini, Google Sheets,
+Mailchimp, OpenRouter) and the Composio public logo API (`logos.composio.dev`) for
+providers without a simple-icon export (OpenAI, DeepSeek, ActiveCampaign, GetResponse,
+MailerLite, Moosend, SendGrid, Klaviyo). Drip uses its own hosted logo asset. The
+generic BotIcon is kept only for "OpenAI Compatible" (no single brand to represent).
+
+**Why:** Six AI providers sharing one BotIcon and eight email providers sharing one
+MailIcon makes it hard to visually scan the integrations list. Originally fixed in commit
+`5dbdfe2c1` but lost during the accordion-shell refactor (`8b6a0c527`).
+
+**Verify after sync:** Navigate to Settings → Integrations. Each provider row shows its
+distinct brand logo instead of a generic icon. Check that external images load (Composio
+logos for OpenAI, DeepSeek, etc.). Claude icon adapts to dark mode (zinc-100 fill).
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

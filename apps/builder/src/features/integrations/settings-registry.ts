@@ -1,6 +1,22 @@
 import { SiFacebook, SiMake } from "@icons-pack/react-simple-icons"
-import { BotIcon, CodeIcon, MailIcon, TableIcon } from "lucide-react"
+import { BotIcon, CodeIcon } from "lucide-react"
 import type { ComponentType } from "react"
+import {
+  ActiveCampaignIcon,
+  ClaudeIcon,
+  DeepSeekIcon,
+  DripIcon,
+  GeminiIcon,
+  GetResponseIcon,
+  GoogleSheetsIcon,
+  KlaviyoIcon,
+  MailchimpIcon,
+  MailerLiteIcon,
+  MoosendIcon,
+  OpenAIIcon,
+  OpenRouterIcon,
+  SendGridIcon,
+} from "@/features/integrations/integration-icons"
 
 /**
  * Ordered registry of the workspace-settings integration providers, following
@@ -31,29 +47,41 @@ export const INTEGRATION_SETTINGS_REGISTRY: readonly IntegrationSettingsEntry[] 
       titleKey: "workspaceToken.title",
       icon: CodeIcon,
     },
-    { slug: "openai", titleKey: "openai.title", icon: BotIcon },
-    { slug: "gemini", titleKey: "gemini.title", icon: BotIcon },
-    { slug: "claude", titleKey: "claude.title", icon: BotIcon },
-    { slug: "deepseek", titleKey: "deepseek.title", icon: BotIcon },
-    { slug: "openrouter", titleKey: "openrouter.title", icon: BotIcon },
+    { slug: "openai", titleKey: "openai.title", icon: OpenAIIcon },
+    { slug: "gemini", titleKey: "gemini.title", icon: GeminiIcon },
+    { slug: "claude", titleKey: "claude.title", icon: ClaudeIcon },
+    { slug: "deepseek", titleKey: "deepseek.title", icon: DeepSeekIcon },
+    { slug: "openrouter", titleKey: "openrouter.title", icon: OpenRouterIcon },
     {
       slug: "openai-compatible",
       titleKey: "openaiCompatible.title",
       icon: BotIcon,
     },
-    { slug: "google-sheets", titleKey: "googleSheets.title", icon: TableIcon },
+    {
+      slug: "google-sheets",
+      titleKey: "googleSheets.title",
+      icon: GoogleSheetsIcon,
+    },
     { slug: "facebook-ads", titleKey: "facebookAds.title", icon: SiFacebook },
     { slug: "make", titleKey: "make.title", icon: SiMake },
     {
       slug: "active-campaign",
       titleKey: "activeCampaign.title",
-      icon: MailIcon,
+      icon: ActiveCampaignIcon,
     },
-    { slug: "get-response", titleKey: "getResponse.title", icon: MailIcon },
-    { slug: "mailchimp", titleKey: "mailchimp.title", icon: MailIcon },
-    { slug: "mailer-lite", titleKey: "mailerLite.title", icon: MailIcon },
-    { slug: "moosend", titleKey: "moosend.title", icon: MailIcon },
-    { slug: "drip", titleKey: "drip.title", icon: MailIcon },
-    { slug: "sendgrid", titleKey: "sendGrid.title", icon: MailIcon },
-    { slug: "klaviyo", titleKey: "klaviyo.title", icon: MailIcon },
+    {
+      slug: "get-response",
+      titleKey: "getResponse.title",
+      icon: GetResponseIcon,
+    },
+    { slug: "mailchimp", titleKey: "mailchimp.title", icon: MailchimpIcon },
+    {
+      slug: "mailer-lite",
+      titleKey: "mailerLite.title",
+      icon: MailerLiteIcon,
+    },
+    { slug: "moosend", titleKey: "moosend.title", icon: MoosendIcon },
+    { slug: "drip", titleKey: "drip.title", icon: DripIcon },
+    { slug: "sendgrid", titleKey: "sendGrid.title", icon: SendGridIcon },
+    { slug: "klaviyo", titleKey: "klaviyo.title", icon: KlaviyoIcon },
   ]
