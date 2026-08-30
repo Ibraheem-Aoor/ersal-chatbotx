@@ -796,6 +796,26 @@ logos for OpenAI, DeepSeek, etc.). Claude icon adapts to dark mode (zinc-100 fil
 
 ---
 
+## 28. Fix Google Sheets "Manage" button 404 — wrong href path
+
+**File:** `apps/builder/src/features/integration-google-sheets/google-sheets-manage.tsx`
+
+**What:** Changed the Manage button's `href` from the broken relative path `../google-sheets`
+to an absolute path `/space/${workspaceId}/google-sheets`. The relative path resolved to
+`/space/{workspaceId}/settings/google-sheets` which 404s because the actual manage page
+lives under the `(integrations)` route group at `(integrations)/google-sheets/page.tsx` —
+and since `(integrations)` is a Next.js route group (parentheses = not in URL), the correct
+URL is `/space/{workspaceId}/google-sheets`.
+
+**Why:** Clicking the Manage button on the Google Sheets integration settings card produced
+a 404. All other integrations (WhatsApp, Messenger, Instagram) already use absolute paths
+for their Manage links — Google Sheets was the only one using a broken relative href.
+
+**Verify after sync:** Connect Google Sheets in Settings → Integrations → Google Sheets.
+Click the "Manage" button → navigates to the spreadsheet browser page (not a 404).
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
