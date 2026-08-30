@@ -36,14 +36,18 @@ import {
   Crown,
   Loader2Icon,
   LogOutIcon,
+  Monitor,
+  Moon,
   PencilIcon,
   Settings2,
   ShieldCheck,
   SparklesIcon,
+  Sun,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { useTheme } from "next-themes"
 import { useState, useTransition } from "react"
 import { UpgradePlanDialog } from "@/enterprise/features/billing/upgrade-plan-dialog"
 import { isCloud } from "@/env"
@@ -58,7 +62,6 @@ import {
 import { authClient } from "@/lib/auth/auth-client"
 import { useUserAvatarUrl } from "@/lib/auth/avatar"
 import { setUserLocale } from "@/lib/locale"
-import { ThemeSwitcher } from "./theme-switcher"
 
 export function NavUser({
   user,
@@ -89,6 +92,16 @@ export function NavUser({
   const [editProfileOpen, setEditProfileOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+
+  // Theme switching — inlined as plain menu items (same pattern as locale
+  // below). Embedding ThemeSwitcher's Button components inside a
+  // DropdownMenuItem triggers Base UI error #31.
+  const { theme, setTheme } = useTheme()
+  const themeOptions = [
+    { value: "light", icon: Sun, label: t("theme.light") },
+    { value: "dark", icon: Moon, label: t("theme.dark") },
+    { value: "system", icon: Monitor, label: t("theme.system") },
+  ] as const
 
   // Locale switching — inlined because there are only 2 enabled locales,
   // no need for the Popover+Command that LangSelector uses.
@@ -302,15 +315,23 @@ export function NavUser({
               ))}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            {/* Theme — inline icon buttons (no nested menu) */}
+            {/* Theme — plain menu items (no nested interactive component) */}
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                className="justify-between"
-                closeOnClick={false}
-              >
+              <DropdownMenuLabel className="font-normal text-muted-foreground text-xs">
                 {t("fields.theme.label")}
-                <ThemeSwitcher />
-              </DropdownMenuItem>
+              </DropdownMenuLabel>
+              {themeOptions.map(({ value, icon: Icon, label }) => (
+                <DropdownMenuItem
+                  key={value}
+                  onClick={() => setTheme(value)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                  {theme === value && (
+                    <Check className="ms-auto h-4 w-4 opacity-100" />
+                  )}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {(isSuperAdmin || isPlatformAdmin) && (

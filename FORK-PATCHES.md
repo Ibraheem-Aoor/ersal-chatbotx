@@ -616,6 +616,28 @@ selected) — both must succeed with `folderId = null` in the DB, not `"0"`.
 
 ---
 
+## 22. NavUser Theme Switcher — Plain Menu Items (Base UI Error #31)
+
+**File:** `apps/builder/src/components/nav-user.tsx`
+
+**What:** Replaced the embedded `<ThemeSwitcher />` component (renders interactive
+`Button` components) inside a `DropdownMenuItem` with plain `DropdownMenuItem`s
+per theme option (light / dark / system), each with an `onClick` that calls
+`setTheme()`. Shows a `Check` icon on the active theme, mirroring the locale
+group directly above it.
+
+**Why:** `ThemeSwitcher` renders `<Button>` components — interactive Base UI
+primitives. Nesting them inside `DropdownMenuItem` triggers Base UI production
+error #31 on `onMouseDown`, crashing the user avatar menu. This is the same
+nesting-violation class already fixed for dialogs in this file. The standalone
+`ThemeSwitcher` component is preserved for use outside menus (e.g. auth layout).
+
+**Verify after sync:** User avatar menu opens without crash; all three theme
+options appear with a check on the active one; switching themes works. Auth page
+theme switcher (standalone) still works.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
