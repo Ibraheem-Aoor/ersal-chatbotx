@@ -674,6 +674,32 @@ on all items including "Refresh all channel tokens".
 
 ---
 
+## 24. Enable usage metrics display for enterprise edition
+
+**File:** `apps/builder/src/app/space/[workspaceId]/layout.tsx`
+
+**What:** Removed the `isCloud()` gate on the `quotaEnforcementService.getWorkspaceUsageSummary()`
+call. Previously, the workspace usage summary was only fetched for the cloud edition —
+enterprise always received `null`, so `buildWorkspaceQuotaMetrics(null)` returned `[]`
+and `NavUsage` rendered nothing in the sidebar.
+
+Now the usage summary is fetched unconditionally. The `NavUsage` component renders a
+usage ring for any metric that has a numeric `limit` in the plan's `UserQuota` row.
+Metrics with `null` limits are automatically hidden by `buildWorkspaceQuotaMetrics`.
+
+The expired-trial banner (`ExpiredBanner`) remains cloud-only — that blocking UX does
+not apply to enterprise.
+
+**Why:** Enterprise billing plans set numeric limits on contacts, channels, workspaces,
+and team members via the `UserQuota` row. Without fetching the usage summary, the
+sidebar never displayed how much of the plan's quota was consumed.
+
+**Verify after sync:** Sidebar footer shows a usage ring when the workspace owner's
+plan has numeric limits. Metrics without limits are hidden. Expired-trial banner does
+NOT appear for enterprise users.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
@@ -695,7 +721,7 @@ if upstream modifies the same files.
 These upstream gates work correctly with `NEXT_PUBLIC_EDITION=enterprise`:
 
 - `isCommunity()` → `false` — create workspace card, superAdmin toggles, OAuth providers all enabled
-- `isCloud()` → `false` — cloud-only Stripe scoping, manage layout, action-level blocking stay hidden (correct); quota *read* for planName is now always-on (patch #16)
+- `isCloud()` → `false` — cloud-only Stripe scoping, manage layout, action-level blocking, expired-trial banner stay hidden (correct); quota *read* for planName is always-on (patch #16); usage metrics display is always-on (patch #24)
 - `showEnterpriseItems` → `true` — branding, email templates, help items shown in admin sidebar
 - `assertEnterpriseFeatures()` → passes — branding/email template mutations succeed
 - `app/admin/(enterprise)/layout.tsx` → passes — enterprise admin pages load

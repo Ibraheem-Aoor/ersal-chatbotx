@@ -59,8 +59,8 @@ export default async function WorkspaceLayout({
     redirect("/suspended")
   }
 
-  // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
-  // community/enterprise installs use every feature freely — no quota gating.
+  // Blocking gates (trial-expired banner) apply only to the cloud edition.
+  // Usage metrics display for all editions (enterprise plans set limits too).
   const cloud = isCloud()
 
   // Check if user is a member of the workspace
@@ -83,12 +83,15 @@ export default async function WorkspaceLayout({
     tokenRefreshErrors,
   ] = await Promise.all([
     resolveWorkspaceBlockState(targetWorkspaceMember.workspace.ownerId),
-    cloud
-      ? quotaEnforcementService.getWorkspaceUsageSummary({
-          userId: targetWorkspaceMember.workspace.ownerId,
-          workspaceId,
-        })
-      : null,
+    // FORK PATCH: Fetch usage summary for ALL editions (not just cloud) so the
+    // sidebar displays quota metrics for enterprise billing plans too. The
+    // service reads from UserQuota + WorkspaceUsage — both are populated by the
+    // enterprise billing system. `buildWorkspaceQuotaMetrics` filters to only
+    // metrics with numeric limits, so plans without a given limit just hide it.
+    quotaEnforcementService.getWorkspaceUsageSummary({
+      userId: targetWorkspaceMember.workspace.ownerId,
+      workspaceId,
+    }),
     integrationService.findTokenRefreshErrorsByWorkspaceId(workspaceId),
   ])
 
