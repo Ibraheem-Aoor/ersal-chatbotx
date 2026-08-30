@@ -1,4 +1,5 @@
 import { type DatabaseClient, db } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import {
   flowAnalyticsSessionModel,
   flowModel,
@@ -102,7 +103,11 @@ class FlowService extends BaseService {
         active: input.active,
         enableInInbox: input.enableInInbox,
         workspaceId: input.workspaceId,
-        folderId: input.folderId ?? null,
+        // rootFolderId ("0") is a UI sentinel — coerce to null for DB insert
+        folderId:
+          input.folderId && input.folderId !== rootFolderId
+            ? input.folderId
+            : null,
         currentVersionId: null,
         draftVersionId,
       })

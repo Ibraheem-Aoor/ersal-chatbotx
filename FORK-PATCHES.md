@@ -587,6 +587,35 @@ valid `.json` file creates the flow.
 
 ---
 
+## 21. Coerce rootFolderId to null on Flow Insert (FK Violation Fix)
+
+**Files:**
+- `apps/builder/src/features/flows/import-flow-dialog.tsx`
+- `apps/builder/src/features/flows/actions/import-flow.action.ts`
+- `apps/builder/src/features/flows/actions/create-flow-action.ts`
+- `packages/business/src/flow/service.ts`
+
+**What:** `rootFolderId` is the string `"0"` — a UI sentinel meaning "no folder"
+(used in queries as `{ isNull: true }`, in the URL as the default search param).
+The import-flow dialog and action were passing it through to `flowModel.insert()`
+as `folderId: "0"`, triggering a Postgres FK constraint violation because no
+`Folder` row with `id = 0` exists.
+
+Fixed at three layers (defense in depth):
+1. **import-flow-dialog.tsx**: coerce `folderId` to null when it equals `rootFolderId`
+2. **import-flow.action.ts**: guard `parsedInput.folderId !== rootFolderId`
+3. **create-flow-action.ts**: guard `parsedInput.folderId !== rootFolderId` (safety net)
+4. **flowService.importFlow()**: guard `input.folderId !== rootFolderId` (service-layer safety net)
+
+The create-flow-dialog already had this guard (line 78), matching every other
+create dialog in the codebase (email-topics, bot-fields, custom-fields, tags).
+The import path was the only one missing it.
+
+**Verify after sync:** Create and import a flow from the root flows page (no folder
+selected) — both must succeed with `folderId = null` in the DB, not `"0"`.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

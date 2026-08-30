@@ -6,6 +6,7 @@ import {
   workspaceService,
 } from "@chatbotx.io/business"
 import { flowLimitReachedException } from "@chatbotx.io/business/errors"
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -50,7 +51,11 @@ export const importFlowAction = workspaceActionClient
         nodes: parsedInput.nodes,
         edges: parsedInput.edges,
         startNodeId: parsedInput.startNodeId,
-        folderId: parsedInput.folderId ?? null,
+        // rootFolderId ("0") is a UI sentinel — coerce to null for DB insert
+        folderId:
+          parsedInput.folderId && parsedInput.folderId !== rootFolderId
+            ? parsedInput.folderId
+            : null,
       })
 
       return { id: flowId }

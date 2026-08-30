@@ -3,6 +3,7 @@
 import { userQuotaService, workspaceService } from "@chatbotx.io/business"
 import { flowLimitReachedException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import {
   flowAnalyticsSessionModel,
   flowModel,
@@ -49,10 +50,16 @@ export const createFlowAction = workspaceActionClient
 
       const flow = await db.transaction(async (tx) => {
         const flowId = createId()
+        // rootFolderId ("0") is a UI sentinel — coerce to null for DB insert
+        const folderId =
+          parsedInput.folderId && parsedInput.folderId !== rootFolderId
+            ? parsedInput.folderId
+            : null
         const flow = await tx
           .insert(flowModel)
           .values({
             ...parsedInput,
+            folderId,
             id: flowId,
             workspaceId,
           })

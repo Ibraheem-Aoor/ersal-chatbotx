@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { type ChangeEvent, useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import { importFlowAction } from "./actions/import-flow.action"
 import { type ImportFlowSchema, importFlowSchema } from "./schema/action"
 
@@ -100,9 +101,13 @@ export function ImportFlowDialog({
 
   const onSubmit = useCallback(() => {
     if (!parsedData) return
+    // rootFolderId ("0") is a UI sentinel for "no folder" — coerce to null
+    // so the DB insert doesn't try to reference a non-existent folder row.
+    const resolvedFolderId =
+      folderId && folderId !== rootFolderId ? folderId : null
     execute({
       ...parsedData,
-      folderId: folderId ?? undefined,
+      folderId: resolvedFolderId,
     })
   }, [parsedData, folderId, execute])
 
