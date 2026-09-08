@@ -20,13 +20,17 @@ export function* convertFlowStepImage(
 
   // Past three replies the image can no longer be an inline header, so it is
   // sent as its own message — `buildWhatsappButtonMessages` owns that split.
+  //
+  // FORK PATCH: Meta requires `interactive.body.text` to be non-empty. The
+  // image step schema has no text field, so we use a zero-width space as a
+  // minimal placeholder that passes validation but is invisible to the user.
   for (const message of buildWhatsappButtonMessages({
     flowId: props.data.flowId,
     flowVersionId: props.data.flowVersionId,
     buttons: step.buttons,
     quickReplies,
     metadata: props.data.metadata,
-    bodyText: "",
+    bodyText: "​",
     media: new Image(step.url),
   })) {
     yield message

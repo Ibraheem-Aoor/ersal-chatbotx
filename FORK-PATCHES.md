@@ -816,6 +816,26 @@ Click the "Manage" button → navigates to the spreadsheet browser page (not a 4
 
 ---
 
+## 29. Fix WhatsApp image-with-buttons "body.text is required" error
+
+**File:** `integrations/whatsapp/src/handlers/message/outgoing-message/send-image.ts`
+
+**What:** Changed `bodyText: ""` to `bodyText: "​"` (zero-width space) when
+building the interactive message for an image step with buttons/quick-replies.
+
+**Why:** The Meta WhatsApp API requires `interactive.body.text` to be non-empty. The
+image step schema has no text field (only `url` and `buttons`), so the handler was
+passing an empty string which Meta rejected with "The parameter interactive.body.text
+is required." The zero-width space passes validation but renders invisibly. The sibling
+`send-card.ts` handler avoids this by using the card's `title` as body text, but the
+image step has no equivalent text field.
+
+**Verify after sync:** Create a flow with a "Send Image" step that includes reply buttons
+(quick replies). Run the flow → the image + buttons are delivered successfully without the
+"فشل الإرسال: The parameter interactive.body.text is required" error.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
