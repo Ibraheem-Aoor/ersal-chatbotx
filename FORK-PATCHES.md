@@ -836,6 +836,37 @@ image step has no equivalent text field.
 
 ---
 
+## 30. WhatsApp template creator — full-screen Meta-style layout
+
+**File:** `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+
+**What:** Rewrote the template creation dialog to a full-screen sheet with a Meta
+Business Suite–style layout:
+- **Step 1:** Centered template-type selector (replaces the old inline card grid).
+- **Step 2:** Left panel (w-[420px]) shows a `PhoneFrame` component — a WhatsApp-style
+  phone mockup with bezel, notch, dark-mode header, and chat bubble — rendering the
+  live preview. Right panel holds the input form (name, language, category, and the
+  template-specific partial fields).
+- Fixed header bar with back button and create action.
+- Language default changed from `"en"` to `"ar"`.
+- `SheetContent` overridden to `w-full max-w-full sm:max-w-full` for true full-screen.
+
+**Translation keys added:**
+- `whatsapp.messageTemplate.selectType` — "Select template type" / "اختر نوع القالب"
+- `whatsapp.messageTemplate.noPreview` — "Preview not available for this template type" / "المعاينة غير متاحة لهذا النوع من القوالب"
+- `whatsapp.messageTemplate.preview` — "Preview" / "معاينة"
+
+**Why:** The upstream dialog was a narrow side-sheet that cramped the preview and input
+fields together. The new layout gives the preview dedicated space (matching how Meta
+structures their template editor) and makes the form fields easier to work with.
+
+**Verify after sync:** Open WhatsApp → Message Templates → Create. The dialog should
+open full-screen with template type selection centered. After choosing a type, the
+phone preview appears on the left and input fields on the right. Language defaults
+to Arabic. Submit creates the template successfully.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
