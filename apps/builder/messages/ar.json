@@ -5246,6 +5246,9 @@
         "label": "موقع"
       },
       "nameHint": "أحرف إنجليزية صغيرة وأرقام وشرطات سفلية فقط (مثال: order_update)",
+      "selectType": "اختر نوع القالب",
+      "noPreview": "المعاينة غير متاحة لهذا النوع من القوالب",
+      "preview": "معاينة",
       "params": {
         "carouselCard": "البطاقة {index}",
         "catalogProductId": "معرّف المنتج",

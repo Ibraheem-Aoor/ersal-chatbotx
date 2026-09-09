@@ -8,8 +8,6 @@ import { Form } from "@chatbotx.io/ui/components/ui/form"
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@chatbotx.io/ui/components/ui/sheet"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -78,13 +76,60 @@ const partials: Record<TemplateType, ComponentType<PartialProps> | undefined> =
     [templateTypes.enum.Location]: undefined,
   }
 
+// ---------------------------------------------------------------------------
+// WhatsApp phone-frame preview — mirrors the Meta Business Suite style
+// ---------------------------------------------------------------------------
+
+function PhoneFrame({
+  children,
+  subtitle,
+}: {
+  children: React.ReactNode
+  subtitle: string
+}) {
+  return (
+    <div className="flex flex-col items-center">
+      {/* Phone bezel */}
+      <div className="relative w-[340px] rounded-[2.5rem] border-[6px] border-zinc-800 bg-zinc-800 shadow-xl dark:border-zinc-600">
+        {/* Notch */}
+        <div className="mx-auto mt-1 h-5 w-28 rounded-full bg-zinc-900 dark:bg-zinc-700" />
+        {/* Screen */}
+        <div className="mx-1 mt-1 mb-2 flex h-[580px] flex-col overflow-hidden rounded-[2rem] bg-[#efeae2] dark:bg-[#0b141a]">
+          {/* WhatsApp header bar */}
+          <div className="flex items-center gap-2 bg-[#075e54] px-4 py-3 dark:bg-[#1f2c34]">
+            <div className="size-8 rounded-full bg-white/20" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-white">WhatsApp</span>
+              <span className="text-[10px] text-white/60">{subtitle}</span>
+            </div>
+          </div>
+          {/* Chat area */}
+          <div className="flex flex-1 flex-col justify-end overflow-y-auto p-3">
+            <div className="w-full rounded-lg bg-white p-2.5 shadow-sm dark:bg-[#1f2c34]">
+              {children}
+            </div>
+          </div>
+        </div>
+        {/* Home indicator */}
+        <div className="mx-auto mt-1 mb-1 h-1 w-24 rounded-full bg-zinc-500" />
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Content (inside the full-screen sheet)
+// ---------------------------------------------------------------------------
+
 function CreateMessageTemplateDialogContent({
   workspaceId,
   integrationWhatsappId,
+  onClose,
   onSuccess,
 }: {
   workspaceId: string
   integrationWhatsappId: string
+  onClose: () => void
   onSuccess: () => void
 }) {
   const t = useTranslations()
@@ -120,7 +165,7 @@ function CreateMessageTemplateDialogContent({
         mode: "onChange",
         defaultValues: {
           name: "",
-          language: "en",
+          language: "ar",
           category: "UTILITY",
           content: {
             footer: "",
@@ -184,21 +229,14 @@ function CreateMessageTemplateDialogContent({
   return (
     <Form {...form}>
       <form
-        className="flex h-full flex-col gap-4 overflow-y-auto"
+        className="flex h-full flex-col overflow-hidden"
         onSubmit={handleSubmitWithAction}
       >
-        {!templateType && (
-          <div className="p-2">
-            <WhatsappMessageTemplateTypeSelect
-              onSelectTemplateType={onSelectTemplateType}
-            />
-          </div>
-        )}
-        {templateType && (
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+        {/* ---- Fixed header bar ---- */}
+        <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
+          <div className="flex items-center gap-3">
             <Button
-              className="self-start"
-              onClick={() => setTemplateType(null)}
+              onClick={templateType ? () => setTemplateType(null) : onClose}
               size="sm"
               type="button"
               variant="ghost"
@@ -206,18 +244,73 @@ function CreateMessageTemplateDialogContent({
               <ArrowLeftIcon className="size-4" />
               {t("actions.back")}
             </Button>
-            <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto lg:grid-cols-2">
-              <div className="flex flex-col gap-4 overflow-y-auto">
-                <Card>
-                  <CardContent className="flex flex-col gap-4 py-4">
-                    <InputField
-                      description={t("whatsapp.messageTemplate.nameHint")}
-                      label={t("fields.name.label")}
-                      name="name"
-                      pattern="[a-z0-9_]+"
-                      placeholder="order_shipping_update"
-                      required
-                    />
+            <h2 className="text-lg font-semibold">
+              {t("whatsapp.messageTemplate.createTitle")}
+            </h2>
+          </div>
+          {templateType && (
+            <Button
+              disabled={
+                !form.formState.isValid || form.formState.isSubmitting
+              }
+              size="sm"
+              type="submit"
+            >
+              {form.formState.isSubmitting && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
+              {t("actions.create")}
+            </Button>
+          )}
+        </div>
+
+        {/* ---- Step 1: Choose template type ---- */}
+        {!templateType && (
+          <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
+            <div className="mb-6 text-center">
+              <h3 className="text-xl font-semibold">
+                {t("whatsapp.messageTemplate.selectType")}
+              </h3>
+            </div>
+            <div className="w-full max-w-2xl">
+              <WhatsappMessageTemplateTypeSelect
+                onSelectTemplateType={onSelectTemplateType}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ---- Step 2: Preview (left) + Inputs (right) ---- */}
+        {templateType && (
+          <div className="flex flex-1 overflow-hidden">
+            {/* LEFT: Preview panel */}
+            <div className="flex w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6">
+              {PreviewComponent ? (
+                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                  <PreviewComponent parentName="content" />
+                </PhoneFrame>
+              ) : (
+                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    {t("whatsapp.messageTemplate.noPreview")}
+                  </p>
+                </PhoneFrame>
+              )}
+            </div>
+
+            {/* RIGHT: Input form */}
+            <div className="flex flex-1 flex-col overflow-y-auto p-6">
+              <Card>
+                <CardContent className="flex flex-col gap-5 py-5">
+                  <InputField
+                    description={t("whatsapp.messageTemplate.nameHint")}
+                    label={t("fields.name.label")}
+                    name="name"
+                    pattern="[a-z0-9_]+"
+                    placeholder="order_shipping_update"
+                    required
+                  />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <WhatsappMessageTemplateLanguageSelect
                       label={t("fields.language.label")}
                       name="language"
@@ -228,39 +321,14 @@ function CreateMessageTemplateDialogContent({
                       name="category"
                       required
                     />
-                    {PartialComponent && (
+                  </div>
+                  {PartialComponent && (
+                    <div className="border-t pt-4">
                       <PartialComponent parentName="content" />
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-              <div className="flex justify-center overflow-y-auto">
-                <Card className="h-fit min-w-[300px] max-w-[400px] rounded bg-orange-100 p-6">
-                  {PreviewComponent && (
-                    <PreviewComponent parentName="content" />
+                    </div>
                   )}
-                </Card>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 border-t pt-4">
-              <Button
-                onClick={() => setTemplateType(null)}
-                type="button"
-                variant="outline"
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button
-                disabled={
-                  !form.formState.isValid || form.formState.isSubmitting
-                }
-                type="submit"
-              >
-                {form.formState.isSubmitting && (
-                  <Loader2Icon className="animate-spin" />
-                )}
-                {t("actions.create")}
-              </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
@@ -291,13 +359,13 @@ export const CreateMessageTemplateDialog = memo(
             </Button>
           }
         />
-        <SheetContent className="flex w-full flex-col sm:max-w-2xl lg:max-w-4xl">
-          <SheetHeader>
-            <SheetTitle>{t("whatsapp.messageTemplate.createTitle")}</SheetTitle>
-          </SheetHeader>
+        {/* FORK PATCH: Full-screen sheet for Meta-style template editor.
+            Preview on the left (phone frame), inputs on the right. */}
+        <SheetContent className="flex w-full max-w-full flex-col p-0 sm:max-w-full">
           {open && (
             <CreateMessageTemplateDialogContent
               integrationWhatsappId={integrationWhatsappId}
+              onClose={() => setOpen(false)}
               onSuccess={() => {
                 setOpen(false)
                 router.refresh()
