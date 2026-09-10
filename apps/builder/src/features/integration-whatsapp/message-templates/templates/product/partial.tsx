@@ -1,7 +1,7 @@
 "use client"
 
-import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
 import { memo, useCallback } from "react"

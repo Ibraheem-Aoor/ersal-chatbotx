@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm"
 import { createId } from "@chatbotx.io/utils"
+import { eq } from "drizzle-orm"
 import { db } from "../client"
 import { ROOT_TENANT_ID } from "../partials/shared"
 import {

@@ -1,5 +1,6 @@
 "use client"
 
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
@@ -17,7 +18,6 @@ import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { type ChangeEvent, useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
-import { rootFolderId } from "@chatbotx.io/database/partials"
 import { importFlowAction } from "./actions/import-flow.action"
 import { type ImportFlowSchema, importFlowSchema } from "./schema/action"
 
@@ -100,7 +100,9 @@ export function ImportFlowDialog({
   )
 
   const onSubmit = useCallback(() => {
-    if (!parsedData) return
+    if (!parsedData) {
+      return
+    }
     // rootFolderId ("0") is a UI sentinel for "no folder" — coerce to null
     // so the DB insert doesn't try to reference a non-existent folder row.
     const resolvedFolderId =
@@ -115,7 +117,9 @@ export function ImportFlowDialog({
     <Dialog
       onOpenChange={(isOpen) => {
         setOpen(isOpen)
-        if (!isOpen) resetState()
+        if (!isOpen) {
+          resetState()
+        }
       }}
       open={open}
     >
@@ -139,10 +143,10 @@ export function ImportFlowDialog({
         <div className="space-y-4">
           <div>
             <input
-              ref={fileInputRef}
               accept=".json"
               className="block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:font-semibold file:text-primary-foreground file:text-sm hover:file:bg-primary/90"
               onChange={onFileChange}
+              ref={fileInputRef}
               type="file"
             />
           </div>
@@ -158,7 +162,8 @@ export function ImportFlowDialog({
                 {parsedData.name}
               </p>
               <p>
-                {parsedData.nodes.length} {t("fields.steps.label").toLowerCase()}
+                {parsedData.nodes.length}{" "}
+                {t("fields.steps.label").toLowerCase()}
               </p>
             </div>
           )}

@@ -236,11 +236,7 @@ export function FlowEditToolbar({
   const onClickExport = async () => {
     setIsExporting(true)
     try {
-      const result = await exportFlowAction.bind(
-        null,
-        workspaceId,
-        flow.id,
-      )()
+      const result = await exportFlowAction.bind(null, workspaceId, flow.id)()
       if (result?.data) {
         const json = JSON.stringify(result.data, null, 2)
         const blob = new Blob([json], { type: "application/json" })

@@ -95,9 +95,8 @@ export async function shareCreditLine({
           const body: Record<string, unknown> = await error.response
             .json()
             .catch(() => ({}))
-          const subCode = (
-            body as { error?: { error_subcode?: number } }
-          )?.error?.error_subcode
+          const subCode = (body as { error?: { error_subcode?: number } })
+            ?.error?.error_subcode
           // Same business owns both WABA and credit line — not an error
           if (subCode === 1_752_244) {
             logger.info(
@@ -257,7 +256,10 @@ export async function registerPhoneNumber({
       } catch (error) {
         const channelError = mapToChannelError(error)
         if (isVerificationRequiredError(channelError)) {
-          return { status: "verification_required" as const, error: channelError }
+          return {
+            status: "verification_required" as const,
+            error: channelError,
+          }
         }
 
         return { status: "failed" as const, error: channelError }

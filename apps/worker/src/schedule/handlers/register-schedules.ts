@@ -23,9 +23,7 @@ const CLOUD_ONLY_SCHEDULERS = [
  * dependency. FORK PATCH: upstream gates this to cloud-only; we enable it
  * for enterprise so self-hosted quota enforcement stays accurate.
  */
-const CLOUD_OR_ENTERPRISE_SCHEDULERS = [
-  ScheduleJobData.syncUserQuota,
-] as const
+const CLOUD_OR_ENTERPRISE_SCHEDULERS = [ScheduleJobData.syncUserQuota] as const
 
 export const registerSchedules = async () => {
   if (!(scheduleQueue instanceof Queue)) {
@@ -41,7 +39,7 @@ export const registerSchedules = async () => {
       await scheduleQueue.removeJobScheduler(name)
     }
   }
-  if (!isCloud && !isEnterprise) {
+  if (!(isCloud || isEnterprise)) {
     for (const name of CLOUD_OR_ENTERPRISE_SCHEDULERS) {
       await scheduleQueue.removeJobScheduler(name)
     }

@@ -1,6 +1,6 @@
 import {
-  type DatabaseClient,
   and,
+  type DatabaseClient,
   db,
   desc,
   eq,
@@ -12,8 +12,8 @@ import {
   billingPlanModel,
   subscriptionModel,
 } from "@chatbotx.io/database/schema"
-import { userQuotaService } from "../user-quota/service"
 import { logger } from "../logger"
+import { userQuotaService } from "../user-quota/service"
 
 export class BillingPlanService {
   async list(props?: { tx?: DatabaseClient; activeOnly?: boolean }) {

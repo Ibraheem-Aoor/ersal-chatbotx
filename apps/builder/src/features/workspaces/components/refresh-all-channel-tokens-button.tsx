@@ -50,9 +50,9 @@ export function RefreshAllChannelTokensButton({
   return (
     <button
       {...rest}
-      ref={ref}
       disabled={isPending}
       onClick={() => execute()}
+      ref={ref}
       type="button"
     >
       {isPending ? (

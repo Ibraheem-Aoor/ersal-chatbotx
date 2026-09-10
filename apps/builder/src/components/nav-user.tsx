@@ -123,10 +123,7 @@ export function NavUser({
       <SidebarMenuItem>
         {/* ---- Dialogs rendered OUTSIDE the menu tree ---- */}
         {isCloud() && (
-          <UpgradePlanDialog
-            onOpenChange={setUpgradeOpen}
-            open={upgradeOpen}
-          />
+          <UpgradePlanDialog onOpenChange={setUpgradeOpen} open={upgradeOpen} />
         )}
         <EditProfileDialog
           onOpenChange={setEditProfileOpen}
@@ -321,10 +318,7 @@ export function NavUser({
                 {t("fields.theme.label")}
               </DropdownMenuLabel>
               {themeOptions.map(({ value, icon: Icon, label }) => (
-                <DropdownMenuItem
-                  key={value}
-                  onClick={() => setTheme(value)}
-                >
+                <DropdownMenuItem key={value} onClick={() => setTheme(value)}>
                   <Icon className="h-4 w-4" />
                   {label}
                   {theme === value && (
@@ -363,9 +357,7 @@ export function NavUser({
             )}
             <DropdownMenuItem render={<RefreshAllChannelTokensButton />} />
             {/* SignOut — plain menu item, opens the controlled Dialog above */}
-            <DropdownMenuItem
-              onClick={() => setSignOutOpen(true)}
-            >
+            <DropdownMenuItem onClick={() => setSignOutOpen(true)}>
               <LogOutIcon className="h-4 w-4" />
               {t("actions.signOut")}
             </DropdownMenuItem>
