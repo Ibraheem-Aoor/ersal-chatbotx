@@ -14,20 +14,23 @@ import { Loader2Icon } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
 import { getAuthErrorMessage } from "../lib/get-auth-error-message"
 import {
+  createEmailPasswordSignInSchema,
   type EmailPasswordSignInRequest,
-  emailPasswordSignInRequest,
 } from "../schemas/action"
 
 export const EmailPasswordSignIn = () => {
   const t = useTranslations()
 
+  const schema = useMemo(() => createEmailPasswordSignInSchema(t), [t])
+
   const emailPasswordForm = useForm<EmailPasswordSignInRequest>({
-    resolver: zodResolver(emailPasswordSignInRequest),
+    resolver: zodResolver(schema),
     defaultValues: {
       email: "",
       password: "",

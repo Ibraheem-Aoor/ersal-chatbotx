@@ -25,13 +25,26 @@ export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequest>
 // `t` when building the schema for `zodResolver()`.
 // ---------------------------------------------------------------------------
 
-export const emailPasswordSignInRequest = z.object({
-  email: z.email(),
-  password: z.string().min(8),
-})
+export function createEmailPasswordSignInSchema(t: TranslateFunction) {
+  return z.object({
+    email: z.email(),
+    password: z.string().min(8, t("auth.validation.passwordMinLength")),
+  })
+}
 export type EmailPasswordSignInRequest = z.infer<
-  typeof emailPasswordSignInRequest
+  ReturnType<typeof createEmailPasswordSignInSchema>
 >
+
+// Static fallback for server-side usage (if any)
+export const emailPasswordSignInRequest = createEmailPasswordSignInSchema(
+  (k) => {
+    const fallbacks: Record<string, string> = {
+      "auth.validation.passwordMinLength":
+        "Password must be at least 8 characters",
+    }
+    return fallbacks[k] ?? k
+  },
+)
 
 export function createEmailPasswordSignUpSchema(t: TranslateFunction) {
   return z
