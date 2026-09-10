@@ -5249,6 +5249,7 @@
       "selectType": "اختر نوع القالب",
       "noPreview": "المعاينة غير متاحة لهذا النوع من القوالب",
       "preview": "معاينة",
+      "startTyping": "ابدأ بالكتابة لرؤية المعاينة",
       "params": {
         "carouselCard": "البطاقة {index}",
         "catalogProductId": "معرّف المنتج",

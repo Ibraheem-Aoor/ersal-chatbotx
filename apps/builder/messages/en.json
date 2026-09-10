@@ -3632,7 +3632,8 @@
       "nameHint": "Lowercase letters, numbers and underscores only (e.g. order_update)",
       "selectType": "Select template type",
       "noPreview": "Preview not available for this template type",
-      "preview": "Preview"
+      "preview": "Preview",
+      "startTyping": "Start typing to see preview"
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"

@@ -16,6 +16,7 @@ import { ArrowLeftIcon, Loader2Icon, PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { type ComponentType, memo, useState } from "react"
+import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createMessageTemplateAction } from "@/features/integration-whatsapp/message-templates/actions/create-message-template.action"
 import { WhatsappMessageTemplateCategorySelect } from "@/features/integration-whatsapp/message-templates/components/category-select"
@@ -113,6 +114,114 @@ function PhoneFrame({
         {/* Home indicator */}
         <div className="mx-auto mt-1 mb-1 h-1 w-24 rounded-full bg-zinc-500" />
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Read-only live preview — watches form state, renders in the phone frame
+// ---------------------------------------------------------------------------
+
+function LivePreview({
+  parentName = "content",
+  templateType,
+}: {
+  parentName?: string
+  templateType: TemplateType
+}) {
+  const t = useTranslations()
+  const { control } = useFormContext()
+
+  const headerText = useWatch({ control, name: `${parentName}.header.text` })
+  const bodyText = useWatch({ control, name: `${parentName}.body.text` })
+  const footer = useWatch({ control, name: `${parentName}.footer` })
+  const buttons = useWatch({ control, name: `${parentName}.buttons` })
+  const hideHeader = useWatch({ control, name: `${parentName}.hideHeader` })
+  const showFooter = useWatch({ control, name: `${parentName}.showFooter` })
+
+  const isMedia =
+    templateType === templateTypes.enum.Image ||
+    templateType === templateTypes.enum.Video ||
+    templateType === templateTypes.enum.Document
+  const isCarousel =
+    templateType === templateTypes.enum.CarouselImage ||
+    templateType === templateTypes.enum.CarouselVideo
+
+  const hasBody = typeof bodyText === "string" && bodyText.length > 0
+
+  return (
+    <div className="flex flex-col text-sm">
+      {/* Media placeholder */}
+      {isMedia && (
+        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-36 items-center justify-center rounded-t-lg bg-zinc-200 dark:bg-zinc-700">
+          <span className="text-3xl opacity-40">
+            {templateType === templateTypes.enum.Image
+              ? "🖼️"
+              : templateType === templateTypes.enum.Video
+                ? "🎬"
+                : "📄"}
+          </span>
+        </div>
+      )}
+
+      {/* Carousel placeholder */}
+      {isCarousel && (
+        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-28 items-center justify-center gap-1.5 rounded-t-lg bg-zinc-200 px-3 dark:bg-zinc-700">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-20 w-14 rounded bg-zinc-300 dark:bg-zinc-600"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Header text (text-type templates only) */}
+      {!isMedia &&
+        !isCarousel &&
+        !hideHeader &&
+        typeof headerText === "string" &&
+        headerText.length > 0 && (
+          <p className="mb-1 text-[13px] font-bold leading-snug dark:text-zinc-100">
+            {headerText}
+          </p>
+        )}
+
+      {/* Body */}
+      <p className="whitespace-pre-wrap text-[13px] leading-relaxed dark:text-zinc-200">
+        {hasBody ? (
+          bodyText
+        ) : (
+          <span className="italic opacity-40">
+            {t("whatsapp.messageTemplate.startTyping")}
+          </span>
+        )}
+      </p>
+
+      {/* Footer */}
+      {showFooter &&
+        typeof footer === "string" &&
+        footer.length > 0 && (
+          <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            {footer}
+          </p>
+        )}
+
+      {/* Buttons */}
+      {Array.isArray(buttons) && buttons.length > 0 && (
+        <div className="-mx-2.5 -mb-2.5 mt-2 flex flex-col border-t border-zinc-200 dark:border-zinc-600">
+          {(buttons as Array<{ text?: string }>).map(
+            (btn: { text?: string }, i: number) => (
+              <div
+                key={`btn-${i}`}
+                className="border-b border-zinc-200 py-2 text-center text-[13px] font-medium text-[#00a5f4] last:border-b-0 dark:border-zinc-600"
+              >
+                {btn?.text || "•••"}
+              </div>
+            ),
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -280,26 +389,22 @@ function CreateMessageTemplateDialogContent({
           </div>
         )}
 
-        {/* ---- Step 2: Preview (left) + Inputs (right) ---- */}
+        {/* ---- Step 2: Read-only preview (left) + All inputs (right) ---- */}
         {templateType && (
           <div className="flex flex-1 overflow-hidden">
-            {/* LEFT: Preview panel */}
-            <div className="flex w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6">
-              {PreviewComponent ? (
-                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                  <PreviewComponent parentName="content" />
-                </PhoneFrame>
-              ) : (
-                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    {t("whatsapp.messageTemplate.noPreview")}
-                  </p>
-                </PhoneFrame>
-              )}
+            {/* LEFT: Read-only phone preview */}
+            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview
+                  parentName="content"
+                  templateType={templateType}
+                />
+              </PhoneFrame>
             </div>
 
-            {/* RIGHT: Input form */}
-            <div className="flex flex-1 flex-col overflow-y-auto p-6">
+            {/* RIGHT: All input fields */}
+            <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+              {/* Template details */}
               <Card>
                 <CardContent className="flex flex-col gap-5 py-5">
                   <InputField
@@ -322,13 +427,26 @@ function CreateMessageTemplateDialogContent({
                       required
                     />
                   </div>
-                  {PartialComponent && (
-                    <div className="border-t pt-4">
-                      <PartialComponent parentName="content" />
-                    </div>
-                  )}
                 </CardContent>
               </Card>
+
+              {/* Template content editor (body, header, footer, buttons, files) */}
+              {PreviewComponent && (
+                <Card>
+                  <CardContent className="py-5">
+                    <PreviewComponent parentName="content" />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Template options (toggles, variable sample values) */}
+              {PartialComponent && (
+                <Card>
+                  <CardContent className="py-5">
+                    <PartialComponent parentName="content" />
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
@@ -361,7 +479,9 @@ export const CreateMessageTemplateDialog = memo(
         />
         {/* FORK PATCH: Full-screen sheet for Meta-style template editor.
             Preview on the left (phone frame), inputs on the right. */}
-        <SheetContent className="flex w-full max-w-full flex-col p-0 sm:max-w-full">
+        {/* [&>.absolute]:hidden hides the built-in Sheet close (X) button —
+            we use our own Back button in the header instead. */}
+        <SheetContent className="flex w-full max-w-full flex-col p-0 sm:max-w-full [&>.absolute]:hidden">
           {open && (
             <CreateMessageTemplateDialogContent
               integrationWhatsappId={integrationWhatsappId}
