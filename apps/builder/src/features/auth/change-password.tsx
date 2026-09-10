@@ -12,20 +12,25 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { forceChangePasswordAction } from "./actions/force-change-password"
 import { AuthHeader } from "./components/shared"
+import { getAuthErrorMessage } from "./lib/get-auth-error-message"
 import {
   type ChangePasswordRequest,
-  changePasswordRequest,
+  createChangePasswordSchema,
 } from "./schemas/action"
 
 export const ChangePassword = () => {
   const t = useTranslations()
   const router = useRouter()
+
+  const schema = useMemo(() => createChangePasswordSchema(t), [t])
+
   const form = useForm<ChangePasswordRequest>({
-    resolver: zodResolver(changePasswordRequest),
+    resolver: zodResolver(schema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -38,7 +43,7 @@ export const ChangePassword = () => {
     const result = await forceChangePasswordAction(input)
 
     if (result?.serverError) {
-      toast.error(result.serverError)
+      toast.error(getAuthErrorMessage({ message: result.serverError }, t))
       return
     }
 

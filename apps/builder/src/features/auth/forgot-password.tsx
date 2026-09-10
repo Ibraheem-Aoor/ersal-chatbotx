@@ -22,6 +22,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
 import { AuthHeader } from "./components/shared"
+import { getAuthErrorMessage } from "./lib/get-auth-error-message"
 import {
   type ForgotPasswordRequest,
   forgotPasswordRequest,
@@ -47,7 +48,7 @@ export const ForgotPassword = () => {
     })
 
     if (error) {
-      toast.error(error.message)
+      toast.error(getAuthErrorMessage(error, t))
       return
     }
 

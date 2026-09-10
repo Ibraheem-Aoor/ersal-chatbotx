@@ -7,20 +7,24 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
+import { getAuthErrorMessage } from "../lib/get-auth-error-message"
 import {
+  createEmailPasswordSignUpSchema,
   type EmailPasswordSignUpRequest,
-  emailPasswordSignUpRequest,
 } from "../schemas/action"
 
 export const EmailPasswordSignUp = () => {
   const t = useTranslations()
   const router = useRouter()
 
+  const schema = useMemo(() => createEmailPasswordSignUpSchema(t), [t])
+
   const emailPasswordForm = useForm<EmailPasswordSignUpRequest>({
-    resolver: zodResolver(emailPasswordSignUpRequest),
+    resolver: zodResolver(schema),
     defaultValues: {
       email: "",
       password: "",
@@ -38,7 +42,7 @@ export const EmailPasswordSignUp = () => {
       toast.success(t("auth.signUpSuccess"))
       router.push("/auth/sign-in")
     } else {
-      toast.error(error.message)
+      toast.error(getAuthErrorMessage(error, t))
     }
   }
   return (

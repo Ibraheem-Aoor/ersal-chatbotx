@@ -13,21 +13,25 @@ import { Loader2Icon } from "lucide-react"
 import Link from "next/link"
 import { redirect, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
 import { AuthHeader } from "./components/shared"
+import { getAuthErrorMessage } from "./lib/get-auth-error-message"
 import {
+  createResetPasswordSchema,
   type ResetPasswordRequest,
-  resetPasswordRequest,
 } from "./schemas/action"
 
 export const ResetPassword = () => {
   const t = useTranslations()
   const searchParams = useSearchParams()
 
+  const schema = useMemo(() => createResetPasswordSchema(t), [t])
+
   const form = useForm<ResetPasswordRequest>({
-    resolver: zodResolver(resetPasswordRequest),
+    resolver: zodResolver(schema),
     defaultValues: {
       token: searchParams.get("token") ?? "",
       newPassword: "",
@@ -43,7 +47,7 @@ export const ResetPassword = () => {
     })
 
     if (error) {
-      toast.error(error.message)
+      toast.error(getAuthErrorMessage(error, t))
       return
     }
 

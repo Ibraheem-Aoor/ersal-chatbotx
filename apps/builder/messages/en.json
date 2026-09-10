@@ -3456,7 +3456,24 @@
     "signUpTitle": "Sign up to {name}",
     "changePasswordTitle": "Change your password",
     "changePasswordDescription": "Set a new password before continuing.",
-    "passwordChangeSuccess": "Password changed"
+    "passwordChangeSuccess": "Password changed",
+    "signInSuccess": "Signed in successfully",
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "emailNotVerified": "Please verify your email before signing in",
+      "invalidToken": "This link is invalid or has expired. Please request a new one.",
+      "rateLimitExceeded": "Too many requests. Please try again in a moment.",
+      "userAlreadyExists": "An account with this email already exists",
+      "passwordTooShort": "Password is too short",
+      "passwordTooLong": "Password is too long",
+      "userNotFound": "Account not found",
+      "changePasswordFailed": "Failed to change password"
+    },
+    "validation": {
+      "passwordsDoNotMatch": "Passwords do not match",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "newPasswordMustDiffer": "New password must be different from your current password"
+    }
   },
   "emailTopics": {
     "title": "Email Topics"

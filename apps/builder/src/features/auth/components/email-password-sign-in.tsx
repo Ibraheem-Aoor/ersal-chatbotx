@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
+import { getAuthErrorMessage } from "../lib/get-auth-error-message"
 import {
   type EmailPasswordSignInRequest,
   emailPasswordSignInRequest,
@@ -44,10 +45,10 @@ export const EmailPasswordSignIn = () => {
     })
 
     if (data) {
-      toast.success("Signed in successfully")
+      toast.success(t("auth.signInSuccess"))
       redirect("/")
     } else {
-      toast.error(error.message)
+      toast.error(getAuthErrorMessage(error, t))
     }
   }
   return (

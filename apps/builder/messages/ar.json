@@ -729,7 +729,24 @@
     "signUpSuccess": "تم إنشاء الحساب بنجاح. يُرجى التحقق من بريدك الإلكتروني لتأكيده.",
     "signUpTitle": "إنشاء حساب في {name}",
     "termsOfService": "شروط الخدمة",
-    "trySigningInAgain": "يمكنك أيضًا محاولة تسجيل الدخول مجددًا باستخدام بريد إلكتروني آخر."
+    "trySigningInAgain": "يمكنك أيضًا محاولة تسجيل الدخول مجددًا باستخدام بريد إلكتروني آخر.",
+    "signInSuccess": "تم تسجيل الدخول بنجاح",
+    "errors": {
+      "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+      "emailNotVerified": "يُرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول",
+      "invalidToken": "هذا الرابط غير صالح أو منتهي الصلاحية. يُرجى طلب رابط جديد.",
+      "rateLimitExceeded": "عدد الطلبات كبير جدًا. يُرجى المحاولة بعد قليل.",
+      "userAlreadyExists": "يوجد حساب مسجل بهذا البريد الإلكتروني",
+      "passwordTooShort": "كلمة المرور قصيرة جدًا",
+      "passwordTooLong": "كلمة المرور طويلة جدًا",
+      "userNotFound": "لم يتم العثور على الحساب",
+      "changePasswordFailed": "فشل تغيير كلمة المرور"
+    },
+    "validation": {
+      "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+      "passwordMinLength": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+      "newPasswordMustDiffer": "يجب أن تختلف كلمة المرور الجديدة عن كلمة المرور الحالية"
+    }
   },
   "autoAssignConversation": {
     "rule": {
