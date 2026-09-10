@@ -843,11 +843,15 @@ image step has no equivalent text field.
 **What:** Rewrote the template creation dialog to a full-screen sheet with a Meta
 Business Suite–style layout:
 - **Step 1:** Centered template-type selector (replaces the old inline card grid).
-- **Step 2:** Left panel (w-[420px]) shows a `PhoneFrame` component — a WhatsApp-style
-  phone mockup with bezel, notch, dark-mode header, and chat bubble — rendering the
-  live preview. Right panel holds the input form (name, language, category, and the
-  template-specific partial fields).
-- Fixed header bar with back button and create action.
+- **Step 2:** Left panel (w-[420px], hidden on `< lg` screens) shows a `PhoneFrame`
+  component with a **read-only `LivePreview`** — uses `useWatch` to mirror form state
+  in real-time (header, body, footer, buttons, media/carousel placeholders).
+  Right panel holds **all** inputs: template details (name, language, category),
+  content editor (body text, header, footer, file upload, buttons), and options
+  (switches, variable sample values) — organized in three stacked Cards.
+- Fixed header bar with back button and create action. The Sheet's built-in close
+  (X) button is hidden via `[&>.absolute]:hidden` to prevent overlap with the
+  Create button.
 - Language default changed from `"en"` to `"ar"`.
 - `SheetContent` overridden to `w-full max-w-full sm:max-w-full` for true full-screen.
 
@@ -855,14 +859,19 @@ Business Suite–style layout:
 - `whatsapp.messageTemplate.selectType` — "Select template type" / "اختر نوع القالب"
 - `whatsapp.messageTemplate.noPreview` — "Preview not available for this template type" / "المعاينة غير متاحة لهذا النوع من القوالب"
 - `whatsapp.messageTemplate.preview` — "Preview" / "معاينة"
+- `whatsapp.messageTemplate.startTyping` — "Start typing to see preview" / "ابدأ بالكتابة لرؤية المعاينة"
 
 **Why:** The upstream dialog was a narrow side-sheet that cramped the preview and input
-fields together. The new layout gives the preview dedicated space (matching how Meta
-structures their template editor) and makes the form fields easier to work with.
+fields together. The v1 layout placed all inputs on the right but still rendered the
+interactive editor (body/header/footer textareas, file uploads, button management) inside
+the phone frame preview on the left. v2 separates concerns: the left phone frame is now
+a true read-only live preview, and ALL interactive inputs are on the right.
 
 **Verify after sync:** Open WhatsApp → Message Templates → Create. The dialog should
 open full-screen with template type selection centered. After choosing a type, the
-phone preview appears on the left and input fields on the right. Language defaults
+phone preview appears on the left showing live text as you type. All form fields
+(body, header, footer, buttons, file upload, toggles, variables) are on the right.
+The Create button is clearly visible without overlapping the X. Language defaults
 to Arabic. Submit creates the template successfully.
 
 ---
