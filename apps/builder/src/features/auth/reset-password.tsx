@@ -1,6 +1,11 @@
 "use client"
 
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@chatbotx.io/ui/components/ui/alert"
 import { Button, buttonVariants } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
@@ -9,7 +14,7 @@ import {
 } from "@chatbotx.io/ui/components/ui/card"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2Icon } from "lucide-react"
+import { AlertCircleIcon, Loader2Icon } from "lucide-react"
 import Link from "next/link"
 import { redirect, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -27,6 +32,8 @@ import {
 export const ResetPassword = () => {
   const t = useTranslations()
   const searchParams = useSearchParams()
+
+  const hasTokenError = searchParams.get("error") === "INVALID_TOKEN"
 
   const schema = useMemo(() => createResetPasswordSchema(t), [t])
 
@@ -63,57 +70,91 @@ export const ResetPassword = () => {
         </CardHeader>
 
         <CardContent>
-          <Form {...form}>
-            <form
-              className="flex w-full flex-col gap-4"
-              onSubmit={form.handleSubmit(onSubmitResetPasswordForm)}
-            >
-              <p className="text-muted-foreground text-sm">
-                {t("auth.resetPasswordDescription")}
-              </p>
+          {hasTokenError ? (
+            <div className="flex flex-col gap-4">
+              <Alert variant="destructive">
+                <AlertCircleIcon />
+                <AlertTitle>{t("auth.invalidResetLinkTitle")}</AlertTitle>
+                <AlertDescription>
+                  {t("auth.errors.invalidToken")}
+                </AlertDescription>
+              </Alert>
 
-              <InputField
-                label={t("fields.newPassword.label")}
-                name="newPassword"
-                placeholder={t("fields.newPassword.label")}
-                required
-                type="password"
-              />
-
-              <InputField
-                label={t("fields.passwordConfirmation.label")}
-                name="passwordConfirmation"
-                placeholder={t("fields.passwordConfirmation.label")}
-                required
-                type="password"
-              />
-
-              <Button
-                className="w-full"
-                disabled={
-                  !form.formState.isValid || form.formState.isSubmitting
-                }
-                type="submit"
+              <Link
+                className={buttonVariants({
+                  variant: "default",
+                  className: "w-full",
+                })}
+                href="/auth/forgot-password"
               >
-                {form.formState.isSubmitting && (
-                  <Loader2Icon className="animate-spin" />
-                )}
-                {t("actions.continue")}
-              </Button>
-            </form>
-          </Form>
+                {t("auth.requestNewResetLink")}
+              </Link>
 
-          <div className="mt-3 space-y-3">
-            <Link
-              className={buttonVariants({
-                variant: "outline",
-                className: "w-full",
-              })}
-              href="/auth/sign-in"
-            >
-              {t("actions.backToSignIn")}
-            </Link>
-          </div>
+              <Link
+                className={buttonVariants({
+                  variant: "outline",
+                  className: "w-full",
+                })}
+                href="/auth/sign-in"
+              >
+                {t("actions.backToSignIn")}
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Form {...form}>
+                <form
+                  className="flex w-full flex-col gap-4"
+                  onSubmit={form.handleSubmit(onSubmitResetPasswordForm)}
+                >
+                  <p className="text-muted-foreground text-sm">
+                    {t("auth.resetPasswordDescription")}
+                  </p>
+
+                  <InputField
+                    label={t("fields.newPassword.label")}
+                    name="newPassword"
+                    placeholder={t("fields.newPassword.label")}
+                    required
+                    type="password"
+                  />
+
+                  <InputField
+                    label={t("fields.passwordConfirmation.label")}
+                    name="passwordConfirmation"
+                    placeholder={t("fields.passwordConfirmation.label")}
+                    required
+                    type="password"
+                  />
+
+                  <Button
+                    className="w-full"
+                    disabled={
+                      !form.formState.isValid || form.formState.isSubmitting
+                    }
+                    type="submit"
+                  >
+                    {form.formState.isSubmitting && (
+                      <Loader2Icon className="animate-spin" />
+                    )}
+                    {t("actions.continue")}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="mt-3 space-y-3">
+                <Link
+                  className={buttonVariants({
+                    variant: "outline",
+                    className: "w-full",
+                  })}
+                  href="/auth/sign-in"
+                >
+                  {t("actions.backToSignIn")}
+                </Link>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

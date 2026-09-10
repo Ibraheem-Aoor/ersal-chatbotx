@@ -1,13 +1,18 @@
 "use client"
 
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
-import { Button } from "@chatbotx.io/ui/components/ui/button"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@chatbotx.io/ui/components/ui/alert"
+import { Button, buttonVariants } from "@chatbotx.io/ui/components/ui/button"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2Icon } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { CheckCircle2Icon, Loader2Icon } from "lucide-react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
@@ -19,7 +24,8 @@ import {
 
 export const EmailPasswordSignUp = () => {
   const t = useTranslations()
-  const router = useRouter()
+
+  const [isSubmitted, setIsSubmitted] = useState(false)
 
   const schema = useMemo(() => createEmailPasswordSignUpSchema(t), [t])
 
@@ -36,15 +42,44 @@ export const EmailPasswordSignUp = () => {
   const onSubmitEmailPasswordForm = async (
     input: EmailPasswordSignUpRequest,
   ) => {
-    const { data, error } = await authClient.signUp.email(input)
+    const { error } = await authClient.signUp.email(input)
 
-    if (data) {
-      toast.success(t("auth.signUpSuccess"))
-      router.push("/auth/sign-in")
-    } else {
+    if (error) {
       toast.error(getAuthErrorMessage(error, t))
+      return
     }
+
+    setIsSubmitted(true)
   }
+
+  if (isSubmitted) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert>
+          <CheckCircle2Icon />
+          <AlertTitle>{t("auth.checkYourEmail")}</AlertTitle>
+          <AlertDescription>
+            {t("auth.signUpCheckEmailDescription")}
+          </AlertDescription>
+        </Alert>
+
+        <p className="text-center text-muted-foreground text-sm">
+          {t("auth.didNotReceiveEmail")}
+        </p>
+
+        <Link
+          className={buttonVariants({
+            variant: "outline",
+            className: "w-full",
+          })}
+          href="/auth/sign-in"
+        >
+          {t("actions.backToSignIn")}
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <Form {...emailPasswordForm}>
       <form
