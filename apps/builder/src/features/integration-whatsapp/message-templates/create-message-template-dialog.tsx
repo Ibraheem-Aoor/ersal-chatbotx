@@ -100,7 +100,7 @@ function PhoneFrame({
           <div className="flex items-center gap-2 bg-[#075e54] px-4 py-3 dark:bg-[#1f2c34]">
             <div className="size-8 rounded-full bg-white/20" />
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-medium text-white">WhatsApp</span>
+              <span className="font-medium text-white text-xs">WhatsApp</span>
               <span className="text-[10px] text-white/60">{subtitle}</span>
             </div>
           </div>
@@ -169,20 +169,18 @@ function LivePreview({
         <div className="-mx-2.5 -mt-2.5 mb-2 flex h-28 items-center justify-center gap-1.5 rounded-t-lg bg-zinc-200 px-3 dark:bg-zinc-700">
           {[1, 2, 3].map((i) => (
             <div
-              key={i}
               className="h-20 w-14 rounded bg-zinc-300 dark:bg-zinc-600"
+              key={i}
             />
           ))}
         </div>
       )}
 
       {/* Header text (text-type templates only) */}
-      {!isMedia &&
-        !isCarousel &&
-        !hideHeader &&
+      {!(isMedia || isCarousel || hideHeader) &&
         typeof headerText === "string" &&
         headerText.length > 0 && (
-          <p className="mb-1 text-[13px] font-bold leading-snug dark:text-zinc-100">
+          <p className="mb-1 font-bold text-[13px] leading-snug dark:text-zinc-100">
             {headerText}
           </p>
         )}
@@ -199,22 +197,20 @@ function LivePreview({
       </p>
 
       {/* Footer */}
-      {showFooter &&
-        typeof footer === "string" &&
-        footer.length > 0 && (
-          <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-            {footer}
-          </p>
-        )}
+      {showFooter && typeof footer === "string" && footer.length > 0 && (
+        <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+          {footer}
+        </p>
+      )}
 
       {/* Buttons */}
       {Array.isArray(buttons) && buttons.length > 0 && (
-        <div className="-mx-2.5 -mb-2.5 mt-2 flex flex-col border-t border-zinc-200 dark:border-zinc-600">
+        <div className="-mx-2.5 mt-2 -mb-2.5 flex flex-col border-zinc-200 border-t dark:border-zinc-600">
           {(buttons as Array<{ text?: string }>).map(
             (btn: { text?: string }, i: number) => (
               <div
+                className="border-zinc-200 border-b py-2 text-center font-medium text-[#00a5f4] text-[13px] last:border-b-0 dark:border-zinc-600"
                 key={`btn-${i}`}
-                className="border-b border-zinc-200 py-2 text-center text-[13px] font-medium text-[#00a5f4] last:border-b-0 dark:border-zinc-600"
               >
                 {btn?.text || "•••"}
               </div>
@@ -353,15 +349,13 @@ function CreateMessageTemplateDialogContent({
               <ArrowLeftIcon className="size-4" />
               {t("actions.back")}
             </Button>
-            <h2 className="text-lg font-semibold">
+            <h2 className="font-semibold text-lg">
               {t("whatsapp.messageTemplate.createTitle")}
             </h2>
           </div>
           {templateType && (
             <Button
-              disabled={
-                !form.formState.isValid || form.formState.isSubmitting
-              }
+              disabled={!form.formState.isValid || form.formState.isSubmitting}
               size="sm"
               type="submit"
             >
@@ -377,7 +371,7 @@ function CreateMessageTemplateDialogContent({
         {!templateType && (
           <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
             <div className="mb-6 text-center">
-              <h3 className="text-xl font-semibold">
+              <h3 className="font-semibold text-xl">
                 {t("whatsapp.messageTemplate.selectType")}
               </h3>
             </div>
@@ -395,10 +389,7 @@ function CreateMessageTemplateDialogContent({
             {/* LEFT: Read-only phone preview */}
             <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
               <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                <LivePreview
-                  parentName="content"
-                  templateType={templateType}
-                />
+                <LivePreview parentName="content" templateType={templateType} />
               </PhoneFrame>
             </div>
 
