@@ -1,3 +1,4 @@
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { InfoIcon } from "lucide-react"
 import type { ReactElement } from "react"
@@ -44,6 +45,7 @@ export function FormFieldWrapper<T extends FieldValues>({
   children,
 }: FormFieldWrapperProps<T>) {
   const { control } = useFormContext()
+  const uiLabels = useUILabels()
 
   return (
     <FormField
@@ -56,7 +58,7 @@ export function FormFieldWrapper<T extends FieldValues>({
               {label}
               {!required && (
                 <span className="self-start font-normal text-xxs">
-                  (optional)
+                  {uiLabels.optional}
                 </span>
               )}
               {description && descriptionType === "tooltip" ? (

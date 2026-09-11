@@ -14,13 +14,14 @@ import {
 } from "@chatbotx.io/ui/components/ui/tooltip"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { formatDistanceToNowStrict, isAfter } from "date-fns"
+import { ar } from "date-fns/locale"
 import {
   MailIcon,
   MessageCircleMoreIcon,
   StarIcon,
   UsersRoundIcon,
 } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect, useMemo } from "react"
 import { toast } from "sonner"
@@ -94,6 +95,8 @@ export default function ConversationItem({
   onSelect,
 }: ConversationItemProps) {
   const t = useTranslations()
+  const locale = useLocale()
+  const dateFnsLocale = locale === "ar" ? ar : undefined
   const { activeConversationId, readConversation } = useChatStore(
     (state) => state,
   )
@@ -229,7 +232,9 @@ export default function ConversationItem({
           <p className="text-end text-neutral-400 text-xs">
             <span>
               {conversation.lastActivityAt
-                ? formatDistanceToNowStrict(conversation.lastActivityAt)
+                ? formatDistanceToNowStrict(conversation.lastActivityAt, {
+                    locale: dateFnsLocale,
+                  })
                 : " "}
             </span>
           </p>

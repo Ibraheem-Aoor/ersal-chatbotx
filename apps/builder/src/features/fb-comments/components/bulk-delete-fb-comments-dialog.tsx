@@ -94,7 +94,7 @@ export function BulkDeleteFbCommentsDialog({
             }
           />
           <Button
-            aria-label="Delete selected rows"
+            aria-label={t("actions.deleteSelectedRows")}
             onClick={handleBulkDelete}
             size="sm"
             variant="destructive"

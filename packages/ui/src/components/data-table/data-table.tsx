@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@chatbotx.io/ui/components/ui/table"
 import { getCommonPinningStyles } from "@chatbotx.io/ui/lib/data-table"
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 
 interface DataTableProps<TData> extends React.ComponentProps<"div"> {
@@ -32,6 +33,8 @@ export function DataTable<TData>({
   className,
   ...props
 }: DataTableProps<TData>) {
+  const uiLabels = useUILabels()
+
   return (
     <div
       className={cn("flex w-full flex-col gap-2.5 overflow-auto", className)}
@@ -103,7 +106,7 @@ export function DataTable<TData>({
                   colSpan={table.getAllColumns().length}
                   className="h-24 text-center"
                 >
-                  {labels?.noResults ?? "No results."}
+                  {labels?.noResults ?? uiLabels.noResults}
                 </TableCell>
               </TableRow>
             )}

@@ -7,7 +7,10 @@
     ".": "./src/index.tsx",
     "./postcss.config": "./postcss.config.mjs",
     "./components/*": "./src/components/*.tsx",
-    "./lib/*": "./src/lib/*.ts",
+    "./lib/*": [
+      "./src/lib/*.ts",
+      "./src/lib/*.tsx"
+    ],
     "./styles/*": "./src/styles/*",
     "./config/*": "./src/config/*.ts",
     "./types/*": "./src/types/*.ts",

@@ -95,7 +95,7 @@ export function DeleteFlowsDialog({
             }
           />
           <Button
-            aria-label="Delete selected rows"
+            aria-label={t("actions.deleteSelectedRows")}
             disabled={isPending}
             onClick={() => execute({ ids: flows.map((f) => f.id) })}
             size="sm"

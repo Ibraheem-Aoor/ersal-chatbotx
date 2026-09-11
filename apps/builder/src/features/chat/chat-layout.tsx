@@ -7,7 +7,9 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@chatbotx.io/ui/components/ui/resizable"
+import { useIsMobile } from "@chatbotx.io/ui/hooks/use-mobile"
 import {
+  ArrowRightIcon,
   BotIcon,
   Loader2Icon,
   MessagesSquareIcon,
@@ -40,11 +42,15 @@ type ChatLayoutProps = {
 
 export const ChatLayout = (props: ChatLayoutProps) => {
   const t = useTranslations()
+  const isMobile = useIsMobile()
   const {
     canViewEmailAndPhone = true,
     workspaceId,
     layout = [25, 50, 25],
   } = props
+
+  // On mobile: "list" shows the conversation list, "thread" shows message + contact panel.
+  const [mobileView, setMobileView] = useState<"list" | "thread">("list")
 
   // Clear all unread notifications when the inbox page mounts — the user
   // is now looking at conversations directly.
@@ -58,8 +64,16 @@ export const ChatLayout = (props: ChatLayoutProps) => {
     isLoadingConversation,
     isBootstrappingUrlConversation,
     activeConversationId,
+    setActiveConversationId,
     updateConversation,
   } = useChatStore((state) => state)
+
+  // Switch to thread view when a conversation is selected on mobile
+  useEffect(() => {
+    if (isMobile && activeConversationId) {
+      setMobileView("thread")
+    }
+  }, [isMobile, activeConversationId])
 
   const [activeConversation, setActiveConversation] =
     useState<ConversationResource | null>(null)
@@ -106,6 +120,68 @@ export const ChatLayout = (props: ChatLayoutProps) => {
     }
   }, [activeConversationId, conversations])
 
+  const handleMobileBack = () => {
+    setMobileView("list")
+    setActiveConversationId(null)
+  }
+
+  // ── Mobile layout: show one panel at a time ──
+  if (isMobile) {
+    return (
+      <div className="flex h-full w-full flex-col">
+        {mobileView === "list" && (
+          <div className="h-full p-3">
+            <ConversationList
+              canViewEmailAndPhone={canViewEmailAndPhone}
+              workspaceId={workspaceId}
+            />
+          </div>
+        )}
+        {mobileView === "thread" && (
+          <div className="flex h-full w-full flex-col">
+            {/* Back button */}
+            <div className="flex items-center gap-2 border-b px-3 py-2">
+              <Button
+                className="gap-1"
+                onClick={handleMobileBack}
+                size="sm"
+                variant="ghost"
+              >
+                <ArrowRightIcon className="size-4 ltr:rotate-180 rtl:rotate-0" />
+                {t("messages.backToConversations")}
+              </Button>
+            </div>
+            {isResolvingConversation && (
+              <Loader2Icon className="mx-auto my-4 animate-spin" />
+            )}
+            {activeConversation && (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <MessageHead />
+                {isConversationActive(activeConversation) && (
+                  <Button
+                    className="rounded-none"
+                    disabled={isDisablingBot}
+                    onClick={() => {
+                      disableBot({ ids: [activeConversation.id] })
+                    }}
+                    variant="secondary"
+                  >
+                    <BotIcon />
+                    {t("messages.botIsActive")}
+                  </Button>
+                )}
+                <MessageList />
+                <MessageInput />
+              </div>
+            )}
+            <ChatRealtime />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop layout: three resizable panels ──
   return (
     <ResizablePanelGroup className="h-full items-stretch">
       {/* CONVERSATION LIST */}

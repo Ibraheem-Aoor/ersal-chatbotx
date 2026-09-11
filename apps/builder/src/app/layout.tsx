@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server"
 import type { ReactNode } from "react"
 import { PublicEnvScript } from "@/components/public-env-script"
 import { SupportChatScript } from "@/components/support-chat-script"
+import { UILabelsConfig } from "@/components/ui-labels-config"
 import { ZodErrorMapProvider } from "@/components/zod-error-map-provider"
 import { env } from "@/env"
 import { TenantProvider } from "@/features/tenant"
@@ -108,8 +109,10 @@ export default async function RootLayout({ children }: Props) {
           <DirectionProvider direction={dir}>
             <UiProvider>
               <NextIntlClientProvider>
-                <ZodErrorMapProvider />
-                {children}
+                <UILabelsConfig>
+                  <ZodErrorMapProvider />
+                  {children}
+                </UILabelsConfig>
               </NextIntlClientProvider>
             </UiProvider>
           </DirectionProvider>

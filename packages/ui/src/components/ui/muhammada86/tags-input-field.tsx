@@ -17,6 +17,7 @@ import {
   PopoverContent,
 } from "@chatbotx.io/ui/components/ui/popover";
 import { cn } from "@chatbotx.io/ui/lib/utils";
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels";
 import {
   type ReactNode,
   useState,
@@ -71,6 +72,7 @@ const TagsInputFieldBase = <TFieldValues extends FieldValues>({
   onSelect,
 }: TagsInputFieldProps<TFieldValues>) => {
   const { control } = useFormContext();
+  const uiLabels = useUILabels();
   const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
@@ -377,7 +379,7 @@ const TagsInputFieldBase = <TFieldValues extends FieldValues>({
                 )}
                 {tags.length > 0 && (
                   <Badge variant="outline" className="text-xs">
-                    {tags.length} {beautifyName ?? "tags"}
+                    {tags.length} {beautifyName ?? uiLabels.tags}
                   </Badge>
                 )}
               </div>

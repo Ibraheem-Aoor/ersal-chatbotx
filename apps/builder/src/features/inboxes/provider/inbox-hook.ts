@@ -1,5 +1,6 @@
 import { channelTypes } from "@chatbotx.io/database/partials"
 import type { SelectOption } from "@chatbotx.io/ui/components/form/select-field"
+import { useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
 import { useInboxStore } from "./inbox-store-context"
 
@@ -17,7 +18,7 @@ export const allInboxConfigs = {
     value: "instagram",
   },
   whatsapp: {
-    label: "Whatsapp",
+    label: "WhatsApp",
     value: "whatsapp",
   },
   zalo: {
@@ -39,6 +40,7 @@ export const allInboxConfigs = {
 } as const
 
 export const useConfiguredInboxTypeOptions = () => {
+  const t = useTranslations("messages")
   const [inboxTypes, setInboxTypes] = useState<string[]>([])
   const inboxes = useInboxStore((state) => state.inboxes)
 
@@ -53,15 +55,26 @@ export const useConfiguredInboxTypeOptions = () => {
     setInboxTypes(Array.from(setOfInboxTypes))
   }, [inboxes])
 
+  const translatedLabels: Partial<
+    Record<keyof typeof allInboxConfigs, string>
+  > = useMemo(
+    () => ({
+      omnichannel: t("channelOmnichannel"),
+    }),
+    [t],
+  )
+
   return useMemo(
     () =>
       inboxTypes
         .filter((inboxType) => inboxType in allInboxConfigs)
-        .map(
-          (inboxType) =>
-            allInboxConfigs[inboxType as keyof typeof allInboxConfigs],
-        ),
-    [inboxTypes],
+        .map((inboxType) => {
+          const key = inboxType as keyof typeof allInboxConfigs
+          const config = allInboxConfigs[key]
+          const label = translatedLabels[key]
+          return label ? { ...config, label } : config
+        }),
+    [inboxTypes, translatedLabels],
   )
 }
 

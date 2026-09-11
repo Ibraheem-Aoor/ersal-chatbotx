@@ -502,7 +502,7 @@ export const MessageInput = () => {
               {!hasFiles && <InputMenu setContent={setContent} />}
               {!isInstagramPostComment && (
                 <Button
-                  aria-label="Attach file"
+                  aria-label={t("messages.attachFile")}
                   className="px-2 py-1.5 [&_svg]:size-5"
                   onClick={onClickAttachment}
                   type="button"
@@ -512,7 +512,7 @@ export const MessageInput = () => {
                 </Button>
               )}
               <Button
-                aria-label="Send message"
+                aria-label={t("messages.sendMessageAction")}
                 className="px-2 py-1.5 [&_svg]:size-5"
                 disabled={
                   !form.formState.isValid || form.formState.isSubmitting

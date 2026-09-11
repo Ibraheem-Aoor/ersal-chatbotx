@@ -1,5 +1,6 @@
 import type { SelectOption } from "@chatbotx.io/ui/components/form/select-field"
 import type { MultiSelectGroup } from "@chatbotx.io/ui/components/ui/sersavan/multi-select"
+import { useTranslations } from "next-intl"
 import { useMemo } from "react"
 import { useUserStore } from "./user-store-context"
 
@@ -14,12 +15,13 @@ export const useContactAssigneeOptions = (props?: {
     includeUnassigned = false,
   } = props || {}
 
+  const t = useTranslations("messages")
   const { workspaceMembers, inboxTeams } = useUserStore((state) => state)
 
   return useMemo(() => {
     const result: SelectOption[] = [
       {
-        label: "Agents",
+        label: t("assignGroupAgents"),
         value: "agents",
         children: workspaceMembers.map((v) => ({
           label: v.user?.name ?? "--",
@@ -27,7 +29,7 @@ export const useContactAssigneeOptions = (props?: {
         })),
       },
       {
-        label: "Inbox Teams",
+        label: t("assignGroupInboxTeams"),
         value: "inbox-teams",
         children: inboxTeams.map((v) => ({
           label: v.name,
@@ -38,14 +40,14 @@ export const useContactAssigneeOptions = (props?: {
 
     if (includeUnassigned) {
       result.unshift({
-        label: "Unassigned",
+        label: t("assignUnassigned"),
         value: "unassigned",
       })
     }
 
     if (includeAll) {
       result.unshift({
-        label: "All",
+        label: t("assignAll"),
         value: "all",
       })
     }
@@ -56,29 +58,37 @@ export const useContactAssigneeOptions = (props?: {
     return result
       .flatMap((v) => v.children ?? [])
       .filter(Boolean) as SelectOption[]
-  }, [workspaceMembers, inboxTeams, autoGroup, includeAll, includeUnassigned])
+  }, [
+    workspaceMembers,
+    inboxTeams,
+    autoGroup,
+    includeAll,
+    includeUnassigned,
+    t,
+  ])
 }
 
 export const useContactAssigneeMultiSelectOptions = (): MultiSelectGroup[] => {
+  const t = useTranslations("messages")
   const { workspaceMembers, inboxTeams } = useUserStore((state) => state)
 
   return useMemo(
     () => [
       {
-        heading: "Agents",
+        heading: t("assignGroupAgents"),
         options: workspaceMembers.map((v) => ({
           label: v.user?.name ?? "--",
           value: `u_${v.user?.id}`,
         })),
       },
       {
-        heading: "Inbox Teams",
+        heading: t("assignGroupInboxTeams"),
         options: inboxTeams.map((v) => ({
           label: v.name,
           value: `t_${v.id}`,
         })),
       },
     ],
-    [workspaceMembers, inboxTeams],
+    [workspaceMembers, inboxTeams, t],
   )
 }
