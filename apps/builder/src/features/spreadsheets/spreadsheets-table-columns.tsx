@@ -93,7 +93,7 @@ export function getSpreadsheetColumns({
           <DropdownMenuTrigger
             render={
               <Button
-                aria-label="Open menu"
+                aria-label={t("actions.openMenu")}
                 className="flex size-8 p-0 data-[state=open]:bg-muted"
                 variant="ghost"
               >

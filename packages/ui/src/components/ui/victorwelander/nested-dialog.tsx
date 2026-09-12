@@ -5,6 +5,7 @@
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels";
 import { cn } from "@chatbotx.io/ui/lib/utils";
 
 interface DialogContextValue {
@@ -54,6 +55,7 @@ const DialogContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const context = React.useContext(DialogContext);
   if (!context) throw new Error("DialogContent must be used within a Dialog");
+  const uiLabels = useUILabels();
 
   return (
     <DialogPortal>
@@ -70,7 +72,7 @@ const DialogContent = React.forwardRef<
         {children}
         <DialogClose className="absolute end-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-popup-open:bg-accent data-popup-open:text-muted-foreground">
           <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{uiLabels.close}</span>
         </DialogClose>
       </DialogPrimitive.Popup>
     </DialogPortal>
@@ -126,6 +128,7 @@ const InnerDialogContent = React.forwardRef<
     const context = React.useContext(DialogContext);
     if (!context)
       throw new Error("InnerDialogContent must be used within a Dialog");
+    const uiLabels = useUILabels();
 
     const [isDragging, setIsDragging] = React.useState(false);
     const [startY, setStartY] = React.useState(0);
@@ -188,7 +191,7 @@ const InnerDialogContent = React.forwardRef<
           <div ref={contentRef}>{children}</div>
           <InnerDialogClose className="absolute end-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-popup-open:bg-accent data-popup-open:text-muted-foreground">
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{uiLabels.close}</span>
           </InnerDialogClose>
         </DialogPrimitive.Popup>
       </DialogPortal>

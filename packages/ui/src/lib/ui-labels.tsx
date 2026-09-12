@@ -24,6 +24,10 @@ export type UILabels = {
   previousSlide: string
   nextSlide: string
   selectOption: string
+  selectAll: string
+  clear: string
+  noResultsFound: string
+  pleaseSelect: string
   toggleColumns: string
   view: string
   searchColumns: string
@@ -48,6 +52,10 @@ const defaults: UILabels = {
   previousSlide: "Previous slide",
   nextSlide: "Next slide",
   selectOption: "Select option",
+  selectAll: "Select All",
+  clear: "Clear",
+  noResultsFound: "No results found.",
+  pleaseSelect: "Please select...",
   toggleColumns: "Toggle columns",
   view: "View",
   searchColumns: "Search columns...",

@@ -13,6 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@chatbotx.io/ui/components/ui/popover"
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { useMemo, useState } from "react"
@@ -95,6 +96,7 @@ export function ComboboxField<T extends FieldValues>({
   clearLabel,
   emptyValue,
 }: ComboboxFieldProps<T>) {
+  const uiLabels = useUILabels()
   const [open, setOpen] = useState(false)
 
   const flattenedOptions = useMemo(
@@ -140,7 +142,7 @@ export function ComboboxField<T extends FieldValues>({
               render={
                 <Button
                   aria-expanded={open}
-                  aria-label={label || "Select option"}
+                  aria-label={label || uiLabels.selectOption}
                   className={cn(
                     "w-full justify-between",
                     className,
@@ -150,7 +152,7 @@ export function ComboboxField<T extends FieldValues>({
                   variant="outline"
                 >
                   <span className="min-w-0 truncate">
-                    {selectedLabel || placeholder || "Please select..."}
+                    {selectedLabel || placeholder || uiLabels.pleaseSelect}
                   </span>
                   <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
                 </Button>

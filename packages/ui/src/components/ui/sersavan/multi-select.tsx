@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@chatbotx.io/ui/components/ui/popover"
 import { Separator } from "@chatbotx.io/ui/components/ui/separator"
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 import {
@@ -336,6 +337,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     },
     ref,
   ) => {
+    const labels = useUILabels()
     const [selectedValues, setSelectedValues] =
       React.useState<string[]>(defaultValue)
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -1052,14 +1054,14 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )}
               >
                 <CommandEmpty>
-                  {emptyIndicator || "No results found."}
+                  {emptyIndicator || labels.noResultsFound}
                 </CommandEmpty>{" "}
                 {!(hideSelectAll || searchValue) && (
                   <CommandGroup>
                     <CommandItem
-                      aria-label={`Select all ${
+                      aria-label={`${labels.selectAll} ${
                         getAllOptions().length
-                      } options`}
+                      }`}
                       aria-selected={
                         selectedValues.length ===
                         getAllOptions().filter((opt) => !opt.disabled).length
@@ -1083,9 +1085,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         <CheckIcon className="h-4 w-4" />
                       </div>
                       <span>
-                        (Select All
+                        ({labels.selectAll}
                         {getAllOptions().length > 20
-                          ? ` - ${getAllOptions().length} options`
+                          ? ` - ${getAllOptions().length}`
                           : ""}
                         )
                       </span>
@@ -1189,7 +1191,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                           className="flex-1 cursor-pointer justify-center"
                           onSelect={handleClear}
                         >
-                          Clear
+                          {labels.clear}
                         </CommandItem>
                         <Separator
                           className="flex h-full min-h-6"
@@ -1201,7 +1203,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                       className="max-w-full flex-1 cursor-pointer justify-center"
                       onSelect={() => setIsPopoverOpen(false)}
                     >
-                      Close
+                      {labels.close}
                     </CommandItem>
                   </div>
                 </CommandGroup>
