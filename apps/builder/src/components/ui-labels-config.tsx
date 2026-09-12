@@ -22,6 +22,15 @@ export function UILabelsConfig({ children }: { children: ReactNode }) {
         nextPage: t("nextPage"),
         lastPage: t("lastPage"),
         noResults: t("noResults"),
+        reset: t("reset"),
+        resetFilters: t("resetFilters"),
+        previousSlide: t("previousSlide"),
+        nextSlide: t("nextSlide"),
+        selectOption: t("selectOption"),
+        toggleColumns: t("toggleColumns"),
+        view: t("view"),
+        searchColumns: t("searchColumns"),
+        noColumnsFound: t("noColumnsFound"),
       }}
     >
       {children}

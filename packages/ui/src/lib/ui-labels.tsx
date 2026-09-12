@@ -19,6 +19,15 @@ export type UILabels = {
   nextPage: string
   lastPage: string
   noResults: string
+  reset: string
+  resetFilters: string
+  previousSlide: string
+  nextSlide: string
+  selectOption: string
+  toggleColumns: string
+  view: string
+  searchColumns: string
+  noColumnsFound: string
 }
 
 const defaults: UILabels = {
@@ -34,6 +43,15 @@ const defaults: UILabels = {
   nextPage: "Go to next page",
   lastPage: "Go to last page",
   noResults: "No results.",
+  reset: "Reset",
+  resetFilters: "Reset filters",
+  previousSlide: "Previous slide",
+  nextSlide: "Next slide",
+  selectOption: "Select option",
+  toggleColumns: "Toggle columns",
+  view: "View",
+  searchColumns: "Search columns...",
+  noColumnsFound: "No columns found.",
 }
 
 const UILabelsContext = createContext<UILabels>(defaults)

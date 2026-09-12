@@ -1919,6 +1919,9 @@
     "role": {
       "label": "Role"
     },
+    "rootFolder": {
+      "label": "-- Root --"
+    },
     "plan": {
       "label": "Plan"
     },
@@ -3091,6 +3094,7 @@
     "refreshTokenSuccessfully": "{feature} token refreshed successfully",
     "success": "Success",
     "failed": "Failed",
+    "copiedNodeId": "Copied Node ID",
     "copiedToClipboard": "Copied to clipboard",
     "messengerAdsJsonDescription": "You will only need to generate a new JSON code if you make changes to the starting Step. Changes in other steps won't affect this JSON code.",
     "messengerAdsNotPublished": "Publish the content of this flow and try again.",
@@ -3112,6 +3116,7 @@
     "commentHidden": "This comment was hidden",
     "messageDeleted": "The message has been deleted.",
     "sendFailed": "Failed to send",
+    "testRequestFailed": "Request test failed — check the URL and try again",
     "repliedToStory": "Replied to your story",
     "sentAttachments": "Sent {count, plural, one {1 attachment} other {# attachments}}",
     "deleteComment": "Delete comment",
@@ -5451,6 +5456,15 @@
     "previousPage": "Go to previous page",
     "nextPage": "Go to next page",
     "lastPage": "Go to last page",
-    "noResults": "No results."
+    "noResults": "No results.",
+    "reset": "Reset",
+    "resetFilters": "Reset filters",
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "selectOption": "Select option",
+    "toggleColumns": "Toggle columns",
+    "view": "View",
+    "searchColumns": "Search columns...",
+    "noColumnsFound": "No columns found."
   }
 }

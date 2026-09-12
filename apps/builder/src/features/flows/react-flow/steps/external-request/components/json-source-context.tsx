@@ -2,6 +2,7 @@
 
 import type { ExternalRequestFieldsSchema } from "@chatbotx.io/flow-config"
 import { useAction } from "next-safe-action/hooks"
+import { useTranslations } from "next-intl"
 import {
   createContext,
   type ReactNode,
@@ -25,6 +26,7 @@ type JsonSourceContextValue = {
   execute: (input: ExternalRequestFieldsSchema) => void
   isPending: boolean
   testResult: TestResult | undefined
+  testError: string | undefined
   pastedSample: string
   setPastedSample: (raw: string) => void
   activeTab: JsonSourceTab
@@ -36,6 +38,7 @@ type JsonSourceContextValue = {
 const JsonSourceContext = createContext<JsonSourceContextValue | null>(null)
 
 export const JsonSourceProvider = ({ children }: { children: ReactNode }) => {
+  const t = useTranslations()
   const workspaceId = useWorkspaceId()
   const [pastedSample, setPastedSample] = useState("")
   const [activeTab, setActiveTab] = useState<JsonSourceTab>("pasteSample")
@@ -43,15 +46,18 @@ export const JsonSourceProvider = ({ children }: { children: ReactNode }) => {
     null,
   )
 
+  const [testError, setTestError] = useState<string | undefined>(undefined)
+
   const { execute, result, isPending } = useAction(
     testExternalRequestAction.bind(null, workspaceId),
     {
-      onError: ({ error }) => {
-        if (error.serverError) {
-          toast.error(error.serverError)
-        }
+      onError: (args) => {
+        const msg = args.error.serverError
+        setTestError(msg ?? undefined)
+        toast.error(msg ?? t("messages.testRequestFailed"))
       },
       onSuccess: () => {
+        setTestError(undefined)
         setActiveTab("testResponse")
       },
     },
@@ -62,6 +68,7 @@ export const JsonSourceProvider = ({ children }: { children: ReactNode }) => {
       execute,
       isPending,
       testResult: result.data,
+      testError,
       pastedSample,
       setPastedSample,
       activeTab,
@@ -73,6 +80,7 @@ export const JsonSourceProvider = ({ children }: { children: ReactNode }) => {
       execute,
       isPending,
       result.data,
+      testError,
       pastedSample,
       activeTab,
       activeTargetIndex,

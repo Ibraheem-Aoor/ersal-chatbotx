@@ -2756,6 +2756,9 @@
     "role": {
       "label": "الدور"
     },
+    "rootFolder": {
+      "label": "-- الجذر --"
+    },
     "savePayloadToCustomField": {
       "label": "حفظ الحمولة في حقل مخصص"
     },
@@ -3773,6 +3776,7 @@
     "connectFailed": "تعذّر ربط {feature}",
     "connectSuccess": "تم ربط {feature} بنجاح",
     "connectedSuccess": "تم ربط {feature} بنجاح",
+    "copiedNodeId": "تم نسخ معرّف العقدة",
     "copiedToClipboard": "تم النسخ إلى الحافظة",
     "copyFailed": "تعذّر النسخ إلى الحافظة",
     "copyInvitationUrlSuccess": "انسخ الرابط أدناه وأرسله إلى الشخص الذي تريد إضافته كمسؤول.",
@@ -3875,6 +3879,7 @@
     "selectConversationDescription": "اختر محادثة من القائمة على اليمين لعرض الرسائل وبدء الدردشة.",
     "selectConversationTitle": "اختر محادثة",
     "sendFailed": "فشل الإرسال",
+    "testRequestFailed": "فشل اختبار الطلب — تحقق من الرابط وحاول مرة أخرى",
     "sendHumanAgentTag": "إرسال رسالة واحدة باستخدام وسم HUMAN_AGENT",
     "sentAttachments": "تم إرسال {count, plural, one {مرفق واحد} other {# مرفقات}}",
     "signOutConfirmation": "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
@@ -5451,6 +5456,15 @@
     "previousPage": "الذهاب إلى الصفحة السابقة",
     "nextPage": "الذهاب إلى الصفحة التالية",
     "lastPage": "الذهاب إلى الصفحة الأخيرة",
-    "noResults": "لا توجد نتائج."
+    "noResults": "لا توجد نتائج.",
+    "reset": "إعادة تعيين",
+    "resetFilters": "إعادة تعيين الفلاتر",
+    "previousSlide": "الشريحة السابقة",
+    "nextSlide": "الشريحة التالية",
+    "selectOption": "اختر خيارًا",
+    "toggleColumns": "تبديل الأعمدة",
+    "view": "عرض",
+    "searchColumns": "بحث الأعمدة...",
+    "noColumnsFound": "لم يتم العثور على أعمدة."
   }
 }

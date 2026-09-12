@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@chatbotx.io/ui/components/ui/popover"
+import { useUILabels } from "@chatbotx.io/ui/lib/ui-labels"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 
 interface DataTableViewOptionsProps<TData> {
@@ -26,6 +27,7 @@ interface DataTableViewOptionsProps<TData> {
 export function DataTableViewOptions<TData>({
   table,
 }: DataTableViewOptionsProps<TData>) {
+  const labels = useUILabels()
   const columns = React.useMemo(
     () =>
       table
@@ -42,7 +44,7 @@ export function DataTableViewOptions<TData>({
       <PopoverTrigger
         render={
           <Button
-            aria-label="Toggle columns"
+            aria-label={labels.toggleColumns}
             // biome-ignore lint/a11y/useSemanticElements: <explanation>
             role="combobox"
             variant="outline"
@@ -50,16 +52,16 @@ export function DataTableViewOptions<TData>({
             className="ms-auto hidden h-8 lg:flex"
           >
             <Settings2 />
-            View
+            {labels.view}
             <ChevronsUpDown className="ms-auto opacity-50" />
           </Button>
         }
       />
       <PopoverContent align="end" className="w-44 p-0">
         <Command>
-          <CommandInput placeholder="Search columns..." />
+          <CommandInput placeholder={labels.searchColumns} />
           <CommandList>
-            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandEmpty>{labels.noColumnsFound}</CommandEmpty>
             <CommandGroup>
               {columns.map((column) => (
                 <CommandItem

@@ -2,7 +2,7 @@
 
 import type { ExternalRequestStepSchema } from "@chatbotx.io/flow-config"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import { Loader2Icon, PlayIcon } from "lucide-react"
+import { AlertCircleIcon, Loader2Icon, PlayIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useFormContext } from "react-hook-form"
 import { useJsonSourceContext } from "./json-source-context"
@@ -10,7 +10,7 @@ import { useJsonSourceContext } from "./json-source-context"
 export const TestNowPanel = () => {
   const t = useTranslations()
   const { getValues } = useFormContext<ExternalRequestStepSchema>()
-  const { execute, isPending, testResult } = useJsonSourceContext()
+  const { execute, isPending, testResult, testError } = useJsonSourceContext()
 
   const handleTestNow = () => {
     const { method, url, headers, body } = getValues()
@@ -45,6 +45,13 @@ export const TestNowPanel = () => {
           <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all">
             {testResult.responseBody}
           </pre>
+        </div>
+      )}
+
+      {!testResult && testError && (
+        <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+          <AlertCircleIcon className="size-4 shrink-0" />
+          <span>{t("messages.testRequestFailed")}</span>
         </div>
       )}
     </div>

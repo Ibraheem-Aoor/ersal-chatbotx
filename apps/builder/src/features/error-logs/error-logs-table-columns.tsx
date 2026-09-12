@@ -64,7 +64,7 @@ export function getColumns({
       id: "action",
       accessorKey: "type",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Type" />
+        <DataTableColumnHeader column={column} title={t("fields.type.label")} />
       ),
       cell: ({ row }) => <div>{row.original.action}</div>,
       meta: {
@@ -79,7 +79,7 @@ export function getColumns({
     {
       accessorKey: "detail",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Description" />
+        <DataTableColumnHeader column={column} title={t("fields.description.label")} />
       ),
       cell: ({ row }) => (
         <Tooltip>
@@ -105,7 +105,7 @@ export function getColumns({
       id: "contact",
       accessorKey: "contact",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Contact" />
+        <DataTableColumnHeader column={column} title={t("fields.contact.label")} />
       ),
       cell: ({ row }) => (
         <div>{row.original.contactId ? <UserRoundIcon size={16} /> : null}</div>
@@ -120,7 +120,7 @@ export function getColumns({
     {
       accessorKey: "createdAt",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
+        <DataTableColumnHeader column={column} title={t("fields.date.label")} />
       ),
       cell: ({ row }) => format(row.original.createdAt, "yyyy/MM/dd HH:mm"),
       meta: {
@@ -131,13 +131,13 @@ export function getColumns({
     },
     {
       id: "actions",
-      header: "Actions",
+      header: t("actions.actions"),
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <Button
-                aria-label="Open menu"
+                aria-label={t("actions.openMenu")}
                 className="flex size-8 p-0 data-[state=open]:bg-muted"
                 variant="ghost"
               >
@@ -149,7 +149,7 @@ export function getColumns({
             <DropdownMenuItem
               onClick={() => setRowAction({ row, variant: "delete" })}
             >
-              Delete
+              {t("actions.delete")}
               <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
             </DropdownMenuItem>
           </DropdownMenuContent>
