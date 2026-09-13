@@ -3317,6 +3317,7 @@
         "imageHint": "PNG, JPG, or GIF. The image is uploaded before submission.",
         "noImageSelected": "No image selected",
         "body": "Body",
+        "footer": "Footer",
         "buttons": "Buttons",
         "addButton": "Add Button",
         "addVariable": "Add Variable",

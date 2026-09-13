@@ -76,7 +76,10 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
   )
 
   return (
-    <>
+    <div className="flex flex-col gap-1">
+      <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
+        {t("integrations.messageTemplates.create.body")}
+      </span>
       {showForm ? (
         <div className="flex flex-col gap-2">
           <Textarea
@@ -100,7 +103,7 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
           {displayText}
         </Button>
       )}
-    </>
+    </div>
   )
 }
 

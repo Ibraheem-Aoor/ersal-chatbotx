@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl"
 import { memo, useCallback } from "react"
 import { Controller, useFormContext, useWatch } from "react-hook-form"
 import FileDropzone from "@/components/file-dropzone"
@@ -14,6 +15,7 @@ const TemplateDocumentPreviewComponent = (
 ) => {
   const { parentName = "content", ...rest } = props
 
+  const t = useTranslations()
   const { register, unregister, control, setValue } = useFormContext()
   const showFooter = useWatch({
     control,
@@ -37,26 +39,31 @@ const TemplateDocumentPreviewComponent = (
 
   return (
     <div className="flex w-full flex-col gap-4" {...rest}>
-      <Controller
-        control={control}
-        name={`${parentName}.header.file`}
-        render={() => (
-          <FileDropzone
-            configs={{
-              uploadKeyName: "actions.uploadDocument",
-              accept: {
-                "application/pdf": [".pdf"],
-              },
-              isCard: true,
-            }}
-            onDrop={handleDrop}
-            onRemove={handleRemove}
-            parentName={`${parentName}.header`}
-            register={register}
-            unregister={unregister}
-          />
-        )}
-      />
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
+          {t("integrations.messageTemplates.create.header")}
+        </span>
+        <Controller
+          control={control}
+          name={`${parentName}.header.file`}
+          render={() => (
+            <FileDropzone
+              configs={{
+                uploadKeyName: "actions.uploadDocument",
+                accept: {
+                  "application/pdf": [".pdf"],
+                },
+                isCard: true,
+              }}
+              onDrop={handleDrop}
+              onRemove={handleRemove}
+              parentName={`${parentName}.header`}
+              register={register}
+              unregister={unregister}
+            />
+          )}
+        />
+      </div>
       <TemplateBody parentName={`${parentName}.body`} />
       {showFooter && <TemplateFooter parentName={parentName} />}
       <hr />

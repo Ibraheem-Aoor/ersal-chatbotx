@@ -3037,6 +3037,7 @@
         "imageHint": "PNG, JPG of GIF. De afbeelding wordt vóór verzending geüpload.",
         "noImageSelected": "Geen afbeelding geselecteerd",
         "body": "Inhoud",
+        "footer": "Voettekst",
         "buttons": "Knoppen",
         "addButton": "Knop toevoegen",
         "addVariable": "Variabele toevoegen",
