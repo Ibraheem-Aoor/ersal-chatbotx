@@ -1,7 +1,11 @@
 import {
+  type SendAudioStepSchema,
   type SendCarouselStepSchema,
+  type SendFileStepSchema,
+  type SendGifStepSchema,
   type SendImageStepSchema,
   type SendTextStepSchema,
+  type SendVideoStepSchema,
   type SendWaTemplateMessageStepSchema,
   stepTypes,
   type WhatsappFlowStepSchema,
@@ -23,9 +27,13 @@ import { API_URL, DEFAULT_API_VERSION } from "../../../constants"
 import { mapToChannelError } from "../../../lib/error-mapper"
 import { logger } from "../../../lib/logger"
 import type { RawWhatsappMessage, WhatsappAuthValue } from "../../../schema"
+import { convertFlowStepAudio } from "./send-audio"
 import { generateOutgoingMessages as convertFlowStepCarousel } from "./send-carousel"
+import { convertFlowStepFile } from "./send-file"
+import { convertFlowStepGif } from "./send-gif"
 import { convertFlowStepImage } from "./send-image"
 import { convertFlowStepText } from "./send-text"
+import { convertFlowStepVideo } from "./send-video"
 import { convertFlowStepWaTemplate } from "./send-wa-template"
 import { convertFlowStepWhatsappFlow } from "./whatsapp-flow"
 import { convertFlowStepWhatsappOptionList } from "./whatsapp-option-list"
@@ -80,6 +88,40 @@ function* convertFlowStepToWhatsappMessage(
             WhatsappAuthValue,
             SendImageStepSchema
           >["sendFlowStep"]
+        >[0],
+      )
+      break
+    case stepTypes.enum.sendVideo:
+      yield* convertFlowStepVideo(
+        props as Parameters<
+          MessageHandlers<
+            WhatsappAuthValue,
+            SendVideoStepSchema
+          >["sendFlowStep"]
+        >[0],
+      )
+      break
+    case stepTypes.enum.sendAudio:
+      yield* convertFlowStepAudio(
+        props as Parameters<
+          MessageHandlers<
+            WhatsappAuthValue,
+            SendAudioStepSchema
+          >["sendFlowStep"]
+        >[0],
+      )
+      break
+    case stepTypes.enum.sendFile:
+      yield* convertFlowStepFile(
+        props as Parameters<
+          MessageHandlers<WhatsappAuthValue, SendFileStepSchema>["sendFlowStep"]
+        >[0],
+      )
+      break
+    case stepTypes.enum.sendGif:
+      yield* convertFlowStepGif(
+        props as Parameters<
+          MessageHandlers<WhatsappAuthValue, SendGifStepSchema>["sendFlowStep"]
         >[0],
       )
       break

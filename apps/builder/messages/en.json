@@ -153,6 +153,11 @@
   "errors": {
     "superAdminRequired": "You need to be a workspace super admin to do this."
   },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to Home"
+  },
   "states": {
     "success": "Success",
     "error": "Error",
@@ -2305,6 +2310,7 @@
   },
   "flows": {
     "title": "Flows",
+    "defaultNodeName": "Send Message #{number}",
     "quickReplies": {
       "limitReached": "Quick reply limit reached ({max})."
     },
@@ -4100,6 +4106,7 @@
     "settings": "Settings",
     "flow": "Flow",
     "active": "Active",
+    "inactive": "Inactive",
     "messageSentAtLeast": "This message will be sent at least",
     "afterPreviousMessage": "after the previous message (day = 24h)",
     "anyTime": "Any time",

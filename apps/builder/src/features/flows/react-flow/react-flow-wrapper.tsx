@@ -260,7 +260,8 @@ export function ReactFlowWrapper({
         cancelAutosave: () => handleChanges.cancel(),
         getNodes: () => getNodes() as unknown as FlowNode[],
         getEdges,
-        cloneNode: duplicateFlowNode,
+        cloneNode: (node: FlowNode) =>
+          duplicateFlowNode(node, t("actions.copy")),
         addNodes,
         // The action input schema types `nodes` as `any[]` (FlowNode[] flows in
         // freely) and `edges` as the zod edge schema, so only `edges` needs a cast.

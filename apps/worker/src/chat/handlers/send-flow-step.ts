@@ -477,7 +477,7 @@ export async function sendFlowStep({
     return
   }
 
-  const messageText =
+  let messageText: string | null =
     resolvedStep.stepType === stepTypes.enum.sendText ? resolvedStep.text : null
 
   let message: MessageModel | MessageWithAttachments | undefined
@@ -618,15 +618,30 @@ export async function sendFlowStep({
     let attachmentInput:
       | Parameters<typeof repository.createWithAttachments>[1][0]
       | undefined
-    if ("url" in step) {
-      const uploadedFile = await uploadFileFromUrl(
-        step.url,
-        `public/space/${conversation.workspaceId}/conversations/${conversation.id}/${createId()}`,
-      )
-      attachmentInput = {
-        ...uploadedFile,
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
+    if ("url" in step && step.url) {
+      try {
+        const uploadedFile = await uploadFileFromUrl(
+          step.url,
+          `public/space/${conversation.workspaceId}/conversations/${conversation.id}/${createId()}`,
+        )
+        attachmentInput = {
+          ...uploadedFile,
+          workspaceId: conversation.workspaceId,
+          conversationId: conversation.id,
+        }
+      } catch (uploadError) {
+        logger.warn(
+          {
+            conversationId: conversation.id,
+            workspaceId: conversation.workspaceId,
+            url: step.url,
+            error: normalizeError(uploadError),
+          },
+          "sendFlowStep: failed to download media url, falling back to text with url",
+        )
+        // Fallback: append the URL to the message text so the user
+        // still receives the link even when the server cannot fetch it.
+        messageText = [messageText, step.url].filter(Boolean).join("\n")
       }
     }
 

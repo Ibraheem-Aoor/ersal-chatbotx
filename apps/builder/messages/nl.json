@@ -150,6 +150,11 @@
   "errors": {
     "superAdminRequired": "Je moet superbeheerder van de werkruimte zijn om dit te doen."
   },
+  "notFound": {
+    "title": "Pagina niet gevonden",
+    "description": "De pagina die u zoekt bestaat niet of is verplaatst.",
+    "backHome": "Terug naar Home"
+  },
   "states": {
     "success": "Succes",
     "error": "Fout",
@@ -1984,6 +1989,7 @@
   },
   "flows": {
     "title": "Flows",
+    "defaultNodeName": "Bericht verzenden #{number}",
     "quickReplies": {
       "limitReached": "Limiet voor snelle antwoorden bereikt ({max})."
     },
@@ -3749,6 +3755,7 @@
     "settings": "Instellingen",
     "flow": "Flow",
     "active": "Actief",
+    "inactive": "Inactief",
     "messageSentAtLeast": "Dit bericht wordt op zijn vroegst verzonden",
     "afterPreviousMessage": "na het vorige bericht (dag = 24 uur)",
     "anyTime": "Op elk moment",

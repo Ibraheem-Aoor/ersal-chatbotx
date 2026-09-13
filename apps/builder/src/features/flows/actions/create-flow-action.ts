@@ -11,6 +11,7 @@ import {
 } from "@chatbotx.io/database/schema"
 import { sendMessageNodeDefaultFn } from "@chatbotx.io/flow-config"
 import { createId } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -41,9 +42,10 @@ export const createFlowAction = workspaceActionClient
         await ensureFolderIsExists(parsedInput.folderId, workspaceId, "flow")
       }
 
+      const t = await getTranslations("flows")
       const defaultNode = sendMessageNodeDefaultFn({
         dataProps: {
-          name: "Send Message #1",
+          name: t("defaultNodeName", { number: 1 }),
           isStartNode: true,
         },
       })

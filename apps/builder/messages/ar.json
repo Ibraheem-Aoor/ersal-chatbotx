@@ -1542,6 +1542,11 @@
   "errors": {
     "superAdminRequired": "يجب أن تكون مسؤولًا فائقًا لمساحة العمل للقيام بذلك."
   },
+  "notFound": {
+    "title": "الصفحة غير موجودة",
+    "description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    "backHome": "العودة إلى الصفحة الرئيسية"
+  },
   "extensionsMe": {
     "actions": {
       "delete": "حذف بياناتي",
@@ -3127,6 +3132,7 @@
     }
   },
   "flows": {
+    "defaultNodeName": "إرسال رسالة #{number}",
     "actions": {
       "actions": "الإجراءات",
       "activeCampaignSyncContact": "إضافة جهة الاتصال إلى ActiveCampaign",
@@ -4818,6 +4824,7 @@
   },
   "sequences": {
     "active": "نشط",
+    "inactive": "غير نشط",
     "addFirstStep": "إضافة الرسالة الأولى",
     "addStep": "إضافة رسالة",
     "afterPreviousMessage": "من الرسالة السابقة على الأقل (اليوم = 24 ساعة)",

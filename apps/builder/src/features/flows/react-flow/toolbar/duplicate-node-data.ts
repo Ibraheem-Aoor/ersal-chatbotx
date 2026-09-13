@@ -82,7 +82,10 @@ const duplicateStep = <T extends MutableRecord>(step: T): T => {
   return nextStep as T
 }
 
-export const duplicateFlowNodeData = (node: FlowNode): FlowNode["data"] => {
+export const duplicateFlowNodeData = (
+  node: FlowNode,
+  copySuffix = "Copy",
+): FlowNode["data"] => {
   const details = clone(node.data.details)
 
   if ("beforeStep" in details && details.beforeStep) {
@@ -102,13 +105,16 @@ export const duplicateFlowNodeData = (node: FlowNode): FlowNode["data"] => {
   }
 
   return {
-    name: `${node.data.name} Copy`,
+    name: `${node.data.name} ${copySuffix}`,
     isStartNode: false,
     details,
   } as FlowNode["data"]
 }
 
-export const duplicateFlowNode = (node: FlowNode): FlowNode =>
+export const duplicateFlowNode = (
+  node: FlowNode,
+  copySuffix = "Copy",
+): FlowNode =>
   ({
     id: createId(),
     type: node.type,
@@ -120,5 +126,5 @@ export const duplicateFlowNode = (node: FlowNode): FlowNode =>
       width: node.measured?.width ?? DEFAULT_NODE_MEASURED.width,
       height: node.measured?.height ?? DEFAULT_NODE_MEASURED.height,
     },
-    data: duplicateFlowNodeData(node),
+    data: duplicateFlowNodeData(node, copySuffix),
   }) as FlowNode
