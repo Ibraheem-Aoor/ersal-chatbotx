@@ -137,7 +137,7 @@ export const parseHeader = async (
         header = {
           ...header,
           example: {
-            header_text: content.body.variables,
+            header_text: (content as TemplateTextSchema).header.variables,
           },
         }
       }
