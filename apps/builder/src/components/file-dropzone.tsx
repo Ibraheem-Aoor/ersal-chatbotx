@@ -21,7 +21,6 @@ import {
   Volume2,
   X,
 } from "lucide-react"
-import Image from "next/image"
 import { useTranslations } from "next-intl"
 import { type SVGProps, useState } from "react"
 import Dropzone from "react-dropzone"
@@ -186,6 +185,7 @@ export default function FileDropzone({
             <Button
               className="p-0 text-destructive"
               onClick={_onMode}
+              type="button"
               variant="link"
             >
               {t("actions.insertLink")}
@@ -200,7 +200,9 @@ export default function FileDropzone({
     if (type === "image") {
       return (
         <>
-          <Image
+          {/* biome-ignore lint/performance/noImgElement: blob preview URLs are not compatible with next/image */}
+          {/* biome-ignore lint/correctness/useImageSize: dimensions handled by CSS object-cover */}
+          <img
             alt="Thumbnail"
             className="h-full w-full object-cover"
             src={preview}
@@ -210,6 +212,7 @@ export default function FileDropzone({
               className="size-5 rounded-full"
               onClick={_onRemove}
               size="icon"
+              type="button"
               variant="outline"
             >
               <X size={10} />
@@ -239,7 +242,7 @@ export default function FileDropzone({
                 "relative flex h-36 flex-col items-center justify-center overflow-hidden hover:cursor-pointer",
                 preview ? "border-solid" : "border-dashed",
                 isCard
-                  ? ""
+                  ? "rounded-lg border border-zinc-300 border-dashed bg-zinc-50 hover:border-blue-500 dark:border-zinc-600 dark:bg-zinc-800/50"
                   : "rounded-lg border-2 hover:border-blue-500 hover:border-solid",
               )}
             >
@@ -261,13 +264,13 @@ export default function FileDropzone({
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <Button onClick={_onMode} variant="link">
+                  <Button onClick={_onMode} type="button" variant="link">
                     <Undo2 size={20} />
                   </Button>
                 }
               />
               <TooltipContent>
-                <p>Upload File</p>
+                <p>{t("actions.uploadFile")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

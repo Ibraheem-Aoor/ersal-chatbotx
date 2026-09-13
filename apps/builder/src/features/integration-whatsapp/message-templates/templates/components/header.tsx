@@ -81,6 +81,7 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
           <Button
             className="flex cursor-pointer justify-end text-xs hover:underline"
             onClick={addParam}
+            type="button"
             variant="link"
           >
             {t("actions.addVariable")}
@@ -90,6 +91,7 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
         <Button
           className="cursor-pointer font-bold"
           onClick={handleStartEditing}
+          type="button"
           variant="link"
         >
           {displayText}

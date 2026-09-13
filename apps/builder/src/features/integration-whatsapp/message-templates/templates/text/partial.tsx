@@ -21,7 +21,7 @@ const VariableInput = memo(
 
     return (
       <div className="mt-2 flex w-full gap-2">
-        <Button variant="secondary">{`{{${index + 1}}}`}</Button>
+        <Button type="button" variant="secondary">{`{{${index + 1}}}`}</Button>
         <div className="flex-1">
           <InputField
             name={`${parentName}.${type}.variables.${index}`}

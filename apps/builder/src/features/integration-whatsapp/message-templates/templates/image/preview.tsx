@@ -1,4 +1,3 @@
-import { CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { memo, useCallback } from "react"
 import { Controller, useFormContext, useWatch } from "react-hook-form"
 import FileDropzone from "@/components/file-dropzone"
@@ -44,40 +43,38 @@ const TemplateImagePreviewComponent = (
   )
 
   return (
-    <CardContent className="rounded bg-white p-4">
-      <div className="flex w-full flex-col gap-4" {...rest}>
-        <Controller
-          control={control}
-          name={`${parentName}.header.file`}
-          render={() => (
-            <FileDropzone
-              configs={{
-                uploadKeyName: "actions.uploadImage",
-                accept: {
-                  "image/png": [".png"],
-                  "image/jpg": [".jpg"],
-                  "image/jpeg": [".jpeg"],
-                },
-                isCard: true,
-              }}
-              onDrop={handleDrop}
-              onRemove={handleRemove}
-              parentName={`${parentName}.header`}
-              register={register}
-              unregister={unregister}
-            />
-          )}
-        />
-        <TemplateBody parentName={`${parentName}.body`} />
-        {showFooter && <TemplateFooter parentName={parentName} />}
-        <hr />
-        <ButtonGroupPreview
-          max={maxButtons}
-          min={minButtons}
-          parentName={`${parentName}.buttons`}
-        />
-      </div>
-    </CardContent>
+    <div className="flex w-full flex-col gap-4" {...rest}>
+      <Controller
+        control={control}
+        name={`${parentName}.header.file`}
+        render={() => (
+          <FileDropzone
+            configs={{
+              uploadKeyName: "actions.uploadImage",
+              accept: {
+                "image/png": [".png"],
+                "image/jpg": [".jpg"],
+                "image/jpeg": [".jpeg"],
+              },
+              isCard: true,
+            }}
+            onDrop={handleDrop}
+            onRemove={handleRemove}
+            parentName={`${parentName}.header`}
+            register={register}
+            unregister={unregister}
+          />
+        )}
+      />
+      <TemplateBody parentName={`${parentName}.body`} />
+      {showFooter && <TemplateFooter parentName={parentName} />}
+      <hr />
+      <ButtonGroupPreview
+        max={maxButtons}
+        min={minButtons}
+        parentName={`${parentName}.buttons`}
+      />
+    </div>
   )
 }
 

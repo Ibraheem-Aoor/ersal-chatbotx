@@ -58,6 +58,7 @@ const TemplateFooterComponent = ({ parentName }: { parentName: string }) => {
         <Button
           className="cursor-pointer text-gray-300"
           onClick={handleStartEditing}
+          type="button"
           variant="link"
         >
           {displayText}

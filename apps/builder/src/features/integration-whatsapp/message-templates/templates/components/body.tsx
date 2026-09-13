@@ -86,7 +86,7 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
             placeholder={t("actions.enterText")}
             value={localBody}
           />
-          <Button onClick={addParam} variant="link">
+          <Button onClick={addParam} type="button" variant="link">
             {t("actions.addVariable")}
           </Button>
         </div>
@@ -94,6 +94,7 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
         <Button
           className="cursor-pointer"
           onClick={handleStartEditing}
+          type="button"
           variant="link"
         >
           {displayText}

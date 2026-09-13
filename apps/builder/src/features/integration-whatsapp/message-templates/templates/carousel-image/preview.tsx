@@ -1,5 +1,5 @@
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
+import { Card } from "@chatbotx.io/ui/components/ui/card"
 import {
   Carousel,
   type CarouselApi,
@@ -74,10 +74,10 @@ const TemplateCarouselImagePreviewComponent = (
 
   return (
     <>
-      <CardContent className="rounded bg-white p-4">
+      <div className="mb-4">
         <TemplateBody parentName={`${parentName}.body`} />
-      </CardContent>
-      <CardContent className="relative mt-4 rounded bg-white px-8 py-4">
+      </div>
+      <div className="relative px-2">
         <Carousel opts={{ dragFree: false }} setApi={setApi}>
           <CarouselContent>
             {fields.map((field, index) => (
@@ -218,7 +218,7 @@ const TemplateCarouselImagePreviewComponent = (
             </TooltipProvider>
           </>
         )}
-      </CardContent>
+      </div>
     </>
   )
 }

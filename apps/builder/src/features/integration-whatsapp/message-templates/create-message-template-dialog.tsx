@@ -15,7 +15,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { ArrowLeftIcon, Loader2Icon, PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { type ComponentType, memo, useState } from "react"
+import { type ComponentType, memo, useEffect, useMemo, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createMessageTemplateAction } from "@/features/integration-whatsapp/message-templates/actions/create-message-template.action"
@@ -133,6 +133,7 @@ function LivePreview({
   const { control } = useFormContext()
 
   const headerText = useWatch({ control, name: `${parentName}.header.text` })
+  const headerFile = useWatch({ control, name: `${parentName}.header.file` })
   const bodyText = useWatch({ control, name: `${parentName}.body.text` })
   const footer = useWatch({ control, name: `${parentName}.footer` })
   const buttons = useWatch({ control, name: `${parentName}.buttons` })
@@ -149,18 +150,55 @@ function LivePreview({
 
   const hasBody = typeof bodyText === "string" && bodyText.length > 0
 
+  // Build a preview URL for the uploaded file
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string>("")
+  useEffect(() => {
+    if (headerFile instanceof File) {
+      const url = URL.createObjectURL(headerFile)
+      setFilePreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    }
+    setFilePreviewUrl("")
+  }, [headerFile])
+
+  const mediaEmoji = useMemo(() => {
+    if (templateType === templateTypes.enum.Image) {
+      return "🖼️"
+    }
+    if (templateType === templateTypes.enum.Video) {
+      return "🎬"
+    }
+    return "📄"
+  }, [templateType])
+
   return (
     <div className="flex flex-col text-sm">
-      {/* Media placeholder */}
+      {/* Media header — shows uploaded file or placeholder */}
       {isMedia && (
-        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-36 items-center justify-center rounded-t-lg bg-zinc-200 dark:bg-zinc-700">
-          <span className="text-3xl opacity-40">
-            {templateType === templateTypes.enum.Image
-              ? "🖼️"
-              : templateType === templateTypes.enum.Video
-                ? "🎬"
-                : "📄"}
-          </span>
+        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-36 items-center justify-center overflow-hidden rounded-t-lg bg-zinc-200 dark:bg-zinc-700">
+          {(() => {
+            if (filePreviewUrl && templateType === templateTypes.enum.Image) {
+              return (
+                // biome-ignore lint/performance/noImgElement: blob preview URL not compatible with next/image
+                // biome-ignore lint/correctness/useImageSize: dimensions handled by CSS object-cover
+                <img
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                  src={filePreviewUrl}
+                />
+              )
+            }
+            if (filePreviewUrl && templateType === templateTypes.enum.Video) {
+              return (
+                <video
+                  className="h-full w-full object-cover"
+                  muted
+                  src={filePreviewUrl}
+                />
+              )
+            }
+            return <span className="text-3xl opacity-40">{mediaEmoji}</span>
+          })()}
         </div>
       )}
 
@@ -210,6 +248,7 @@ function LivePreview({
             (btn: { text?: string }, i: number) => (
               <div
                 className="border-zinc-200 border-b py-2 text-center font-medium text-[#00a5f4] text-[13px] last:border-b-0 dark:border-zinc-600"
+                // biome-ignore lint/suspicious/noArrayIndexKey: buttons have no stable ID
                 key={`btn-${i}`}
               >
                 {btn?.text || "•••"}

@@ -1,4 +1,3 @@
-import { CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { memo } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { ButtonGroupPreview } from "../button/preview"
@@ -26,15 +25,13 @@ const TemplateTextPreviewComponent = (
   })
 
   return (
-    <CardContent className="rounded bg-white p-4">
-      <div className="flex w-full flex-col gap-4" {...rest}>
-        {hideHeader && <TemplateHeader parentName={`${parentName}.header`} />}
-        <TemplateBody parentName={`${parentName}.body`} />
-        {showFooter && <TemplateFooter parentName={parentName} />}
-        <hr />
-        <ButtonGroupPreview parentName={`${parentName}.buttons`} />
-      </div>
-    </CardContent>
+    <div className="flex w-full flex-col gap-4" {...rest}>
+      {hideHeader && <TemplateHeader parentName={`${parentName}.header`} />}
+      <TemplateBody parentName={`${parentName}.body`} />
+      {showFooter && <TemplateFooter parentName={parentName} />}
+      <hr />
+      <ButtonGroupPreview parentName={`${parentName}.buttons`} />
+    </div>
   )
 }
 
