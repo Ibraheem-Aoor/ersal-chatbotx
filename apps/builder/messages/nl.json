@@ -3373,7 +3373,8 @@
       "sectionHeader": "Koptekst",
       "sectionBody": "Inhoud",
       "sectionFooter": "Voettekst",
-      "sectionButtons": "Knoppen"
+      "sectionButtons": "Knoppen",
+      "formHasErrors": "Vul alle verplichte velden in voordat u verzendt"
     },
     "sampleBodyCardContent": {
       "label": "Voorbeeldinhoud van kaarttekst"

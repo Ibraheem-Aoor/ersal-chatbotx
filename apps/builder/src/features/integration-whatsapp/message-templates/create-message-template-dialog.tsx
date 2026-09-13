@@ -12,7 +12,12 @@ import {
 } from "@chatbotx.io/ui/components/ui/sheet"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { ArrowLeftIcon, Loader2Icon, PlusIcon } from "lucide-react"
+import {
+  AlertCircleIcon,
+  ArrowLeftIcon,
+  Loader2Icon,
+  PlusIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { type ComponentType, memo, useEffect, useMemo, useState } from "react"
@@ -214,8 +219,9 @@ function LivePreview({
         </div>
       )}
 
-      {/* Header text (text-type templates only) */}
-      {!(isMedia || isCarousel || hideHeader) &&
+      {/* Header text (text-type templates only — hideHeader=true means header IS visible) */}
+      {!(isMedia || isCarousel) &&
+        hideHeader &&
         typeof headerText === "string" &&
         headerText.length > 0 && (
           <p className="mb-1 font-bold text-[13px] leading-snug dark:text-zinc-100">
@@ -393,16 +399,28 @@ function CreateMessageTemplateDialogContent({
             </h2>
           </div>
           {templateType && (
-            <Button
-              disabled={!form.formState.isValid || form.formState.isSubmitting}
-              size="sm"
-              type="submit"
-            >
-              {form.formState.isSubmitting && (
-                <Loader2Icon className="size-4 animate-spin" />
-              )}
-              {t("actions.create")}
-            </Button>
+            <div className="flex items-center gap-3">
+              {form.formState.isDirty &&
+                !form.formState.isValid &&
+                !form.formState.isSubmitting && (
+                  <span className="flex items-center gap-1.5 text-destructive text-xs">
+                    <AlertCircleIcon className="size-3.5" />
+                    {t("whatsapp.messageTemplate.formHasErrors")}
+                  </span>
+                )}
+              <Button
+                disabled={
+                  !form.formState.isValid || form.formState.isSubmitting
+                }
+                size="sm"
+                type="submit"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
+                {t("actions.create")}
+              </Button>
+            </div>
           )}
         </div>
 

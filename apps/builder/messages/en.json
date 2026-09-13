@@ -3681,7 +3681,8 @@
       "sectionHeader": "Header",
       "sectionBody": "Body",
       "sectionFooter": "Footer",
-      "sectionButtons": "Buttons"
+      "sectionButtons": "Buttons",
+      "formHasErrors": "Please fill in all required fields before submitting"
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"

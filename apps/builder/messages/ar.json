@@ -5331,7 +5331,8 @@
       "sectionHeader": "الرأس",
       "sectionBody": "المحتوى",
       "sectionFooter": "التذييل",
-      "sectionButtons": "الأزرار"
+      "sectionButtons": "الأزرار",
+      "formHasErrors": "يرجى ملء جميع الحقول المطلوبة قبل الإرسال"
     },
     "phoneVerification": {
       "actions": {
