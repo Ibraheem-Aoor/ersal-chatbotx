@@ -98,7 +98,7 @@ const ButtonGroupPreviewComponent = (
   return (
     <div className="flex flex-col gap-3">
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
-        {t("integrations.messageTemplates.create.buttons")}
+        {t("whatsapp.messageTemplate.sectionButtons")}
       </span>
       {fields.map((field: ButtonField, index) => (
         <ButtonItem

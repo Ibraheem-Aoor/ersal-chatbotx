@@ -45,7 +45,7 @@ const TemplateFooterComponent = ({ parentName }: { parentName: string }) => {
   return (
     <div className="flex flex-col gap-1">
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
-        {t("integrations.messageTemplates.create.footer")}
+        {t("whatsapp.messageTemplate.sectionFooter")}
       </span>
       {showForm ? (
         <div className="flex flex-col gap-2">

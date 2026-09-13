@@ -3317,7 +3317,6 @@
         "imageHint": "PNG, JPG, or GIF. The image is uploaded before submission.",
         "noImageSelected": "No image selected",
         "body": "Body",
-        "footer": "Footer",
         "buttons": "Buttons",
         "addButton": "Add Button",
         "addVariable": "Add Variable",
@@ -3678,7 +3677,11 @@
       "selectType": "Select template type",
       "noPreview": "Preview not available for this template type",
       "preview": "Preview",
-      "startTyping": "Start typing to see preview"
+      "startTyping": "Start typing to see preview",
+      "sectionHeader": "Header",
+      "sectionBody": "Body",
+      "sectionFooter": "Footer",
+      "sectionButtons": "Buttons"
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"
