@@ -61,11 +61,13 @@ const TemplateVideoPreviewComponent = (
                   "video/mp4": [".mp4"],
                 },
                 isCard: true,
+                containerClassName: "aspect-video min-h-[120px] max-h-[240px]",
               }}
               onDrop={handleDrop}
               onRemove={handleRemove}
               parentName={`${parentName}.header`}
               register={register}
+              type="video"
               unregister={unregister}
             />
           )}

@@ -15,7 +15,9 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import {
   AlertCircleIcon,
   ArrowLeftIcon,
+  FileTextIcon,
   Loader2Icon,
+  PlayCircleIcon,
   PlusIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -180,7 +182,7 @@ function LivePreview({
     <div className="flex flex-col text-sm">
       {/* Media header — shows uploaded file or placeholder */}
       {isMedia && (
-        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-36 items-center justify-center overflow-hidden rounded-t-lg bg-zinc-200 dark:bg-zinc-700">
+        <div className="-mx-2.5 -mt-2.5 mb-2 flex aspect-[4/3] max-h-44 items-center justify-center overflow-hidden rounded-t-lg bg-zinc-200 dark:bg-zinc-700">
           {(() => {
             if (filePreviewUrl && templateType === templateTypes.enum.Image) {
               return (
@@ -195,26 +197,55 @@ function LivePreview({
             }
             if (filePreviewUrl && templateType === templateTypes.enum.Video) {
               return (
-                <video
-                  className="h-full w-full object-cover"
-                  muted
-                  src={filePreviewUrl}
-                />
+                <div className="relative h-full w-full">
+                  <video
+                    className="h-full w-full object-cover"
+                    muted
+                    src={filePreviewUrl}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <PlayCircleIcon className="size-10 text-white drop-shadow-lg" />
+                  </div>
+                </div>
               )
             }
-            return <span className="text-3xl opacity-40">{mediaEmoji}</span>
+            if (
+              headerFile instanceof File &&
+              templateType === templateTypes.enum.Document
+            ) {
+              return (
+                <div className="flex flex-col items-center gap-1.5 px-4">
+                  <FileTextIcon className="size-8 text-zinc-500 dark:text-zinc-400" />
+                  <span className="max-w-full truncate text-center text-[11px] text-zinc-600 dark:text-zinc-300">
+                    {headerFile.name}
+                  </span>
+                </div>
+              )
+            }
+            return (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-3xl opacity-40">{mediaEmoji}</span>
+                <span className="text-[10px] text-zinc-400">
+                  {t("actions.selectFile")}
+                </span>
+              </div>
+            )
           })()}
         </div>
       )}
 
       {/* Carousel placeholder */}
       {isCarousel && (
-        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-28 items-center justify-center gap-1.5 rounded-t-lg bg-zinc-200 px-3 dark:bg-zinc-700">
+        <div className="-mx-2.5 -mt-2.5 mb-2 flex h-28 items-center justify-center gap-2 rounded-t-lg bg-zinc-200 px-3 dark:bg-zinc-700">
           {[1, 2, 3].map((i) => (
             <div
-              className="h-20 w-14 rounded bg-zinc-300 dark:bg-zinc-600"
+              className="flex h-20 w-14 items-center justify-center rounded bg-zinc-300 shadow-sm dark:bg-zinc-600"
               key={i}
-            />
+            >
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                {i}
+              </span>
+            </div>
           ))}
         </div>
       )}

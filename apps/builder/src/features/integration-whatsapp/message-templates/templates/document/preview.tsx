@@ -54,11 +54,13 @@ const TemplateDocumentPreviewComponent = (
                   "application/pdf": [".pdf"],
                 },
                 isCard: true,
+                containerClassName: "min-h-[100px]",
               }}
               onDrop={handleDrop}
               onRemove={handleRemove}
               parentName={`${parentName}.header`}
               register={register}
+              type="file"
               unregister={unregister}
             />
           )}

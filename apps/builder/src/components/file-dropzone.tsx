@@ -33,6 +33,7 @@ type FileDropzoneConfigs = {
   accept: Record<string, string[]>
   maxSize: number
   isCard: boolean
+  containerClassName: string
 }
 
 type FileDropzoneProps = {
@@ -86,6 +87,7 @@ export default function FileDropzone({
     maxSize = 10,
     isCard = false,
     uploadLabel,
+    containerClassName,
   } = {},
   onMode,
   onRemove,
@@ -196,6 +198,20 @@ export default function FileDropzone({
     </div>
   )
 
+  const _removeButton = () => (
+    <div className="absolute end-2 top-2 z-10">
+      <Button
+        className="size-6 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white dark:bg-zinc-800/80 dark:hover:bg-zinc-800"
+        onClick={_onRemove}
+        size="icon"
+        type="button"
+        variant="outline"
+      >
+        <X size={12} />
+      </Button>
+    </div>
+  )
+
   const _hasFile = () => {
     if (type === "image") {
       return (
@@ -207,27 +223,20 @@ export default function FileDropzone({
             className="h-full w-full object-cover"
             src={preview}
           />
-          <div className="absolute end-1 top-1 z-10">
-            <Button
-              className="size-5 rounded-full"
-              onClick={_onRemove}
-              size="icon"
-              type="button"
-              variant="outline"
-            >
-              <X size={10} />
-            </Button>
-          </div>
+          {_removeButton()}
         </>
       )
     }
     return (
-      <div className="flex flex-col items-center gap-2 px-4">
-        <FileIcon />
-        <span className="line-clamp-2 break-all text-center text-sm">
-          {preview}
-        </span>
-      </div>
+      <>
+        <div className="flex flex-col items-center gap-2 px-4">
+          <FileIcon />
+          <span className="line-clamp-2 break-all text-center text-sm">
+            {preview}
+          </span>
+        </div>
+        {_removeButton()}
+      </>
     )
   }
 
@@ -239,11 +248,13 @@ export default function FileDropzone({
             <Input {...getInputProps()} />
             <div
               className={cn(
-                "relative flex h-36 flex-col items-center justify-center overflow-hidden hover:cursor-pointer",
+                "relative flex flex-col items-center justify-center overflow-hidden hover:cursor-pointer",
+                !containerClassName && "h-36",
                 preview ? "border-solid" : "border-dashed",
                 isCard
                   ? "rounded-lg border border-zinc-300 border-dashed bg-zinc-50 hover:border-blue-500 dark:border-zinc-600 dark:bg-zinc-800/50"
                   : "rounded-lg border-2 hover:border-blue-500 hover:border-solid",
+                containerClassName,
               )}
             >
               {preview ? _hasFile() : _noFile()}

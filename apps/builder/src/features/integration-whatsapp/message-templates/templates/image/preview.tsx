@@ -63,6 +63,7 @@ const TemplateImagePreviewComponent = (
                   "image/jpeg": [".jpeg"],
                 },
                 isCard: true,
+                containerClassName: "aspect-video min-h-[120px] max-h-[240px]",
               }}
               onDrop={handleDrop}
               onRemove={handleRemove}
