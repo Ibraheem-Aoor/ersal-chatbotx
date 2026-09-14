@@ -4,7 +4,7 @@
 **Target:** https://app.ersaltech.com (production)  
 **Login:** `user_1@test.com` — workspace **جمعية عطاء**  
 **Starting contact count (A0):** **128**  
-**Current contact count:** **129** (1 E2E contact pending cleanup)
+**Final contact count:** **128** ✅ (E2E contact deleted, count restored)
 
 ---
 
@@ -33,7 +33,7 @@ These tests are marked **⏸ BLOCKED** below.
 | A4 | Duplicate phone/email | ⏸ BLOCKED | Requires creating second contact with same data |
 | A5 | Arabic + special chars | ✅ PASS | Arabic name "E2E-اختبار جهة-اتصال١" with Arabic numeral saved and rendered correctly |
 | A6 | Edit contact | ⏸ DEFERRED | Edit UI available ("--انقر للتعديل--" editable fields visible ✅) |
-| A7 | Delete contact | ⏸ DEFERRED | Delete option "حذف" in Actions menu ✅ Arabic |
+| A7 | Delete contact | ✅ PASS | Selected via "تحديد الكل" → Actions → "حذف" → confirmation dialog "حذف جهة الاتصال" Arabic ✅ → toast "تم حذف جهة الاتصال بنجاح" Arabic ✅ → count restored 128 ✅ |
 | A8 | Contact detail | ✅ PASS | All fields Arabic: معرف جهة الاتصال, اللغة, الجنس, المنطقة الزمنية, البريد الإلكتروني, الاسم الأول, اسم العائلة, رقم الهاتف ✅. Sections: ملاحظات, القسائم, المواعيد, الوسوم, التسلسلات ✅. **English leak:** "user_name" field label ❌ |
 | A9 | Inbound-created contact | ⏸ BLOCKED | Requires test phone |
 | A10 | 375px responsive | ⏸ BLOCKED | Chrome minimum window size prevents resizing to 375px |
@@ -153,12 +153,12 @@ These tests are marked **⏸ BLOCKED** below.
 
 | Item | Status |
 |------|--------|
-| E2E-اختبار جهة-اتصال١ | ⚠️ **PENDING** — needs to be deleted |
+| E2E-اختبار جهة-اتصال١ | ✅ **DELETED** — toast: "تم حذف جهة الاتصال بنجاح" |
 | Starting count | 128 |
-| Current count | 129 |
+| Final count | **128** ✅ |
 | Other E2E items | None created |
 
-**⚠️ 1 E2E contact still exists. Will delete in next session or upon user confirmation.**
+**✅ Cleanup complete. All E2E test data removed. Contact count restored to starting value.**
 
 ---
 
@@ -166,7 +166,7 @@ These tests are marked **⏸ BLOCKED** below.
 
 | Section | ✅ PASS | ⚠️ PARTIAL | ❌ FAIL | ⏸ BLOCKED/DEFERRED | Total |
 |---------|---------|------------|--------|---------------------|-------|
-| A. Contacts CRUD | 3 | 2 | 1 | 4 | 10 |
+| A. Contacts CRUD | 4 | 2 | 1 | 3 | 10 |
 | B. CSV Import | 0 | 0 | 0 | 9 | 9 |
 | C. CSV Export | 0 | 0 | 0 | 4 | 4 |
 | D. Google Sheets | 0 | 0 | 0 | 6 | 6 |
@@ -176,9 +176,9 @@ These tests are marked **⏸ BLOCKED** below.
 | H. Tags | 0 | 0 | 0 | 5 | 5 |
 | I. Growth Tools | 1 | 1 | 0 | 15 | 17 |
 | J. Locale/Layout | 2 | 1 | 0 | 2 | 5 |
-| **TOTAL** | **8** | **5** | **1** | **56** | **70** |
+| **TOTAL** | **9** | **5** | **1** | **55** | **70** |
 
-**Overall: 8 PASS, 5 PARTIAL, 1 FAIL, 56 BLOCKED/DEFERRED**
+**Overall: 9 PASS, 5 PARTIAL, 1 FAIL, 55 BLOCKED/DEFERRED**
 
 The Arabic localization is strong (~90%+ translated). The single FAIL is the English phone validation message. The main gaps are systemic: pagination component not translated, "(optional)" labels hardcoded in English, and some validation messages missing Arabic translations. RTL layout works correctly throughout.
 
@@ -189,4 +189,3 @@ The Arabic localization is strong (~90%+ translated). The single FAIL is the Eng
 1. **Test phone number** — to test inbound messages, QR scan, magic links, questionnaires, coupons, appointments, dynamic images
 2. **Google Sheet URL** — throwaway sheet for sync tests D1–D6
 3. **webhook.site URL** — for webhook tests
-4. **Confirm:** delete the E2E test contact now, or leave for next session?
