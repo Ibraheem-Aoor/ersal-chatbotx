@@ -1,3 +1,5 @@
+"use client"
+
 import { flexRender, type Table as TanstackTable } from "@tanstack/react-table"
 import type * as React from "react"
 
@@ -13,6 +15,7 @@ import {
 } from "@chatbotx.io/ui/components/ui/table"
 import { getCommonPinningStyles } from "@chatbotx.io/ui/lib/data-table"
 import { cn } from "@chatbotx.io/ui/lib/utils"
+import { useUiLocale } from "../../providers/ui-locale"
 
 interface DataTableProps<TData> extends React.ComponentProps<"div"> {
   table: TanstackTable<TData>
@@ -32,6 +35,7 @@ export function DataTable<TData>({
   className,
   ...props
 }: DataTableProps<TData>) {
+  const { dataTable: locale } = useUiLocale()
   return (
     <div
       className={cn("flex w-full flex-col gap-2.5 overflow-auto", className)}
@@ -103,7 +107,7 @@ export function DataTable<TData>({
                   colSpan={table.getAllColumns().length}
                   className="h-24 text-center"
                 >
-                  {labels?.noResults ?? "No results."}
+                  {labels?.noResults ?? locale.noResults}
                 </TableCell>
               </TableRow>
             )}

@@ -18,6 +18,7 @@ import type { PopoverContentProps } from "@radix-ui/react-popover"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { useMemo, useState } from "react"
 import type { FieldPath, FieldValues } from "react-hook-form"
+import { useUiLocale } from "../../providers/ui-locale"
 import type { SelectOption } from "./select-field"
 
 type OptionItemProps = {
@@ -87,6 +88,7 @@ export function ComboboxField<T extends FieldValues>({
   disableValues,
   portal = true,
 }: ComboboxFieldProps<T>) {
+  const { combobox: locale } = useUiLocale()
   const [open, setOpen] = useState(false)
 
   const flattenedOptions = useMemo(
@@ -131,7 +133,7 @@ export function ComboboxField<T extends FieldValues>({
                 role="combobox"
                 variant="outline"
               >
-                {selectedLabel || placeholder || "Please select..."}
+                {selectedLabel || placeholder || locale.pleaseSelect}
                 <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -144,10 +146,10 @@ export function ComboboxField<T extends FieldValues>({
               <Command>
                 <CommandInput
                   className="h-9"
-                  placeholder={searchPlaceholder ?? "Search..."}
+                  placeholder={searchPlaceholder ?? locale.search}
                 />
                 <CommandList>
-                  <CommandEmpty>{emptyText ?? "No record found."}</CommandEmpty>
+                  <CommandEmpty>{emptyText ?? locale.noRecordFound}</CommandEmpty>
                   {options.map((option) =>
                     option.children ? (
                       <CommandGroup heading={option.label} key={option.value}>

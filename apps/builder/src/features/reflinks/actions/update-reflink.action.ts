@@ -10,6 +10,7 @@ import {
 import { reflinkModel } from "@chatbotx.io/database/schema"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { returnValidationErrors } from "next-safe-action"
+import { getTranslations } from "next-intl/server"
 import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type UpdateReflinkRequest,
@@ -56,9 +57,10 @@ export const updateReflink = async (
       .where(and(eq(reflinkModel.id, reflink.id)))
   } catch (error) {
     if (isUniqueViolationError(error)) {
+      const t = await getTranslations("validation")
       return returnValidationErrors(updateReflinkRequest, {
-        _errors: ["Validation Exception"],
-        name: { _errors: ["Name is already taken"] },
+        _errors: [t("validationException")],
+        name: { _errors: [t("nameAlreadyTaken")] },
       })
     }
 

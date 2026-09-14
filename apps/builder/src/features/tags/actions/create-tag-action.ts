@@ -5,6 +5,7 @@ import { db } from "@chatbotx.io/database/client"
 import { tagModel } from "@chatbotx.io/database/schema"
 import { createId } from "@chatbotx.io/utils"
 import { returnValidationErrors } from "next-safe-action"
+import { getTranslations } from "next-intl/server"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -40,9 +41,10 @@ export const createTag = async (
     },
   })
   if (existingTag) {
+    const t = await getTranslations("validation")
     return returnValidationErrors(createTagRequest, {
       name: {
-        _errors: ["Name is already taken."],
+        _errors: [t("nameAlreadyTaken")],
       },
     })
   }

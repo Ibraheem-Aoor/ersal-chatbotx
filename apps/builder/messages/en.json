@@ -3735,5 +3735,58 @@
       "allStatuses": "All Statuses",
       "searchPlaceholder": "Search by email..."
     }
+  },
+  "validation": {
+    "validationException": "Validation Exception",
+    "nameAlreadyTaken": "Name is already taken",
+    "notFound": "Not found",
+    "flowNotFound": "Flow not found",
+    "templateNotFound": "Template not found",
+    "unauthorized": "Unauthorized",
+    "fileNotFound": "File not found",
+    "inboxNotFound": "Inbox not found",
+    "tokenFormatInvalid": "Token format is not valid",
+    "urlNotValid": "URL is not valid",
+    "urlMustBePublic": "URL must be public or shareable",
+    "userNotValid": "User is not valid",
+    "teamNotValid": "Inbox Team is not valid",
+    "googleSheetsNotSetup": "You need to setup Google Sheets first",
+    "unsupportedFileFormat": "Unsupported file format",
+    "fileNotContactsImport": "File is not a contacts import",
+    "workspaceNotFound": "Workspace not found",
+    "inboxSourceMismatch": "Selected inbox does not match the selected source",
+    "phoneIncludeCountryCode": "Please include the country code (e.g. +84)",
+    "phoneNumberExists": "Phone number already exists",
+    "contactExistsOnInbox": "This contact already exists on the selected inbox",
+    "mcpServerNameExists": "Server with this name already exists",
+    "functionNameExists": "Function with this name already exists"
+  },
+  "uiLocale": {
+    "dataTable": {
+      "selectedRows": "{selected} of {total} row(s) selected.",
+      "rowsPerPage": "Rows per page",
+      "pageOf": "Page {page} of {pageCount}",
+      "firstPage": "Go to first page",
+      "previousPage": "Go to previous page",
+      "nextPage": "Go to next page",
+      "lastPage": "Go to last page",
+      "noResults": "No results."
+    },
+    "combobox": {
+      "search": "Search...",
+      "noRecordFound": "No record found.",
+      "pleaseSelect": "Please select..."
+    },
+    "viewOptions": {
+      "searchColumns": "Search columns...",
+      "noColumnsFound": "No columns found.",
+      "toggleColumns": "Toggle columns",
+      "view": "View"
+    },
+    "multiSelect": {
+      "searchOptions": "Search options...",
+      "noResultsFound": "No results found.",
+      "searchLabel": "Search through available options"
+    }
   }
 }

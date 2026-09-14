@@ -5,6 +5,8 @@ import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
 import type { ReactNode } from "react"
 import { PublicEnvScript } from "@/components/public-env-script"
+import { UiLocaleSetup } from "@/components/ui-locale-setup"
+import { ZodErrorMapProvider } from "@/components/zod-error-map-provider"
 import { env } from "@/env"
 import { TenantProvider } from "@/features/tenant"
 import { getTenantSettings } from "@/features/tenant/utils"
@@ -64,7 +66,10 @@ export default async function RootLayout({ children }: Props) {
         <TenantProvider settings={tenantSettings}>
           <DirectionProvider direction={dir}>
             <UiProvider>
-              <NextIntlClientProvider>{children}</NextIntlClientProvider>
+              <NextIntlClientProvider>
+                <ZodErrorMapProvider />
+                <UiLocaleSetup>{children}</UiLocaleSetup>
+              </NextIntlClientProvider>
             </UiProvider>
           </DirectionProvider>
         </TenantProvider>

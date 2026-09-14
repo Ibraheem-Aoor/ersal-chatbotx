@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@chatbotx.io/ui/components/ui/popover"
 import { cn } from "@chatbotx.io/ui/lib/utils"
+import { useUiLocale } from "../../providers/ui-locale"
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>
@@ -26,6 +27,7 @@ interface DataTableViewOptionsProps<TData> {
 export function DataTableViewOptions<TData>({
   table,
 }: DataTableViewOptionsProps<TData>) {
+  const { viewOptions: locale } = useUiLocale()
   const columns = React.useMemo(
     () =>
       table
@@ -41,7 +43,7 @@ export function DataTableViewOptions<TData>({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          aria-label="Toggle columns"
+          aria-label={locale.toggleColumns}
           // biome-ignore lint/a11y/useSemanticElements: <explanation>
           role="combobox"
           variant="outline"
@@ -49,15 +51,15 @@ export function DataTableViewOptions<TData>({
           className="ml-auto hidden h-8 lg:flex"
         >
           <Settings2 />
-          View
+          {locale.view}
           <ChevronsUpDown className="ml-auto opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-44 p-0">
         <Command>
-          <CommandInput placeholder="Search columns..." />
+          <CommandInput placeholder={locale.searchColumns} />
           <CommandList>
-            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandEmpty>{locale.noColumnsFound}</CommandEmpty>
             <CommandGroup>
               {columns.map((column) => (
                 <CommandItem

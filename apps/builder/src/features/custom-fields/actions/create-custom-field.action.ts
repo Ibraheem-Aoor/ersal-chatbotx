@@ -4,6 +4,7 @@ import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, isDatabaseError } from "@chatbotx.io/database/client"
 import { customFieldModel } from "@chatbotx.io/database/schema"
 import { returnValidationErrors } from "next-safe-action"
+import { getTranslations } from "next-intl/server"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -53,9 +54,10 @@ export const createCustomField = async (
     return newField
   } catch (error) {
     if (isDatabaseError(error) && error.cause.code === "23505") {
+      const t = await getTranslations("validation")
       return returnValidationErrors(createCustomFieldRequest, {
-        _errors: ["Validation Exception"],
-        name: { _errors: ["Name is already taken"] },
+        _errors: [t("validationException")],
+        name: { _errors: [t("nameAlreadyTaken")] },
       })
     }
 

@@ -3735,5 +3735,58 @@
       "timeRequired": "الرجاء اختيار وقت البداية والنهاية",
       "title": "تعيين ساعات العمل النشطة"
     }
+  },
+  "validation": {
+    "validationException": "خطأ في التحقق",
+    "nameAlreadyTaken": "الاسم مستخدم بالفعل",
+    "notFound": "غير موجود",
+    "flowNotFound": "لم يتم العثور على Flow",
+    "templateNotFound": "لم يتم العثور على القالب",
+    "unauthorized": "غير مصرّح",
+    "fileNotFound": "لم يتم العثور على الملف",
+    "inboxNotFound": "لم يتم العثور على صندوق الوارد",
+    "tokenFormatInvalid": "صيغة الرمز غير صالحة",
+    "urlNotValid": "الرابط غير صالح",
+    "urlMustBePublic": "يجب أن يكون الرابط عامًا أو قابلاً للمشاركة",
+    "userNotValid": "المستخدم غير صالح",
+    "teamNotValid": "فريق صندوق الوارد غير صالح",
+    "googleSheetsNotSetup": "يجب إعداد Google Sheets أولاً",
+    "unsupportedFileFormat": "صيغة الملف غير مدعومة",
+    "fileNotContactsImport": "الملف ليس ملف استيراد جهات اتصال",
+    "workspaceNotFound": "لم يتم العثور على مساحة العمل",
+    "inboxSourceMismatch": "صندوق الوارد المحدد لا يتطابق مع المصدر المحدد",
+    "phoneIncludeCountryCode": "يرجى تضمين رمز الدولة (مثال: 84+)",
+    "phoneNumberExists": "رقم الهاتف موجود بالفعل",
+    "contactExistsOnInbox": "جهة الاتصال هذه موجودة بالفعل في صندوق الوارد المحدد",
+    "mcpServerNameExists": "يوجد سيرفر بهذا الاسم بالفعل",
+    "functionNameExists": "يوجد وظيفة بهذا الاسم بالفعل"
+  },
+  "uiLocale": {
+    "dataTable": {
+      "selectedRows": "{selected} من {total} صف(وف) محدد.",
+      "rowsPerPage": "صفوف لكل صفحة",
+      "pageOf": "صفحة {page} من {pageCount}",
+      "firstPage": "الانتقال للصفحة الأولى",
+      "previousPage": "الانتقال للصفحة السابقة",
+      "nextPage": "الانتقال للصفحة التالية",
+      "lastPage": "الانتقال للصفحة الأخيرة",
+      "noResults": "لا توجد نتائج."
+    },
+    "combobox": {
+      "search": "بحث...",
+      "noRecordFound": "لا توجد نتائج.",
+      "pleaseSelect": "يرجى الاختيار..."
+    },
+    "viewOptions": {
+      "searchColumns": "البحث في الأعمدة...",
+      "noColumnsFound": "لا توجد أعمدة.",
+      "toggleColumns": "تبديل الأعمدة",
+      "view": "عرض"
+    },
+    "multiSelect": {
+      "searchOptions": "البحث في الخيارات...",
+      "noResultsFound": "لا توجد نتائج.",
+      "searchLabel": "البحث في الخيارات المتاحة"
+    }
   }
 }

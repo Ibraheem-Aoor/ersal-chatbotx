@@ -16,6 +16,7 @@ import {
 } from "@chatbotx.io/ui/components/ui/popover"
 import { Separator } from "@chatbotx.io/ui/components/ui/separator"
 import { cn } from "@chatbotx.io/ui/lib/utils"
+import { useUiLocale } from "../../../providers/ui-locale"
 import { cva, type VariantProps } from "class-variance-authority"
 import {
   CheckIcon,
@@ -334,6 +335,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     },
     ref,
   ) => {
+    const { multiSelect: localeLabels } = useUiLocale()
     const [selectedValues, setSelectedValues] =
       React.useState<string[]>(defaultValue)
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
@@ -1029,10 +1031,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               {searchable && (
                 <CommandInput
                   aria-describedby={`${multiSelectId}-search-help`}
-                  aria-label="Search through available options"
+                  aria-label={localeLabels.searchLabel}
                   onKeyDown={handleInputKeyDown}
                   onValueChange={setSearchValue}
-                  placeholder="Search options..."
+                  placeholder={localeLabels.searchOptions}
                   value={searchValue}
                 />
               )}
@@ -1049,7 +1051,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )}
               >
                 <CommandEmpty>
-                  {emptyIndicator || "No results found."}
+                  {emptyIndicator || localeLabels.noResultsFound}
                 </CommandEmpty>{" "}
                 {!(hideSelectAll || searchValue) && (
                   <CommandGroup>
