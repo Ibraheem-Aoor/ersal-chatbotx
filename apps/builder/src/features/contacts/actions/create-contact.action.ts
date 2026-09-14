@@ -108,6 +108,7 @@ export const createContact = async ({
   workspaceId: string
   parsedInput: CreateContactRequest
 }): Promise<CreateContactResponse> => {
+  const t = await getTranslations("quotaLimits")
   const inbox = await findOrFail({
     table: inboxModel,
     where: { workspaceId, id: parsedInput.inboxId },
@@ -146,7 +147,7 @@ export const createContact = async ({
       return returnValidationErrors(createContactRequest, {
         _errors: ["Validation Exception"],
         phoneNumber: {
-          _errors: ["Please include the country code (e.g. +84)"],
+          _errors: [t("phoneIncludeCountryCode")],
         },
       })
     }
@@ -171,7 +172,7 @@ export const createContact = async ({
     return returnValidationErrors(createContactRequest, {
       _errors: ["Validation Exception"],
       phoneNumber: {
-        _errors: ["Phone number is exists"],
+        _errors: [t("phoneNumberExists")],
       },
     })
   }
@@ -183,7 +184,7 @@ export const createContact = async ({
     })
     if (existing) {
       const dup = {
-        _errors: ["This contact already exists on the selected inbox"],
+        _errors: [t("contactExistsOnInbox")],
       }
       return returnValidationErrors(createContactRequest, {
         _errors: ["Validation Exception"],

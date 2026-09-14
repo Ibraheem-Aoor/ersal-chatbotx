@@ -303,6 +303,8 @@
       "contactLimitReached": "Contact limit reached",
       "channelDuplicated": "This account is already connected to another workspace.",
       "phoneNumberExists": "Phone number already exists",
+      "phoneIncludeCountryCode": "Please include the country code (e.g. +84)",
+      "contactExistsOnInbox": "This contact already exists on the selected inbox",
       "contactInboxNotFound": "Contact inbox not found",
       "flowLimitReached": "Flow limit reached for this plan",
       "broadcastLimitReached": "Broadcast limit reached for this plan",

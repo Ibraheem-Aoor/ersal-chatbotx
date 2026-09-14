@@ -303,6 +303,8 @@
       "contactLimitReached": "تم الوصول إلى الحد الأقصى لجهات الاتصال",
       "channelDuplicated": "هذا الحساب مرتبط بالفعل بمساحة عمل أخرى.",
       "phoneNumberExists": "رقم الهاتف موجود بالفعل",
+      "phoneIncludeCountryCode": "يرجى تضمين رمز الدولة (مثال: 84+)",
+      "contactExistsOnInbox": "جهة الاتصال هذه موجودة بالفعل في صندوق الوارد المحدد",
       "contactInboxNotFound": "لم يتم العثور على صندوق بريد جهة الاتصال",
       "flowLimitReached": "تم الوصول إلى الحد الأقصى للتدفقات في هذه الخطة",
       "broadcastLimitReached": "تم الوصول إلى الحد الأقصى للرسائل الجماعية في هذه الخطة",

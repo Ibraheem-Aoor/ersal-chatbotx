@@ -681,8 +681,8 @@ export const workspaceTokenAuthAPIs = {
         email: z.union([z.literal(""), z.email().max(100)]).optional(),
         phoneNumber: z
           .string()
-          .min(10)
-          .max(20)
+          .min(10, { error: "رقم الهاتف يجب أن يكون 10 أرقام على الأقل" })
+          .max(20, { error: "رقم الهاتف يجب ألا يتجاوز 20 رقمًا" })
           .regex(/\+?\d{10,20}/)
           .optional(),
         avatar: z.string().optional(),
