@@ -8,15 +8,11 @@
 
 ---
 
-## ⚠️ Status: INITIAL PASS COMPLETE — Sections B–D, G–H, most of I blocked
+## ⚠️ Status: SECOND PASS COMPLETE — Growth Tools & Custom Fields tested, B–D still blocked
 
-Many tests require **user-provided resources** not yet available:
-- **Test phone number** `[TEST PHONE]` — needed for A9, I1, I3, I5, I6, I8, I11, I14
-- **Google Sheet URL** `[SHEET URL]` — needed for D1–D6
-- **webhook.site URL** `[WEBHOOK.SITE URL]` — needed for webhook tests
-- **CSV test files** — needed for B1–B9
-
-These tests are marked **⏸ BLOCKED** below.
+**Resources now available:** phone `972598298969`, Google Sheet, webhook.site URL.  
+**Second pass tested:** QR codes (I1/I2), Magic links (I3), Questionnaires page (I6), Appointments page (I11), Custom fields form (G1), second E2E contact create+delete (A4/A7).  
+**Still blocked:** B1–B9 (CSV files needed), C1–C4 (need E2E data first), D1–D6 (Sheets sync flow), phone-dependent tests (A9, I1 scan, I3 open, I5, I6 submit, I8, I11 book, I14).
 
 ---
 
@@ -30,7 +26,7 @@ These tests are marked **⏸ BLOCKED** below.
 | A1 | Create E2E contact | ✅ PASS | "E2E-اختبار جهة-اتصال١" created. Toast: "تم إنشاء جهة الاتصال بنجاح" ✅ Arabic. Count → 129. Source+Inbox dropdowns work (button-based comboboxes). Gender dropdown: ذكر/أنثى/غير معروف ✅. **English leaks:** "(optional)" on all optional field labels ❌ |
 | A2 | Empty fields validation | ⚠️ PARTIAL | Submit blocked correctly (no contact created). **No visible per-field Arabic validation messages** — form stays open silently ❌. Expected: Arabic error per required field |
 | A3 | Phone validation | ❌ FAIL | English message: **"Please include the country code (e.g. +84)"** ❌. Expected Arabic |
-| A4 | Duplicate phone/email | ⏸ BLOCKED | Requires creating second contact with same data |
+| A4 | Duplicate phone/email | ❌ FAIL | Duplicate correctly blocked ✅ — error shown: **"This contact already exists on the selected inbox"** but message is **English** ❌. Expected Arabic. Behavior: form stays open with error, no contact created |
 | A5 | Arabic + special chars | ✅ PASS | Arabic name "E2E-اختبار جهة-اتصال١" with Arabic numeral saved and rendered correctly |
 | A6 | Edit contact | ⏸ DEFERRED | Edit UI available ("--انقر للتعديل--" editable fields visible ✅) |
 | A7 | Delete contact | ✅ PASS | Selected via "تحديد الكل" → Actions → "حذف" → confirmation dialog "حذف جهة الاتصال" Arabic ✅ → toast "تم حذف جهة الاتصال بنجاح" Arabic ✅ → count restored 128 ✅ |
@@ -78,28 +74,30 @@ These tests are marked **⏸ BLOCKED** below.
 
 | # | Case | Result | Observed |
 |---|------|--------|----------|
-| G1–G7 | All custom field tests | ⏸ DEFERRED | "إضافة الحقل المخصص" button visible in contact detail ✅ Arabic |
+| G1 | Create custom field types | ⚠️ PARTIAL | Create form opens from contact detail via "إضافة الحقل المخصص" ✅. **6 types available** (all Arabic ✅): نص قصير (short text), رقم (number), التاريخ (date), التاريخ والوقت (datetime), قيمة منطقية (boolean), نص طويل (long text). **Missing types:** dropdown/select and URL — test plan expected them. Created "e2e_test_field" (short text) ✅. **English leaks:** "(optional)" on description field ❌. **No settings page** for custom field management: `/settings/custom-fields` → 404. Cannot delete field definitions from UI |
+| G2–G7 | Remaining custom field tests | ⏸ DEFERRED | Validation, flow usage, rename, bot fields not tested |
 
 ### H. Tags
 
 | # | Case | Result | Observed |
 |---|------|--------|----------|
-| H1–H5 | All tag tests | ⏸ DEFERRED | "إضافة وسم" in Actions menu ✅, "الوسوم" section in contact detail ✅ Arabic |
+| H1 | Tags UI check | ⚠️ PARTIAL | "الوسوم" section visible in contact detail panel ✅. "إضافة وسم" in bulk Actions menu ✅ Arabic. Tag section expands to show existing tags. **Functional create/apply/delete not tested** — needs dedicated E2E tag workflow |
+| H2–H5 | Tag validation/delete | ⏸ DEFERRED | Validation, multi-path apply, delete-in-use not tested |
 
 ### I. Growth Tools
 
 | # | Tool | Result | Observed |
 |---|------|--------|----------|
-| I1 | QR Code page | ⚠️ PARTIAL | Page Arabic: "رموز QR" ✅, "إنشاء رمز QR" ✅, "ابحث عن اسم..." ✅, headers الاسم/رد البوت/الحجم ✅. **English leaks:** ".No results" empty state ❌, pagination ❌. Create+scan → ⏸ BLOCKED (needs phone) |
-| I2 | QR delete | ⏸ BLOCKED | No QR codes exist |
-| I3 | Magic Link | ⏸ BLOCKED | Card "الروابط السحرية" visible ✅. Needs phone |
-| I4 | Magic Link invalid | ⏸ BLOCKED | |
+| I1 | QR Code CRUD | ✅ PASS | **Full CRUD tested.** Create: name "e2eqr" (hyphens/spaces rejected — "مدخل غير مقبول" ✅ Arabic validation), bot response + size fields, QR image generated ✅. Edit page loads with code ✅. Page Arabic: "رموز QR", "إنشاء رمز QR", "ابحث عن اسم...", headers الاسم/رد البوت/الحجم ✅. **English leaks:** "(optional)" on size field ❌, ".No results" empty state ❌, pagination ❌. **Scan from phone → ⏸ BLOCKED** |
+| I2 | QR delete | ✅ PASS | Delete via context menu → Arabic confirmation dialog "هل أنت متأكد" ✅ → confirmed → removed from list ✅. Item "e2eqr" deleted |
+| I3 | Magic Link CRUD | ✅ PASS | **Create+delete tested.** Create "e2eml" with name + URL → appears in list ✅. Context menu all Arabic: نسخ الرابط, رمز QR, عرض, تحليلات, تعديل, حذف ✅. Delete → Arabic confirmation ✅ → removed. Form labels Arabic ✅. Page title "الروابط السحرية" ✅. **English leaks:** same pagination ❌, ".No results" ❌. **Open from phone → ⏸ BLOCKED** |
+| I4 | Magic Link invalid | ⏸ BLOCKED | Needs functional test with invalid URL |
 | I5 | Entry Point | ⏸ BLOCKED | Card "روابط نقاط الدخول" visible ✅ |
-| I6 | Questionnaire | ⏸ BLOCKED | Card "الاستبيانات" visible ✅. Needs phone |
+| I6 | Questionnaire page | ⚠️ PARTIAL | Page loads at `/questionnaires` ✅. Title "الاستبيانات" ✅, create button "إنشاء استبيان" ✅, search "ابحث عن كلمة مفتاحية..." ✅. Headers Arabic ✅. **English leaks:** same pagination ❌, ".No results" ❌. **Create+submit from phone → ⏸ BLOCKED** |
 | I7 | Questionnaire invalid | ⏸ BLOCKED | |
 | I8 | Coupons page | ✅ PASS | Fully Arabic: tabs "القسائم"/"التعيين" ✅, filters "جميع الموضوعات"/"جميع الحالات"/"جميع حالات الاستخدام" ✅, headers الموضوع/الكود/الحالة/المستخدم/تاريخ الإنشاء ✅, buttons "استيراد القسائم"/"تكوين قائمة القسائم" ✅, empty state "لم يتم العثور على قسائم" ✅ |
 | I9–I10 | Coupons edge | ⏸ BLOCKED | Needs coupon data + phone |
-| I11 | Appointments | ⏸ DEFERRED | Card "جدولة المواعيد" visible ✅ |
+| I11 | Appointments page | ⚠️ PARTIAL | Page loads at `/appointment-calendars` ✅. Title "جدولة المواعيد" ✅, tabs Arabic ✅, create button Arabic ✅. **English leaks:** same pagination ❌, ".No results" ❌. **Create calendar + book from phone → ⏸ BLOCKED** |
 | I12–I13 | Appointments edge | ⏸ BLOCKED | |
 | I14 | Dynamic Image | ⏸ BLOCKED | Needs phone |
 | I15 | Media Library | ⏸ DEFERRED | |
@@ -127,38 +125,44 @@ These tests are marked **⏸ BLOCKED** below.
 |---|-------|-------|--------|
 | 1 | **Phone validation English:** "Please include the country code (e.g. +84)" | Create Contact form | Every WhatsApp contact creation |
 | 2 | **Pagination English:** "Page X of Y", "Rows per page", "of X row(s) selected Y", "Reset" | All paginated tables (Contacts, QR Codes, etc.) | Systemic — every list view |
-| 3 | **"(optional)" labels English** | All optional fields in Create Contact | Every contact form |
+| 3 | **Duplicate contact error English:** "This contact already exists on the selected inbox" | Create Contact form | Duplicate phone/email scenario |
+| 4 | **"(optional)" labels English** | All optional fields in Create Contact | Every contact form |
 
 ### MEDIUM — Visible but not blocking
 
 | # | Issue | Where |
 |---|-------|-------|
-| 4 | No visible validation on empty form submit | Create Contact — form silently blocks |
-| 5 | ".No results" (with leading period) | QR Codes empty state |
-| 6 | "Actions" button English | Contacts list header |
-| 7 | "Select options" / "Search..." placeholders | Filter dialog |
+| 5 | No visible validation on empty form submit | Create Contact — form silently blocks |
+| 6 | ".No results" (with leading period) | All Growth Tools empty states (QR, Magic Links, Questionnaires, Appointments) — systemic |
+| 7 | "Actions" button English | Contacts list header |
+| 8 | "Select options" / "Search..." placeholders | Filter dialog |
+| 9 | No custom field management page | `/settings/custom-fields` → 404. Cannot delete/edit field definitions. Only add from contact detail |
 
 ### LOW — Minor cosmetic
 
 | # | Issue | Where |
 |---|-------|-------|
-| 8 | "user_name" field label | Contact detail panel |
-| 9 | "Unknown" for target country | Settings page (should be "غير معروف") |
-| 10 | "Reset" button | Search bar |
-| 11 | 404 page fully English | "This page could not be found." |
+| 10 | "user_name" field label | Contact detail panel |
+| 11 | "Unknown" for target country | Settings page (should be "غير معروف") |
+| 12 | "Reset" button | Search bar |
+| 13 | 404 page fully English | "This page could not be found." |
+| 14 | Custom field types incomplete | Missing dropdown/select and URL types (only 6 of expected 8) |
 
 ---
 
 ## Cleanup Status
 
-| Item | Status |
-|------|--------|
-| E2E-اختبار جهة-اتصال١ | ✅ **DELETED** — toast: "تم حذف جهة الاتصال بنجاح" |
-| Starting count | 128 |
-| Final count | **128** ✅ |
-| Other E2E items | None created |
+| Item | Type | Status |
+|------|------|--------|
+| E2E-اختبار جهة-اتصال١ | Contact | ✅ **DELETED** — toast: "تم حذف جهة الاتصال بنجاح" |
+| E2E-اختبار٢ | Contact | ✅ **DELETED** — confirmation dialog Arabic ✅, count restored |
+| e2eqr | QR Code | ✅ **DELETED** — Arabic confirmation dialog, removed from list |
+| e2eml | Magic Link | ✅ **DELETED** — Arabic confirmation dialog, removed from list |
+| e2e_test_field | Custom Field | ⚠️ **NOT DELETED** — no delete option in UI; `/settings/custom-fields` → 404. Field definition remains but has no values on any real contact |
+| Starting count | — | 128 |
+| Final count | — | **128** ✅ |
 
-**✅ Cleanup complete. All E2E test data removed. Contact count restored to starting value.**
+**⚠️ Cleanup mostly complete.** All E2E contacts and growth tool items removed. Contact count restored to 128. One custom field definition ("e2e_test_field") remains — cannot be deleted from the current UI (no custom field management page exists).
 
 ---
 
@@ -166,26 +170,39 @@ These tests are marked **⏸ BLOCKED** below.
 
 | Section | ✅ PASS | ⚠️ PARTIAL | ❌ FAIL | ⏸ BLOCKED/DEFERRED | Total |
 |---------|---------|------------|--------|---------------------|-------|
-| A. Contacts CRUD | 4 | 2 | 1 | 3 | 10 |
+| A. Contacts CRUD | 4 | 2 | 2 | 2 | 10 |
 | B. CSV Import | 0 | 0 | 0 | 9 | 9 |
 | C. CSV Export | 0 | 0 | 0 | 4 | 4 |
 | D. Google Sheets | 0 | 0 | 0 | 6 | 6 |
 | E. Filters & Search | 2 | 0 | 0 | 4 | 6 |
 | F. Bulk Actions | 0 | 1 | 0 | 0+⛔ | 1 |
-| G. Custom Fields | 0 | 0 | 0 | 7 | 7 |
-| H. Tags | 0 | 0 | 0 | 5 | 5 |
-| I. Growth Tools | 1 | 1 | 0 | 15 | 17 |
+| G. Custom Fields | 0 | 1 | 0 | 6 | 7 |
+| H. Tags | 0 | 1 | 0 | 4 | 5 |
+| I. Growth Tools | 3 | 3 | 0 | 11 | 17 |
 | J. Locale/Layout | 2 | 1 | 0 | 2 | 5 |
-| **TOTAL** | **9** | **5** | **1** | **55** | **70** |
+| **TOTAL** | **11** | **9** | **2** | **48** | **70** |
 
-**Overall: 9 PASS, 5 PARTIAL, 1 FAIL, 55 BLOCKED/DEFERRED**
+**Overall: 11 PASS, 9 PARTIAL, 2 FAIL, 48 BLOCKED/DEFERRED**
 
-The Arabic localization is strong (~90%+ translated). The single FAIL is the English phone validation message. The main gaps are systemic: pagination component not translated, "(optional)" labels hardcoded in English, and some validation messages missing Arabic translations. RTL layout works correctly throughout.
+The Arabic localization is strong (~90%+ translated). The 2 FAILs are English phone validation and English duplicate-contact error messages. The main gaps are systemic: pagination component not translated across all list views, "(optional)" labels hardcoded in English, ".No results" with leading period on all Growth Tools pages, and some validation messages missing Arabic translations. RTL layout works correctly throughout. Missing features: no custom field management page (can't delete field definitions), and only 6 of 8 expected custom field types available.
 
 ---
 
-## ⏭️ To Continue — User Input Needed
+## ⏭️ To Continue — Phone-Dependent Tests Remain
 
-1. **Test phone number** — to test inbound messages, QR scan, magic links, questionnaires, coupons, appointments, dynamic images
-2. **Google Sheet URL** — throwaway sheet for sync tests D1–D6
-3. **webhook.site URL** — for webhook tests
+Resources available: phone `972598298969`, Google Sheet, webhook.site.
+
+**Still needs phone interaction (user sends/receives):**
+- A9: Inbound-created contact
+- I1: QR scan from phone → flow fires
+- I3: Magic link open from phone → redirect + UTM
+- I5: Entry point from phone
+- I6: Questionnaire submit from phone
+- I8: Coupons distribute via flow to phone
+- I11–I13: Appointment book/cancel from phone
+- I14: Dynamic image send to phone
+
+**Still needs file prep:**
+- B1–B9: CSV import (need to prepare E2E CSV files)
+- C1–C4: CSV export (need E2E data in system first)
+- D1–D6: Google Sheets sync flow tests
