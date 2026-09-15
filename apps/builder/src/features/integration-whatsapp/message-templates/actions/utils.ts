@@ -75,25 +75,35 @@ export const parseComponents = async (
           buttons: content.buttons.map((btn: Record<string, unknown>) => {
             switch (btn.type) {
               case "copyCode":
-                return { type: "COPY_CODE", example: btn.example }
+                return {
+                  type: "COPY_CODE",
+                  text: btn.text,
+                  example: btn.example,
+                }
               case "url":
                 if (btn.urlDynamic) {
                   return {
                     type: "URL",
+                    text: btn.text,
                     url: btn.url,
                     example: [btn.urlSampleValue],
                   }
                 }
-                return { type: "URL", url: btn.url }
+                return { type: "URL", text: btn.text, url: btn.url }
               case "phoneNumber":
                 return {
                   type: "PHONE_NUMBER",
+                  text: btn.text,
                   phone_number: btn.phone_number,
                 }
               case "flow":
-                return { type: "FLOW", flow_id: btn.flow_id }
+                return {
+                  type: "FLOW",
+                  text: btn.text,
+                  flow_id: btn.flow_id,
+                }
               default:
-                return { type: "QUICK_REPLY" }
+                return { type: "QUICK_REPLY", text: btn.text }
             }
           }),
         })
