@@ -12,11 +12,11 @@ export const templateDocumentSchema = z
           (file) =>
             file && file instanceof File && file.type === "application/pdf",
           {
-            message: "File must be a PDF document",
+            message: "يجب أن يكون الملف مستند PDF",
           },
         )
         .refine((file) => file && file.size <= 5 * 1024 * 1024, {
-          message: "File size must not exceed 5MB",
+          message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
         }),
     }),
     body: z.object({

@@ -23,7 +23,7 @@ export const templateCarouselImageSchema = z.object({
         )
       },
       {
-        message: "All cards must have the same number of buttons",
+        message: "يجب أن تحتوي جميع البطاقات على نفس عدد الأزرار",
       },
     ),
 })

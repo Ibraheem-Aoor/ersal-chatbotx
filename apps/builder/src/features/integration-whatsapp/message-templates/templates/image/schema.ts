@@ -18,11 +18,11 @@ export const templateImageSchema = z
             file instanceof File &&
             ["image/png", "image/jpg", "image/jpeg"].includes(file.type),
           {
-            message: "File must be a Image png, jpg, jpeg",
+            message: "يجب أن يكون الملف صورة بصيغة png أو jpg أو jpeg",
           },
         )
         .refine((file) => file && file.size <= 2 * 1024 * 1024, {
-          message: "File size must not exceed 2MB",
+          message: "يجب ألا يتجاوز حجم الملف 2 ميجابايت",
         }),
     }),
     body: z.object({

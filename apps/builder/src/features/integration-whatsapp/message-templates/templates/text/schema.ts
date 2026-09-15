@@ -20,7 +20,7 @@ export const templateTextSchema = z
     if (data.hideHeader && !data.header.text?.length) {
       ctx.addIssue({
         path: ["header", "text"],
-        message: "Header text is required",
+        message: "نص العنوان مطلوب",
         code: z.ZodIssueCode.custom,
       })
     }

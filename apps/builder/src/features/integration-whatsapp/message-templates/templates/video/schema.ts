@@ -15,11 +15,11 @@ export const templateVideoSchema = z
         .refine(
           (file) => file && file instanceof File && file.type === "video/mp4",
           {
-            message: "File must be a Video",
+            message: "يجب أن يكون الملف فيديو بصيغة mp4",
           },
         )
         .refine((file) => file && file.size <= 20 * 1024 * 1024, {
-          message: "File size must not exceed 20MB",
+          message: "يجب ألا يتجاوز حجم الملف 20 ميجابايت",
         }),
     }),
     body: z.object({

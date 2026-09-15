@@ -35,7 +35,9 @@ export const buttonStepSchema = z
           .string()
           .trim()
           .max(20)
-          .regex(/^\+?[1-9][0-9]{7,18}$/),
+          .regex(/^\+?[1-9][0-9]{7,18}$/, {
+            message: "صيغة رقم الهاتف غير صحيحة. مثال: +1234567890",
+          }),
       }),
       z.object({
         type: z.literal(buttonActionTypes.enum.copyCode),
@@ -50,7 +52,7 @@ export const buttonStepSchema = z
         if (!urlVal.endsWith("{{1}}")) {
           ctx.addIssue({
             path: ["url"],
-            message: "Dynamic URL must end with {{1}}",
+            message: "يجب أن ينتهي الرابط الديناميكي بـ {{1}}",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -60,14 +62,14 @@ export const buttonStepSchema = z
         } catch {
           ctx.addIssue({
             path: ["url"],
-            message: "Invalid URL format",
+            message: "صيغة الرابط غير صحيحة",
             code: z.ZodIssueCode.custom,
           })
         }
         if (!data.urlSampleValue?.trim()) {
           ctx.addIssue({
             path: ["urlSampleValue"],
-            message: "Sample value is required for dynamic URLs",
+            message: "القيمة النموذجية مطلوبة للروابط الديناميكية",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -77,7 +79,7 @@ export const buttonStepSchema = z
         } catch {
           ctx.addIssue({
             path: ["url"],
-            message: "Invalid URL format",
+            message: "صيغة الرابط غير صحيحة",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -131,18 +133,26 @@ export function validateButtonLimits(
     if (buttons.length !== 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message:
-          "Authentication templates must have exactly 1 button (OTP copy code)",
+        message: "قوالب المصادقة يجب أن تحتوي على زر واحد فقط (نسخ رمز OTP)",
       })
     }
     if (buttons.length > 0 && buttons[0]?.type !== "copyCode") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Authentication template button must be Copy Code (OTP) type",
+        message: "زر قالب المصادقة يجب أن يكون من نوع نسخ الرمز (OTP)",
         path: [0, "type"],
       })
     }
     return
+  }
+
+  // Button type names for validation messages
+  const typeNames: Record<string, string> = {
+    quickReply: "رد سريع",
+    url: "رابط",
+    phoneNumber: "رقم هاتف",
+    copyCode: "نسخ رمز",
+    flow: "مسار",
   }
 
   // Count by type
@@ -154,9 +164,10 @@ export function validateButtonLimits(
   // Per-type validation
   for (const [type, max] of Object.entries(BUTTON_LIMITS.perType)) {
     if ((counts[type] || 0) > max) {
+      const name = typeNames[type] || type
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Maximum ${max} ${type} button(s) allowed`,
+        message: `الحد الأقصى ${max} زر ${name} مسموح`,
       })
     }
   }
@@ -181,8 +192,7 @@ export function validateButtonLimits(
   if (sawQrAfterCta && sawCtaAfterQr) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message:
-        "Quick reply buttons and action buttons must be grouped together",
+      message: "يجب تجميع أزرار الرد السريع وأزرار الإجراء معًا",
     })
   }
 }
