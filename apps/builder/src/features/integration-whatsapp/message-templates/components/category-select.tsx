@@ -2,7 +2,7 @@
 
 import { whatsappTemplateCategories } from "@chatbotx.io/database/partials"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
-import { VolumeIcon } from "lucide-react"
+import { InfoIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useMemo } from "react"
 import { useFormContext } from "react-hook-form"
@@ -12,10 +12,12 @@ export function WhatsappMessageTemplateCategorySelect({
   name,
   label,
   required = false,
+  disabled = false,
 }: {
   name: string
   label: string
   required?: boolean
+  disabled?: boolean
 }) {
   const t = useTranslations()
   const { watch } = useFormContext()
@@ -51,35 +53,31 @@ export function WhatsappMessageTemplateCategorySelect({
     [allowOptions, t],
   )
 
+  let description: string | null = null
+  if (category === whatsappTemplateCategories.enum.MARKETING) {
+    description = t("whatsapp.category.marketing.description")
+  } else if (category === whatsappTemplateCategories.enum.UTILITY) {
+    description = t("whatsapp.category.utility.description")
+  }
+
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <SelectField
+        disabled={disabled}
         label={label}
         name={name}
         options={options}
         placeholder={t("actions.pleaseSelect")}
         required={required}
       />
-      {category === whatsappTemplateCategories.enum.MARKETING && (
-        <div className="grid auto-cols-min grid-flow-col items-center gap-x-4 rounded bg-slate-200 p-6">
-          <VolumeIcon className="row-span-2" size={36} />
-          <span className="font-bold">
-            {t("whatsapp.category.marketing.label")}
-          </span>
-          <span className="text-gray-400">
-            {t("whatsapp.category.marketing.description")}
+      {description && (
+        <div className="flex items-start gap-2 rounded-md bg-slate-100 px-3 py-2 dark:bg-slate-800">
+          <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground text-xs leading-relaxed">
+            {description}
           </span>
         </div>
       )}
-      {category === whatsappTemplateCategories.enum.UTILITY && (
-        <div className="grid auto-cols-min grid-flow-col items-center rounded bg-slate-200 p-6">
-          <VolumeIcon className="row-span-2" size={36} />
-          <span className="font-bold">
-            {t("whatsapp.category.utility.label")}
-          </span>
-          <span>{t("whatsapp.category.utility.description")}</span>
-        </div>
-      )}
-    </>
+    </div>
   )
 }

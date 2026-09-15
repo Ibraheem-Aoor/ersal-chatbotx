@@ -3703,7 +3703,19 @@
         "urlHint": "Enter the full URL. For dynamic URLs, end with {{1}}",
         "sampleLabel": "URL sample value",
         "sampleHint": "Enter a sample value for the {{1}} variable (e.g. order123)"
-      }
+      },
+      "buttonText": "Button text",
+      "buttonTextPlaceholder": "Enter button text",
+      "quickRepliesGroup": "Quick Replies",
+      "ctaGroup": "Action Buttons",
+      "status": {
+        "APPROVED": "Approved",
+        "PENDING": "Pending",
+        "REJECTED": "Rejected"
+      },
+      "editTitle": "Edit Message Template",
+      "editApprovedNotice": "Editing an approved template will submit a new version for Meta review",
+      "lockedField": "This field cannot be changed after approval"
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"

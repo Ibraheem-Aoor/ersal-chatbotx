@@ -12,6 +12,7 @@ import {
 } from "./api/phone-number"
 import {
   createMessageTemplate,
+  editMessageTemplate,
   listFlows,
   listMessageTemplates,
 } from "./api/waba"
@@ -57,6 +58,8 @@ const config: IntegrationDefinition<
       await updateConversationalAutomation(ctx.auth, data),
     createMessageTemplate: async ({ ctx, data }) =>
       await createMessageTemplate(ctx.auth, data),
+    editMessageTemplate: async ({ ctx, data }) =>
+      await editMessageTemplate(ctx.auth, data),
   },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")

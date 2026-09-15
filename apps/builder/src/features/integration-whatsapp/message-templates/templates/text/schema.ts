@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { buttonStepSchema } from "../button/schema"
+import { buttonStepSchema, validateButtonLimits } from "../button/schema"
 
 export const templateTextSchema = z
   .object({
@@ -14,7 +14,7 @@ export const templateTextSchema = z
       variables: z.array(z.string().min(1).max(255)),
     }),
     footer: z.string().trim().max(60).nullable(),
-    buttons: z.array(buttonStepSchema).max(3),
+    buttons: z.array(buttonStepSchema).max(10),
   })
   .superRefine((data, ctx) => {
     if (data.hideHeader && !data.header.text?.length) {
@@ -24,6 +24,7 @@ export const templateTextSchema = z
         code: z.ZodIssueCode.custom,
       })
     }
+    validateButtonLimits(data.buttons, ctx)
   })
 
 export type TemplateTextSchema = z.infer<typeof templateTextSchema>

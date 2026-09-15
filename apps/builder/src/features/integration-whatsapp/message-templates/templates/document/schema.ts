@@ -1,30 +1,34 @@
 import { z } from "zod"
-import { buttonStepSchema } from "../button/schema"
+import { buttonStepSchema, validateButtonLimits } from "../button/schema"
 
-export const templateDocumentSchema = z.object({
-  hideHeader: z.boolean(),
-  showFooter: z.boolean(),
-  header: z.object({
-    file: z
-      .any()
-      .refine(
-        (file) =>
-          file && file instanceof File && file.type === "application/pdf",
-        {
-          message: "File must be a PDF document",
-        },
-      )
-      .refine((file) => file && file.size <= 5 * 1024 * 1024, {
-        message: "File size must not exceed 5MB",
-      }),
-  }),
-  body: z.object({
-    text: z.string().trim().min(1).max(1024),
-    variables: z.array(z.string().min(1).max(255)),
-  }),
-  footer: z.string().trim().max(60).nullable(),
-  buttons: z.array(buttonStepSchema).max(3),
-})
+export const templateDocumentSchema = z
+  .object({
+    hideHeader: z.boolean(),
+    showFooter: z.boolean(),
+    header: z.object({
+      file: z
+        .any()
+        .refine(
+          (file) =>
+            file && file instanceof File && file.type === "application/pdf",
+          {
+            message: "File must be a PDF document",
+          },
+        )
+        .refine((file) => file && file.size <= 5 * 1024 * 1024, {
+          message: "File size must not exceed 5MB",
+        }),
+    }),
+    body: z.object({
+      text: z.string().trim().min(1).max(1024),
+      variables: z.array(z.string().min(1).max(255)),
+    }),
+    footer: z.string().trim().max(60).nullable(),
+    buttons: z.array(buttonStepSchema).max(10),
+  })
+  .superRefine((data, ctx) => {
+    validateButtonLimits(data.buttons, ctx)
+  })
 
 export type TemplateDocumentSchema = z.infer<typeof templateDocumentSchema>
 

@@ -2,6 +2,7 @@
 
 import { whatsappTemplateCategories } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Badge } from "@chatbotx.io/ui/components/ui/badge"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
@@ -18,8 +19,11 @@ import {
   ArrowLeftIcon,
   CopyIcon,
   FileTextIcon,
+  InfoIcon,
   LinkIcon,
   Loader2Icon,
+  LockIcon,
+  PencilIcon,
   PlayCircleIcon,
   PlusIcon,
 } from "lucide-react"
@@ -29,10 +33,15 @@ import { type ComponentType, memo, useEffect, useMemo, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createMessageTemplateAction } from "@/features/integration-whatsapp/message-templates/actions/create-message-template.action"
+import { editMessageTemplateAction } from "@/features/integration-whatsapp/message-templates/actions/edit-message-template.action"
 import { WhatsappMessageTemplateCategorySelect } from "@/features/integration-whatsapp/message-templates/components/category-select"
 import { WhatsappMessageTemplateLanguageSelect } from "@/features/integration-whatsapp/message-templates/components/language-select"
 import { WhatsappMessageTemplateTypeSelect } from "@/features/integration-whatsapp/message-templates/components/template-type-select"
-import { createMessageTemplateRequest } from "@/features/integration-whatsapp/message-templates/schema/mutation"
+import {
+  createMessageTemplateRequest,
+  editMessageTemplateRequest,
+} from "@/features/integration-whatsapp/message-templates/schema/mutation"
+import type { WhatsappMessageTemplateResource } from "./schema/resource"
 import { TemplateCarouselImagePartial } from "./templates/carousel-image/partial"
 import { TemplateCarouselImagePreview } from "./templates/carousel-image/preview"
 import { templateCarouselImageDefaultValue } from "./templates/carousel-image/schema"
@@ -592,6 +601,268 @@ function CreateMessageTemplateDialogContent({
     </Form>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Edit mode — re-uses the same layout, but locks immutable fields
+// ---------------------------------------------------------------------------
+
+function EditMessageTemplateDialogContent({
+  workspaceId,
+  integrationWhatsappId,
+  template,
+  onClose,
+  onSuccess,
+}: {
+  workspaceId: string
+  integrationWhatsappId: string
+  template: WhatsappMessageTemplateResource
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const t = useTranslations()
+
+  // Infer template type from stored components (fallback to Text)
+  // Exclude "Location" — not supported in the edit schema
+  const inferredType = useMemo((): Exclude<TemplateType, "Location"> => {
+    // biome-ignore lint/suspicious/noExplicitAny: stored Meta components
+    const components = template.components as any[]
+    if (!Array.isArray(components)) {
+      return templateTypes.enum.Text
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: stored Meta components
+    const header = components.find((c: any) => c.type === "HEADER")
+    if (header?.format === "IMAGE") {
+      return templateTypes.enum.Image
+    }
+    if (header?.format === "VIDEO") {
+      return templateTypes.enum.Video
+    }
+    if (header?.format === "DOCUMENT") {
+      return templateTypes.enum.Document
+    }
+    return templateTypes.enum.Text
+  }, [template.components])
+
+  const { form, handleSubmitWithAction } = useHookFormAction(
+    editMessageTemplateAction.bind(null, workspaceId, integrationWhatsappId),
+    zodResolver(editMessageTemplateRequest),
+    {
+      actionProps: {
+        onSuccess: () => {
+          toast.success(
+            t("messages.updatedSuccess", {
+              feature: t("whatsapp.messageTemplate.label"),
+            }),
+          )
+          onSuccess()
+        },
+        onError: ({ error }) => {
+          if (error.serverError) {
+            toast.error(error.serverError)
+          }
+        },
+      },
+      formProps: {
+        mode: "onChange",
+        defaultValues: {
+          templateId: template.id,
+          name: template.name,
+          language: template.language,
+          category: template.category,
+          // biome-ignore lint/suspicious/noExplicitAny: discriminated union default
+          templateType: inferredType as any,
+          content: {
+            hideHeader: true,
+            showFooter: true,
+            footer: "",
+            header: { text: "", variables: [] },
+            body: { text: "", variables: [] },
+            buttons: [],
+          },
+        },
+      },
+      errorMapProps: {},
+    },
+  )
+
+  const isApproved = template.status === "APPROVED"
+
+  const PreviewComponent = previews[inferredType]
+  const PartialComponent = partials[inferredType]
+
+  return (
+    <Form {...form}>
+      <form
+        className="flex h-full flex-col overflow-hidden"
+        onSubmit={handleSubmitWithAction}
+      >
+        {/* ---- Fixed header bar ---- */}
+        <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Button onClick={onClose} size="sm" type="button" variant="ghost">
+              <ArrowLeftIcon className="size-4" />
+              {t("actions.back")}
+            </Button>
+            <h2 className="font-semibold text-lg">
+              {t("whatsapp.messageTemplate.editTitle")}
+            </h2>
+            <Badge
+              className={
+                isApproved
+                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+              }
+              variant="secondary"
+            >
+              {t(
+                `whatsapp.messageTemplate.status.${template.status as "APPROVED" | "PENDING" | "REJECTED"}`,
+              )}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-3">
+            {form.formState.isDirty &&
+              !form.formState.isValid &&
+              !form.formState.isSubmitting && (
+                <span className="flex items-center gap-1.5 text-destructive text-xs">
+                  <AlertCircleIcon className="size-3.5" />
+                  {t("whatsapp.messageTemplate.formHasErrors")}
+                </span>
+              )}
+            <Button
+              disabled={!form.formState.isValid || form.formState.isSubmitting}
+              size="sm"
+              type="submit"
+            >
+              {form.formState.isSubmitting && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
+              {t("whatsapp.messageTemplate.submitForReview")}
+            </Button>
+          </div>
+        </div>
+
+        {/* ---- Two-column layout ---- */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* LEFT: Read-only phone preview */}
+          <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
+            <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+              <LivePreview parentName="content" templateType={inferredType} />
+            </PhoneFrame>
+          </div>
+
+          {/* RIGHT: Input fields */}
+          <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+            {/* Re-review notice for approved templates */}
+            {isApproved && (
+              <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                <p className="text-xs leading-relaxed">
+                  {t("whatsapp.messageTemplate.editApprovedNotice")}
+                </p>
+              </div>
+            )}
+
+            {/* Template details — locked fields */}
+            <Card>
+              <CardContent className="flex flex-col gap-5 py-5">
+                <div className="relative">
+                  <InputField
+                    disabled
+                    label={t("fields.name.label")}
+                    name="name"
+                  />
+                  <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="relative">
+                    <WhatsappMessageTemplateLanguageSelect
+                      disabled
+                      label={t("fields.language.label")}
+                      name="language"
+                    />
+                    <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="relative">
+                    <WhatsappMessageTemplateCategorySelect
+                      disabled
+                      label={t("fields.category.label")}
+                      name="category"
+                    />
+                    <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                  <LockIcon className="size-3" />
+                  {t("whatsapp.messageTemplate.lockedField")}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Template content editor */}
+            {PreviewComponent && (
+              <Card>
+                <CardContent className="py-5">
+                  <PreviewComponent parentName="content" />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Template options */}
+            {PartialComponent && (
+              <Card>
+                <CardContent className="py-5">
+                  <PartialComponent parentName="content" />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </form>
+    </Form>
+  )
+}
+
+export const EditMessageTemplateDialog = memo(
+  function EditMessageTemplateDialog({
+    workspaceId,
+    integrationWhatsappId,
+    template,
+  }: {
+    workspaceId: string
+    integrationWhatsappId: string
+    template: WhatsappMessageTemplateResource
+  }) {
+    const t = useTranslations()
+    const router = useRouter()
+    const [open, setOpen] = useState(false)
+
+    return (
+      <Sheet onOpenChange={setOpen} open={open}>
+        <SheetTrigger
+          render={
+            <Button size="icon" title={t("actions.edit")} variant="ghost">
+              <PencilIcon className="size-4" />
+            </Button>
+          }
+        />
+        <SheetContent className="flex w-full max-w-full flex-col p-0 sm:max-w-full [&>.absolute]:hidden">
+          {open && (
+            <EditMessageTemplateDialogContent
+              integrationWhatsappId={integrationWhatsappId}
+              onClose={() => setOpen(false)}
+              onSuccess={() => {
+                setOpen(false)
+                router.refresh()
+              }}
+              template={template}
+              workspaceId={workspaceId}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+    )
+  },
+)
 
 export const CreateMessageTemplateDialog = memo(
   function CreateMessageTemplateDialog({

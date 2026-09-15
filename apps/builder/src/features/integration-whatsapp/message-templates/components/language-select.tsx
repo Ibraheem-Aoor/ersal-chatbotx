@@ -8,15 +8,18 @@ export function WhatsappMessageTemplateLanguageSelect({
   name,
   label,
   required = false,
+  disabled = false,
 }: {
   name: string
   label: string
   required?: boolean
+  disabled?: boolean
 }) {
   const t = useTranslations()
 
   return (
     <SelectField
+      disabled={disabled}
       label={label}
       name={name}
       options={languageOptions}

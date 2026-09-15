@@ -5353,7 +5353,19 @@
         "urlHint": "أدخل الرابط الكامل. للروابط الديناميكية، أنهِ بـ {{1}}",
         "sampleLabel": "قيمة نموذجية للرابط",
         "sampleHint": "أدخل قيمة نموذجية للمتغير {{1}} (مثال: order123)"
-      }
+      },
+      "buttonText": "نص الزر",
+      "buttonTextPlaceholder": "أدخل نص الزر",
+      "quickRepliesGroup": "ردود سريعة",
+      "ctaGroup": "أزرار الإجراء",
+      "status": {
+        "APPROVED": "موافق عليه",
+        "PENDING": "قيد المراجعة",
+        "REJECTED": "مرفوض"
+      },
+      "editTitle": "تعديل قالب رسالة",
+      "editApprovedNotice": "تعديل قالب معتمد سيرسل نسخة جديدة لمراجعة Meta",
+      "lockedField": "هذا الحقل غير قابل للتعديل بعد الموافقة"
     },
     "phoneVerification": {
       "actions": {

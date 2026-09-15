@@ -69,3 +69,57 @@ export const createMessageTemplateRequest = z
 export type CreateMessageTemplateRequest = z.infer<
   typeof createMessageTemplateRequest
 >
+
+/**
+ * Edit request — same content shape as create but includes the template ID.
+ * Name, language, and category are locked (Meta does not allow changes post-creation).
+ */
+export const editMessageTemplateRequest = z
+  .object({
+    templateId: z.string().min(1),
+    // Locked fields sent for display but not editable
+    name: z.string(),
+    language: z.string(),
+    category: z.string(),
+    templateType: templateTypes,
+  })
+  .and(
+    z.discriminatedUnion("templateType", [
+      z.object({
+        templateType: z.literal(templateTypes.enum.Text),
+        content: templateTextSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.Image),
+        content: templateImageSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.Video),
+        content: templateVideoSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.Document),
+        content: templateDocumentSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.CarouselImage),
+        content: templateCarouselImageSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.CarouselVideo),
+        content: templateCarouselVideoSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.ViewCatalog),
+        content: templateCatalogSchema,
+      }),
+      z.object({
+        templateType: z.literal(templateTypes.enum.ViewProduct),
+        content: templateProductSchema,
+      }),
+    ]),
+  )
+
+export type EditMessageTemplateRequest = z.infer<
+  typeof editMessageTemplateRequest
+>

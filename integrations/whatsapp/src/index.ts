@@ -1,5 +1,8 @@
 export * from "./api/verification"
-export type { CreateMessageTemplateProps } from "./api/waba"
+export type {
+  CreateMessageTemplateProps,
+  EditMessageTemplateProps,
+} from "./api/waba"
 export * from "./api/waba-setup"
 export { getWhatsappClient } from "./client"
 export * from "./integration"

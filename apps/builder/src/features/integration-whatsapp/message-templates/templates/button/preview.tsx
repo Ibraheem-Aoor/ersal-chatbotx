@@ -1,53 +1,200 @@
+"use client"
+
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import { PlusIcon, XIcon } from "lucide-react"
+import {
+  CopyIcon,
+  GlobeIcon,
+  MessageSquareReplyIcon,
+  PhoneIcon,
+  TrashIcon,
+  WorkflowIcon,
+} from "lucide-react"
 import { useTranslations } from "next-intl"
-import { memo, useCallback, useState } from "react"
-import { useFieldArray, useFormContext } from "react-hook-form"
-import { EditButtonDialog } from "./edit-button-dialog"
-import { buttonStepDefaultFn } from "./schema"
+import { memo, useCallback, useMemo } from "react"
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import {
+  BUTTON_LIMITS,
+  type ButtonActionType,
+  type ButtonStepProps,
+  buttonStepDefaultForType,
+} from "./schema"
 
-type ButtonField = {
-  id: string
-  text: string
-}
+// ---------------------------------------------------------------------------
+// Per-type field configuration
+// ---------------------------------------------------------------------------
 
-const ButtonItem = memo(
-  ({
-    index,
-    parentName,
-    onEdit,
-    onRemove,
-    min,
-  }: {
-    index: number
-    parentName: string
-    onEdit: (name: string) => void
-    onRemove: (index: number) => void
-    min: number
-  }) => {
-    const { getValues } = useFormContext()
-    const buttonText = getValues(`${parentName}.${index}.text`)
+const CHIP_CONFIG: Array<{
+  type: ButtonActionType
+  labelKey: string
+  icon: React.ComponentType<{ className?: string }>
+  group: "quickReply" | "cta"
+}> = [
+  {
+    type: "quickReply",
+    labelKey: "fields.quickReply.label",
+    icon: MessageSquareReplyIcon,
+    group: "quickReply",
+  },
+  {
+    type: "url",
+    labelKey: "fields.url.label",
+    icon: GlobeIcon,
+    group: "cta",
+  },
+  {
+    type: "phoneNumber",
+    labelKey: "fields.phoneNumber.label",
+    icon: PhoneIcon,
+    group: "cta",
+  },
+  {
+    type: "copyCode",
+    labelKey: "whatsapp.messageTemplate.buttonType.copyCode",
+    icon: CopyIcon,
+    group: "cta",
+  },
+  {
+    type: "flow",
+    labelKey: "fields.whatsappFlow.label",
+    icon: WorkflowIcon,
+    group: "cta",
+  },
+]
 
-    return (
-      <div className="relative w-full flex-1">
-        <Button
-          className="my-1 w-full hover:text-blue-500"
-          onClick={() => onEdit(`${parentName}.${index}`)}
-          type="button"
-          variant="secondary"
-        >
-          {buttonText}
-        </Button>
+// ---------------------------------------------------------------------------
+// Single inline button row — renders different fields per type
+// ---------------------------------------------------------------------------
+
+function InlineButtonRow({
+  index,
+  parentName,
+  onRemove,
+  min,
+}: {
+  index: number
+  parentName: string
+  onRemove: (index: number) => void
+  min: number
+}) {
+  const t = useTranslations()
+  const { control } = useFormContext()
+  const type = useWatch({ control, name: `${parentName}.${index}.type` })
+  const urlDynamic = useWatch({
+    control,
+    name: `${parentName}.${index}.urlDynamic`,
+  })
+  const chipConfig = CHIP_CONFIG.find((c) => c.type === type)
+  const Icon = chipConfig?.icon
+
+  // Prevent Enter key in inputs from submitting the outer form
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+        e.preventDefault()
+      }
+    },
+    [],
+  )
+
+  return (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: prevents Enter from submitting outer form
+    // biome-ignore lint/a11y/noStaticElementInteractions: prevents Enter from submitting outer form
+    <div
+      className="group relative rounded-md border bg-background p-3"
+      onKeyDown={handleKeyDown}
+    >
+      {/* Row header: type badge + delete */}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 font-medium text-muted-foreground text-xs">
+          {Icon && <Icon className="size-3.5" />}
+          {chipConfig ? t(chipConfig.labelKey) : type}
+        </span>
         {index >= min && (
-          <XIcon
-            className="absolute end-2 top-1/2 h-4 w-4 -translate-y-1/2 cursor-pointer hover:text-red-500"
+          <button
+            className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
             onClick={() => onRemove(index)}
+            type="button"
+          >
+            <TrashIcon className="size-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Button text — all types */}
+      <div className="flex flex-col gap-2">
+        <InputField
+          label={t("whatsapp.messageTemplate.buttonText")}
+          name={`${parentName}.${index}.text`}
+          placeholder={t("whatsapp.messageTemplate.buttonTextPlaceholder")}
+        />
+
+        {/* URL-specific fields */}
+        {type === "url" && (
+          <>
+            <InputField
+              label={t("fields.url.label")}
+              name={`${parentName}.${index}.url`}
+              placeholder={
+                urlDynamic
+                  ? "https://example.com/order/{{1}}"
+                  : "https://example.com"
+              }
+            />
+            <SwitchField
+              description={t("whatsapp.messageTemplate.dynamicUrl.description")}
+              label={t("whatsapp.messageTemplate.dynamicUrl.label")}
+              name={`${parentName}.${index}.urlDynamic`}
+            />
+            {urlDynamic && (
+              <InputField
+                description={t(
+                  "whatsapp.messageTemplate.dynamicUrl.sampleHint",
+                )}
+                label={t("whatsapp.messageTemplate.dynamicUrl.sampleLabel")}
+                name={`${parentName}.${index}.urlSampleValue`}
+                placeholder="abc123"
+              />
+            )}
+          </>
+        )}
+
+        {/* Phone-specific field */}
+        {type === "phoneNumber" && (
+          <InputField
+            label={t("fields.phoneNumber.label")}
+            name={`${parentName}.${index}.phone_number`}
+            placeholder="+1234567890"
+          />
+        )}
+
+        {/* Copy Code-specific field */}
+        {type === "copyCode" && (
+          <InputField
+            description={t("whatsapp.messageTemplate.copyCode.description")}
+            label={t("whatsapp.messageTemplate.copyCode.label")}
+            name={`${parentName}.${index}.example`}
+            placeholder="123456"
+          />
+        )}
+
+        {/* Flow-specific field */}
+        {type === "flow" && (
+          <InputField
+            label={t("fields.whatsappFlow.label")}
+            name={`${parentName}.${index}.flow_id`}
+            placeholder="flow_id"
           />
         )}
       </div>
-    )
-  },
-)
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main component: inline chip-based button editor
+// ---------------------------------------------------------------------------
 
 type ButtonGroupPreviewComponentProps = {
   parentName: string
@@ -59,30 +206,76 @@ type ButtonGroupPreviewComponentProps = {
 const ButtonGroupPreviewComponent = (
   props: ButtonGroupPreviewComponentProps,
 ) => {
-  const { parentName, changeType = true, min = 0, max = 3 } = props
+  const { parentName, min = 0, max = 10 } = props
   const t = useTranslations()
-  const [openModal, setOpenModal] = useState(false)
-  const [openBtnName, setOpenBtnName] = useState("")
-
   const { control } = useFormContext()
-  const { fields, append, remove } = useFieldArray<{
-    [key: string]: ButtonField[]
-  }>({
+
+  // Watch category from the parent form to enforce AUTH rules
+  const category = useWatch({ control, name: "category" }) as string | undefined
+  const { fields, append, remove } = useFieldArray({
     control,
     name: parentName,
   })
 
-  const addButton = useCallback(() => {
-    append({
-      ...buttonStepDefaultFn(`Button #${fields.length + 1}`),
-      id: `button-${fields.length + 1}`,
-    })
-  }, [append, fields.length])
+  // Watch all buttons to compute per-type counts
+  const buttons = useWatch({ control, name: parentName }) as
+    | ButtonStepProps[]
+    | undefined
+  const buttonList = buttons ?? []
 
-  const handleEdit = useCallback((name: string) => {
-    setOpenBtnName(name)
-    setOpenModal(true)
-  }, [])
+  const isAuth = category === "AUTHENTICATION"
+  const totalCount = buttonList.length
+  const effectiveMax = isAuth ? BUTTON_LIMITS.authMaxButtons : max
+
+  // Per-type counts
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const btn of buttonList) {
+      if (btn?.type) {
+        counts[btn.type] = (counts[btn.type] || 0) + 1
+      }
+    }
+    return counts
+  }, [buttonList])
+
+  // Determine which chips are disabled
+  const isChipDisabled = useCallback(
+    (type: ButtonActionType) => {
+      if (totalCount >= effectiveMax) {
+        return true
+      }
+
+      if (isAuth) {
+        // AUTH: only copyCode allowed
+        return type !== "copyCode"
+      }
+
+      const perTypeMax =
+        BUTTON_LIMITS.perType[type as keyof typeof BUTTON_LIMITS.perType]
+      if (perTypeMax !== undefined && (typeCounts[type] || 0) >= perTypeMax) {
+        return true
+      }
+
+      return false
+    },
+    [totalCount, effectiveMax, typeCounts, isAuth],
+  )
+
+  // Has at least one button of this type
+  const hasType = useCallback(
+    (type: ButtonActionType) => (typeCounts[type] || 0) > 0,
+    [typeCounts],
+  )
+
+  const addButton = useCallback(
+    (type: ButtonActionType) => {
+      if (isChipDisabled(type)) {
+        return
+      }
+      append(buttonStepDefaultForType(type, fields.length))
+    },
+    [append, fields.length, isChipDisabled],
+  )
 
   const handleRemove = useCallback(
     (index: number) => {
@@ -91,47 +284,107 @@ const ButtonGroupPreviewComponent = (
     [remove],
   )
 
-  const handleOpenChange = useCallback((open: boolean) => {
-    setOpenModal(open)
-  }, [])
+  // Group buttons: quick replies first, then CTAs
+  const groupedIndices = useMemo(() => {
+    const qrIndices: number[] = []
+    const ctaIndices: number[] = []
+    for (let i = 0; i < buttonList.length; i++) {
+      if (buttonList[i]?.type === "quickReply") {
+        qrIndices.push(i)
+      } else {
+        ctaIndices.push(i)
+      }
+    }
+    return { qrIndices, ctaIndices }
+  }, [buttonList])
+
+  const hasQrButtons = groupedIndices.qrIndices.length > 0
+  const hasCtaButtons = groupedIndices.ctaIndices.length > 0
+
+  // Chips to show — for AUTH, only copyCode
+  const visibleChips = isAuth
+    ? CHIP_CONFIG.filter((c) => c.type === "copyCode")
+    : CHIP_CONFIG
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
-        {t("whatsapp.messageTemplate.sectionButtons")}
-      </span>
-      {fields.map((field: ButtonField, index) => (
-        <ButtonItem
-          index={index}
-          key={field.id}
-          min={min}
-          onEdit={handleEdit}
-          onRemove={handleRemove}
-          parentName={parentName}
-        />
-      ))}
+      {/* Section header with counter */}
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
+          {t("whatsapp.messageTemplate.sectionButtons")}
+        </span>
+        <span className="font-medium text-xs text-zinc-400 dark:text-zinc-500">
+          {totalCount}/{effectiveMax}
+        </span>
+      </div>
 
-      {fields.length < max && (
-        <Button
-          className="my-1.5 w-full"
-          onClick={addButton}
-          type="button"
-          variant="secondary"
-        >
-          <PlusIcon />
-          {t("actions.createFeature", {
-            feature: t("fields.messageTemplate.label"),
-          })}
-        </Button>
+      {/* Grouped button rows: Quick Replies */}
+      {hasQrButtons && (
+        <div className="flex flex-col gap-2">
+          {buttonList.length > 1 && hasCtaButtons && (
+            <span className="text-[11px] text-muted-foreground">
+              {t("whatsapp.messageTemplate.quickRepliesGroup")}
+            </span>
+          )}
+          {groupedIndices.qrIndices.map((originalIndex) => (
+            <InlineButtonRow
+              index={originalIndex}
+              key={fields[originalIndex]?.id ?? originalIndex}
+              min={min}
+              onRemove={handleRemove}
+              parentName={parentName}
+            />
+          ))}
+        </div>
       )}
-      {openModal && (
-        <EditButtonDialog
-          changeType={changeType}
-          onOpenChange={handleOpenChange}
-          open={openModal}
-          parentName={openBtnName}
-        />
+
+      {/* Grouped button rows: CTAs */}
+      {hasCtaButtons && (
+        <div className="flex flex-col gap-2">
+          {buttonList.length > 1 && hasQrButtons && (
+            <span className="text-[11px] text-muted-foreground">
+              {t("whatsapp.messageTemplate.ctaGroup")}
+            </span>
+          )}
+          {groupedIndices.ctaIndices.map((originalIndex) => (
+            <InlineButtonRow
+              index={originalIndex}
+              key={fields[originalIndex]?.id ?? originalIndex}
+              min={min}
+              onRemove={handleRemove}
+              parentName={parentName}
+            />
+          ))}
+        </div>
       )}
+
+      {/* Inline chips — add button by type */}
+      <div className="flex flex-wrap gap-2">
+        {visibleChips.map((chip) => {
+          const disabled = isChipDisabled(chip.type)
+          const active = hasType(chip.type)
+          const Icon = chip.icon
+
+          return (
+            <Button
+              className={
+                active && !disabled
+                  ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
+                  : ""
+              }
+              disabled={disabled}
+              key={chip.type}
+              onClick={() => addButton(chip.type)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Icon className="size-3.5" />
+              <span className="text-xs">+ {t(chip.labelKey)}</span>
+            </Button>
+          )
+        })}
+      </div>
     </div>
   )
 }

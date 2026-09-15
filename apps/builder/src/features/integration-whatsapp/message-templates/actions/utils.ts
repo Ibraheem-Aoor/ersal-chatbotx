@@ -1,7 +1,10 @@
 import type { WhatsappAuthValue } from "@chatbotx.io/integration-whatsapp"
 import type { Context } from "@chatbotx.io/sdk"
 import { integrations } from "@/integration"
-import type { CreateMessageTemplateRequest } from "../schema/mutation"
+import type {
+  CreateMessageTemplateRequest,
+  EditMessageTemplateRequest,
+} from "../schema/mutation"
 import type { TemplateDocumentSchema } from "../templates/document/schema"
 import type { TemplateImageSchema } from "../templates/image/schema"
 import type { TemplateTextSchema } from "../templates/text/schema"
@@ -13,7 +16,9 @@ export type HeaderMediaFormat = "IMAGE" | "VIDEO" | "DOCUMENT"
 export const parseComponents = async (
   ctx: Context<WhatsappAuthValue>,
   templateType: TemplateType,
-  content: CreateMessageTemplateRequest["content"],
+  content:
+    | CreateMessageTemplateRequest["content"]
+    | EditMessageTemplateRequest["content"],
 ) => {
   // biome-ignore lint/suspicious/noExplicitAny: wip
   let components: any[] = []

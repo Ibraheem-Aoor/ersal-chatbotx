@@ -145,3 +145,36 @@ export const createMessageTemplate = (
       .json(),
   )
 }
+
+export type EditMessageTemplateProps = {
+  /** Meta template ID (e.g. from sourceId) */
+  templateId: string
+  /** Only components can be edited after creation */
+  // biome-ignore lint/suspicious/noExplicitAny: Meta API components schema
+  components: any[]
+}
+
+/**
+ * Edit a message template via the Meta Cloud API.
+ * After approval, only components (header, body, footer, buttons) can be changed.
+ * Editing an approved template creates a new version that goes back to PENDING.
+ *
+ * @see https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates#edit-a-template
+ */
+export const editMessageTemplate = (
+  auth: WhatsappAuthValue,
+  data: EditMessageTemplateProps,
+): Promise<MessageTemplateEntity> => {
+  const { version = DEFAULT_API_VERSION } = auth
+
+  return rescue(() =>
+    ky
+      .post(`${API_URL}/${version}/${data.templateId}`, {
+        headers: {
+          Authorization: `Bearer ${auth.tokens.accessToken}`,
+        },
+        json: { components: data.components },
+      })
+      .json(),
+  )
+}

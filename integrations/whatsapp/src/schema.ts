@@ -10,7 +10,10 @@ import type {
   ConversationalAutomation,
   WhatsappPhoneNumber,
 } from "./api/phone-number"
-import type { CreateMessageTemplateProps } from "./api/waba"
+import type {
+  CreateMessageTemplateProps,
+  EditMessageTemplateProps,
+} from "./api/waba"
 
 export type WhatsappConfig = BaseConfig & {
   verifyToken?: string
@@ -265,6 +268,13 @@ export type WhatsappActions = {
     {
       ctx: Context<WhatsappAuthValue>
       data: CreateMessageTemplateProps
+    },
+    MessageTemplateEntity
+  >
+  editMessageTemplate: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      data: EditMessageTemplateProps
     },
     MessageTemplateEntity
   >
