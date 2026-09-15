@@ -23,6 +23,7 @@ import { emit } from "@chatbotx.io/event-bus"
 import { emitContactCreated } from "@chatbotx.io/events"
 import { createId } from "@chatbotx.io/utils"
 import { type CountryCode, parsePhoneNumberFromString } from "libphonenumber-js"
+import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { randomString } from "remeda"
 import {
@@ -108,6 +109,8 @@ export const createContact = async ({
   workspaceId: string
   parsedInput: CreateContactRequest
 }): Promise<CreateContactResponse> => {
+  const t = await getTranslations("validation")
+
   const inbox = await findOrFail({
     table: inboxModel,
     where: { workspaceId, id: parsedInput.inboxId },
@@ -119,7 +122,7 @@ export const createContact = async ({
     return returnValidationErrors(createContactRequest, {
       _errors: ["Validation Exception"],
       inboxId: {
-        _errors: ["Selected inbox does not match the selected source"],
+        _errors: [t("inboxChannelMismatch")],
       },
     })
   }
@@ -146,7 +149,7 @@ export const createContact = async ({
       return returnValidationErrors(createContactRequest, {
         _errors: ["Validation Exception"],
         phoneNumber: {
-          _errors: ["Please include the country code (e.g. +84)"],
+          _errors: [t("phoneIncludeCountryCode")],
         },
       })
     }
@@ -171,7 +174,7 @@ export const createContact = async ({
     return returnValidationErrors(createContactRequest, {
       _errors: ["Validation Exception"],
       phoneNumber: {
-        _errors: ["Phone number is exists"],
+        _errors: [t("phoneAlreadyExists")],
       },
     })
   }
@@ -184,7 +187,7 @@ export const createContact = async ({
     })
     if (existing) {
       const dup = {
-        _errors: ["This contact already exists on the selected inbox"],
+        _errors: [t("contactExistsOnInbox")],
       }
       return returnValidationErrors(createContactRequest, {
         _errors: ["Validation Exception"],
