@@ -18,7 +18,7 @@ const TemplateImagePreviewComponent = (
   const {
     parentName = "content",
     minButtons = 0,
-    maxButtons = 3,
+    maxButtons = 10,
     ...rest
   } = props
 

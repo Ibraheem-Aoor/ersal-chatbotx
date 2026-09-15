@@ -224,7 +224,9 @@ const ButtonGroupPreviewComponent = (
   const buttonList = buttons ?? []
 
   const isAuth = category === "AUTHENTICATION"
-  const totalCount = buttonList.length
+  // Use fields.length (from useFieldArray) as the authoritative count.
+  // useWatch can return stale/phantom entries after remove(), causing ghost buttons.
+  const totalCount = fields.length
   const effectiveMax = isAuth ? BUTTON_LIMITS.authMaxButtons : max
 
   // Per-type counts
@@ -284,19 +286,23 @@ const ButtonGroupPreviewComponent = (
     [remove],
   )
 
-  // Group buttons: quick replies first, then CTAs
+  // Group buttons: quick replies first, then CTAs.
+  // Bound by fields.length to avoid phantom entries from stale useWatch data.
   const groupedIndices = useMemo(() => {
     const qrIndices: number[] = []
     const ctaIndices: number[] = []
-    for (let i = 0; i < buttonList.length; i++) {
-      if (buttonList[i]?.type === "quickReply") {
+    const len = Math.min(fields.length, buttonList.length)
+    for (let i = 0; i < len; i++) {
+      const type = buttonList[i]?.type
+      if (!type) continue // skip phantom entries with no valid type
+      if (type === "quickReply") {
         qrIndices.push(i)
       } else {
         ctaIndices.push(i)
       }
     }
     return { qrIndices, ctaIndices }
-  }, [buttonList])
+  }, [buttonList, fields.length])
 
   const hasQrButtons = groupedIndices.qrIndices.length > 0
   const hasCtaButtons = groupedIndices.ctaIndices.length > 0
