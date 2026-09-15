@@ -14,6 +14,7 @@ import {
 import { useTranslations } from "next-intl"
 import { memo, useCallback, useMemo } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
+import { FlowSelectField } from "../../components/flow-select-field"
 import {
   BUTTON_LIMITS,
   type ButtonActionType,
@@ -181,10 +182,8 @@ function InlineButtonRow({
 
         {/* Flow-specific field */}
         {type === "flow" && (
-          <InputField
-            label={t("fields.whatsappFlow.label")}
+          <FlowSelectField
             name={`${parentName}.${index}.flow_id`}
-            placeholder="flow_id"
           />
         )}
       </div>
@@ -294,7 +293,9 @@ const ButtonGroupPreviewComponent = (
     const len = Math.min(fields.length, buttonList.length)
     for (let i = 0; i < len; i++) {
       const type = buttonList[i]?.type
-      if (!type) continue // skip phantom entries with no valid type
+      if (!type) {
+        continue // skip phantom entries with no valid type
+      }
       if (type === "quickReply") {
         qrIndices.push(i)
       } else {

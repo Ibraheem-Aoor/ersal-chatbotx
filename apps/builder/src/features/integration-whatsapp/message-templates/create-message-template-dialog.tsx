@@ -41,6 +41,7 @@ import {
   createMessageTemplateRequest,
   editMessageTemplateRequest,
 } from "@/features/integration-whatsapp/message-templates/schema/mutation"
+import { WhatsappTemplateDialogProvider } from "./context"
 import type { WhatsappMessageTemplateResource } from "./schema/resource"
 import { metaComponentsToFormValues } from "./utils/parse-meta-to-form"
 import { TemplateCarouselImagePartial } from "./templates/carousel-image/partial"
@@ -483,123 +484,131 @@ function CreateMessageTemplateDialogContent({
   const PreviewComponent = templateType ? previews[templateType] : undefined
 
   return (
-    <Form {...form}>
-      <form
-        className="flex h-full flex-col overflow-hidden"
-        onSubmit={handleSubmitWithAction}
-      >
-        {/* ---- Fixed header bar ---- */}
-        <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={templateType ? () => setTemplateType(null) : onClose}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <ArrowLeftIcon className="size-4" />
-              {t("actions.back")}
-            </Button>
-            <h2 className="font-semibold text-lg">
-              {t("whatsapp.messageTemplate.createTitle")}
-            </h2>
-          </div>
-          {templateType && (
+    <WhatsappTemplateDialogProvider
+      integrationWhatsappId={integrationWhatsappId}
+      workspaceId={workspaceId}
+    >
+      <Form {...form}>
+        <form
+          className="flex h-full flex-col overflow-hidden"
+          onSubmit={handleSubmitWithAction}
+        >
+          {/* ---- Fixed header bar ---- */}
+          <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
             <div className="flex items-center gap-3">
-              {form.formState.isDirty &&
-                !form.formState.isValid &&
-                !form.formState.isSubmitting && (
-                  <span className="flex items-center gap-1.5 text-destructive text-xs">
-                    <AlertCircleIcon className="size-3.5" />
-                    {t("whatsapp.messageTemplate.formHasErrors")}
-                  </span>
-                )}
               <Button
-                disabled={
-                  !form.formState.isValid || form.formState.isSubmitting
-                }
+                onClick={templateType ? () => setTemplateType(null) : onClose}
                 size="sm"
-                type="submit"
+                type="button"
+                variant="ghost"
               >
-                {form.formState.isSubmitting && (
-                  <Loader2Icon className="size-4 animate-spin" />
-                )}
-                {t("whatsapp.messageTemplate.submitForReview")}
+                <ArrowLeftIcon className="size-4" />
+                {t("actions.back")}
               </Button>
+              <h2 className="font-semibold text-lg">
+                {t("whatsapp.messageTemplate.createTitle")}
+              </h2>
+            </div>
+            {templateType && (
+              <div className="flex items-center gap-3">
+                {form.formState.isDirty &&
+                  !form.formState.isValid &&
+                  !form.formState.isSubmitting && (
+                    <span className="flex items-center gap-1.5 text-destructive text-xs">
+                      <AlertCircleIcon className="size-3.5" />
+                      {t("whatsapp.messageTemplate.formHasErrors")}
+                    </span>
+                  )}
+                <Button
+                  disabled={
+                    !form.formState.isValid || form.formState.isSubmitting
+                  }
+                  size="sm"
+                  type="submit"
+                >
+                  {form.formState.isSubmitting && (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  )}
+                  {t("whatsapp.messageTemplate.submitForReview")}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* ---- Step 1: Choose template type ---- */}
+          {!templateType && (
+            <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
+              <div className="mb-6 text-center">
+                <h3 className="font-semibold text-xl">
+                  {t("whatsapp.messageTemplate.selectType")}
+                </h3>
+              </div>
+              <div className="w-full max-w-2xl">
+                <WhatsappMessageTemplateTypeSelect
+                  onSelectTemplateType={onSelectTemplateType}
+                />
+              </div>
             </div>
           )}
-        </div>
 
-        {/* ---- Step 1: Choose template type ---- */}
-        {!templateType && (
-          <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
-            <div className="mb-6 text-center">
-              <h3 className="font-semibold text-xl">
-                {t("whatsapp.messageTemplate.selectType")}
-              </h3>
-            </div>
-            <div className="w-full max-w-2xl">
-              <WhatsappMessageTemplateTypeSelect
-                onSelectTemplateType={onSelectTemplateType}
-              />
-            </div>
-          </div>
-        )}
+          {/* ---- Step 2: Read-only preview (left) + All inputs (right) ---- */}
+          {templateType && (
+            <div className="flex flex-1 overflow-hidden">
+              {/* LEFT: Read-only phone preview */}
+              <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
+                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                  <LivePreview
+                    parentName="content"
+                    templateType={templateType}
+                  />
+                </PhoneFrame>
+              </div>
 
-        {/* ---- Step 2: Read-only preview (left) + All inputs (right) ---- */}
-        {templateType && (
-          <div className="flex flex-1 overflow-hidden">
-            {/* LEFT: Read-only phone preview */}
-            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
-              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                <LivePreview parentName="content" templateType={templateType} />
-              </PhoneFrame>
-            </div>
-
-            {/* RIGHT: All input fields */}
-            <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-              {/* Template details */}
-              <Card>
-                <CardContent className="flex flex-col gap-5 py-5">
-                  <NameFieldWithCounter />
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <WhatsappMessageTemplateLanguageSelect
-                      label={t("fields.language.label")}
-                      name="language"
-                      required
-                    />
-                    <WhatsappMessageTemplateCategorySelect
-                      label={t("fields.category.label")}
-                      name="category"
-                      required
-                    />
-                  </div>
-                  <LanguageMismatchWarning />
-                </CardContent>
-              </Card>
-
-              {/* Template content editor (body, header, footer, buttons, files) */}
-              {PreviewComponent && (
+              {/* RIGHT: All input fields */}
+              <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+                {/* Template details */}
                 <Card>
-                  <CardContent className="py-5">
-                    <PreviewComponent parentName="content" />
+                  <CardContent className="flex flex-col gap-5 py-5">
+                    <NameFieldWithCounter />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <WhatsappMessageTemplateLanguageSelect
+                        label={t("fields.language.label")}
+                        name="language"
+                        required
+                      />
+                      <WhatsappMessageTemplateCategorySelect
+                        label={t("fields.category.label")}
+                        name="category"
+                        required
+                      />
+                    </div>
+                    <LanguageMismatchWarning />
                   </CardContent>
                 </Card>
-              )}
 
-              {/* Template options (toggles, variable sample values) */}
-              {PartialComponent && (
-                <Card>
-                  <CardContent className="py-5">
-                    <PartialComponent parentName="content" />
-                  </CardContent>
-                </Card>
-              )}
+                {/* Template content editor (body, header, footer, buttons, files) */}
+                {PreviewComponent && (
+                  <Card>
+                    <CardContent className="py-5">
+                      <PreviewComponent parentName="content" />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Template options (toggles, variable sample values) */}
+                {PartialComponent && (
+                  <Card>
+                    <CardContent className="py-5">
+                      <PartialComponent parentName="content" />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </form>
-    </Form>
+          )}
+        </form>
+      </Form>
+    </WhatsappTemplateDialogProvider>
   )
 }
 
@@ -702,134 +711,146 @@ function EditMessageTemplateDialogContent({
   const PartialComponent = partials[inferredType]
 
   return (
-    <Form {...form}>
-      <form
-        className="flex h-full flex-col overflow-hidden"
-        onSubmit={handleSubmitWithAction}
-      >
-        {/* ---- Fixed header bar ---- */}
-        <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Button onClick={onClose} size="sm" type="button" variant="ghost">
-              <ArrowLeftIcon className="size-4" />
-              {t("actions.back")}
-            </Button>
-            <h2 className="font-semibold text-lg">
-              {t("whatsapp.messageTemplate.editTitle")}
-            </h2>
-            <Badge
-              className={
-                isApproved
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-              }
-              variant="secondary"
-            >
-              {t(
-                `whatsapp.messageTemplate.status.${template.status as "APPROVED" | "PENDING" | "REJECTED"}`,
-              )}
-            </Badge>
+    <WhatsappTemplateDialogProvider
+      integrationWhatsappId={integrationWhatsappId}
+      workspaceId={workspaceId}
+    >
+      <Form {...form}>
+        <form
+          className="flex h-full flex-col overflow-hidden"
+          onSubmit={handleSubmitWithAction}
+        >
+          {/* ---- Fixed header bar ---- */}
+          <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={onClose}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <ArrowLeftIcon className="size-4" />
+                {t("actions.back")}
+              </Button>
+              <h2 className="font-semibold text-lg">
+                {t("whatsapp.messageTemplate.editTitle")}
+              </h2>
+              <Badge
+                className={
+                  isApproved
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                }
+                variant="secondary"
+              >
+                {t(
+                  `whatsapp.messageTemplate.status.${template.status as "APPROVED" | "PENDING" | "REJECTED"}`,
+                )}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3">
+              {form.formState.isDirty &&
+                !form.formState.isValid &&
+                !form.formState.isSubmitting && (
+                  <span className="flex items-center gap-1.5 text-destructive text-xs">
+                    <AlertCircleIcon className="size-3.5" />
+                    {t("whatsapp.messageTemplate.formHasErrors")}
+                  </span>
+                )}
+              <Button
+                disabled={
+                  !form.formState.isValid || form.formState.isSubmitting
+                }
+                size="sm"
+                type="submit"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
+                {t("whatsapp.messageTemplate.submitForReview")}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {form.formState.isDirty &&
-              !form.formState.isValid &&
-              !form.formState.isSubmitting && (
-                <span className="flex items-center gap-1.5 text-destructive text-xs">
-                  <AlertCircleIcon className="size-3.5" />
-                  {t("whatsapp.messageTemplate.formHasErrors")}
-                </span>
-              )}
-            <Button
-              disabled={!form.formState.isValid || form.formState.isSubmitting}
-              size="sm"
-              type="submit"
-            >
-              {form.formState.isSubmitting && (
-                <Loader2Icon className="size-4 animate-spin" />
-              )}
-              {t("whatsapp.messageTemplate.submitForReview")}
-            </Button>
-          </div>
-        </div>
 
-        {/* ---- Two-column layout ---- */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* LEFT: Read-only phone preview */}
-          <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
-            <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-              <LivePreview parentName="content" templateType={inferredType} />
-            </PhoneFrame>
-          </div>
+          {/* ---- Two-column layout ---- */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* LEFT: Read-only phone preview */}
+            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={inferredType} />
+              </PhoneFrame>
+            </div>
 
-          {/* RIGHT: Input fields */}
-          <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-            {/* Re-review notice for approved templates */}
-            {isApproved && (
-              <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-                <InfoIcon className="mt-0.5 size-4 shrink-0" />
-                <p className="text-xs leading-relaxed">
-                  {t("whatsapp.messageTemplate.editApprovedNotice")}
-                </p>
-              </div>
-            )}
-
-            {/* Template details — locked fields */}
-            <Card>
-              <CardContent className="flex flex-col gap-5 py-5">
-                <div className="relative">
-                  <InputField
-                    disabled
-                    label={t("fields.name.label")}
-                    name="name"
-                  />
-                  <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+            {/* RIGHT: Input fields */}
+            <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+              {/* Re-review notice for approved templates */}
+              {isApproved && (
+                <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                  <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                  <p className="text-xs leading-relaxed">
+                    {t("whatsapp.messageTemplate.editApprovedNotice")}
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              )}
+
+              {/* Template details — locked fields */}
+              <Card>
+                <CardContent className="flex flex-col gap-5 py-5">
                   <div className="relative">
-                    <WhatsappMessageTemplateLanguageSelect
+                    <InputField
                       disabled
-                      label={t("fields.language.label")}
-                      name="language"
+                      label={t("fields.name.label")}
+                      name="name"
                     />
                     <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
                   </div>
-                  <div className="relative">
-                    <WhatsappMessageTemplateCategorySelect
-                      disabled
-                      label={t("fields.category.label")}
-                      name="category"
-                    />
-                    <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="relative">
+                      <WhatsappMessageTemplateLanguageSelect
+                        disabled
+                        label={t("fields.language.label")}
+                        name="language"
+                      />
+                      <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="relative">
+                      <WhatsappMessageTemplateCategorySelect
+                        disabled
+                        label={t("fields.category.label")}
+                        name="category"
+                      />
+                      <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
+                    </div>
                   </div>
-                </div>
-                <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                  <LockIcon className="size-3" />
-                  {t("whatsapp.messageTemplate.lockedField")}
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Template content editor */}
-            {PreviewComponent && (
-              <Card>
-                <CardContent className="py-5">
-                  <PreviewComponent parentName="content" />
+                  <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                    <LockIcon className="size-3" />
+                    {t("whatsapp.messageTemplate.lockedField")}
+                  </p>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Template options */}
-            {PartialComponent && (
-              <Card>
-                <CardContent className="py-5">
-                  <PartialComponent parentName="content" />
-                </CardContent>
-              </Card>
-            )}
+              {/* Template content editor */}
+              {PreviewComponent && (
+                <Card>
+                  <CardContent className="py-5">
+                    <PreviewComponent parentName="content" />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Template options */}
+              {PartialComponent && (
+                <Card>
+                  <CardContent className="py-5">
+                    <PartialComponent parentName="content" />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </WhatsappTemplateDialogProvider>
   )
 }
 

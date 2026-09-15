@@ -3715,7 +3715,8 @@
       },
       "editTitle": "Edit Message Template",
       "editApprovedNotice": "Editing an approved template will submit a new version for Meta review",
-      "lockedField": "This field cannot be changed after approval"
+      "lockedField": "This field cannot be changed after approval",
+      "noFlowsAvailable": "No WhatsApp Flows available. Sync flows first from the Flows page."
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"
