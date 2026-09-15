@@ -42,6 +42,7 @@ import {
   editMessageTemplateRequest,
 } from "@/features/integration-whatsapp/message-templates/schema/mutation"
 import type { WhatsappMessageTemplateResource } from "./schema/resource"
+import { metaComponentsToFormValues } from "./utils/parse-meta-to-form"
 import { TemplateCarouselImagePartial } from "./templates/carousel-image/partial"
 import { TemplateCarouselImagePreview } from "./templates/carousel-image/preview"
 import { templateCarouselImageDefaultValue } from "./templates/carousel-image/schema"
@@ -643,6 +644,16 @@ function EditMessageTemplateDialogContent({
     return templateTypes.enum.Text
   }, [template.components])
 
+  // Parse stored Meta components back to form values
+  const parsedContent = useMemo(
+    () =>
+      metaComponentsToFormValues(
+        template.components as Record<string, unknown>[],
+        inferredType,
+      ),
+    [template.components, inferredType],
+  )
+
   const { form, handleSubmitWithAction } = useHookFormAction(
     editMessageTemplateAction.bind(null, workspaceId, integrationWhatsappId),
     zodResolver(editMessageTemplateRequest),
@@ -671,7 +682,7 @@ function EditMessageTemplateDialogContent({
           category: template.category,
           // biome-ignore lint/suspicious/noExplicitAny: discriminated union default
           templateType: inferredType as any,
-          content: {
+          content: parsedContent ?? {
             hideHeader: true,
             showFooter: true,
             footer: "",
