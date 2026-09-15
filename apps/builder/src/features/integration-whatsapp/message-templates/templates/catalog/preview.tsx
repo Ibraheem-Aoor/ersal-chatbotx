@@ -1,5 +1,4 @@
 import { memo } from "react"
-import { useFormContext, useWatch } from "react-hook-form"
 import { ButtonGroupPreview } from "../button/preview"
 import { TemplateBody } from "../components/body"
 import { TemplateFooter } from "../components/footer"
@@ -13,16 +12,10 @@ const TemplateCatalogPreviewComponent = (
 ) => {
   const { parentName = "content", ...rest } = props
 
-  const { control } = useFormContext()
-  const showFooter = useWatch({
-    control,
-    name: `${parentName}.showFooter`,
-  })
-
   return (
     <div className="flex w-full flex-col gap-4" {...rest}>
       <TemplateBody parentName={`${parentName}.body`} />
-      {showFooter && <TemplateFooter parentName={parentName} />}
+      <TemplateFooter parentName={parentName} />
       <hr />
       <ButtonGroupPreview
         changeType={false}

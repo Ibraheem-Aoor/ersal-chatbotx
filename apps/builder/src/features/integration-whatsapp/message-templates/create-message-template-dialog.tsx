@@ -14,8 +14,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
   AlertCircleIcon,
+  AlertTriangleIcon,
   ArrowLeftIcon,
+  CopyIcon,
   FileTextIcon,
+  LinkIcon,
   Loader2Icon,
   PlayCircleIcon,
   PlusIcon,
@@ -85,6 +88,38 @@ const partials: Record<TemplateType, ComponentType<PartialProps> | undefined> =
   }
 
 // ---------------------------------------------------------------------------
+// Inline helper components
+// ---------------------------------------------------------------------------
+
+function NameFieldWithCounter() {
+  const t = useTranslations()
+  const { watch } = useFormContext()
+  const nameValue = watch("name") || ""
+  return (
+    <InputField
+      description={`${t("whatsapp.messageTemplate.nameHint")} · ${nameValue.length}/512`}
+      label={t("fields.name.label")}
+      name="name"
+      pattern="[a-z0-9_]+"
+      placeholder="order_shipping_update"
+      required
+    />
+  )
+}
+
+function LanguageMismatchWarning() {
+  const t = useTranslations()
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+      <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+      <p className="text-xs leading-relaxed">
+        {t("whatsapp.messageTemplate.languageMismatch")}
+      </p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // WhatsApp phone-frame preview — mirrors the Meta Business Suite style
 // ---------------------------------------------------------------------------
 
@@ -142,10 +177,13 @@ function LivePreview({
   const headerText = useWatch({ control, name: `${parentName}.header.text` })
   const headerFile = useWatch({ control, name: `${parentName}.header.file` })
   const bodyText = useWatch({ control, name: `${parentName}.body.text` })
+  const bodyVariables = useWatch({
+    control,
+    name: `${parentName}.body.variables`,
+  })
   const footer = useWatch({ control, name: `${parentName}.footer` })
   const buttons = useWatch({ control, name: `${parentName}.buttons` })
   const hideHeader = useWatch({ control, name: `${parentName}.hideHeader` })
-  const showFooter = useWatch({ control, name: `${parentName}.showFooter` })
 
   const isMedia =
     templateType === templateTypes.enum.Image ||
@@ -156,6 +194,23 @@ function LivePreview({
     templateType === templateTypes.enum.CarouselVideo
 
   const hasBody = typeof bodyText === "string" && bodyText.length > 0
+
+  // Substitute sample values into body text for preview
+  const previewBody = useMemo(() => {
+    if (!hasBody) {
+      return ""
+    }
+    let text = bodyText as string
+    if (Array.isArray(bodyVariables)) {
+      for (let i = 0; i < bodyVariables.length; i++) {
+        const sample = bodyVariables[i]
+        if (sample) {
+          text = text.replace(`{{${i + 1}}}`, sample)
+        }
+      }
+    }
+    return text
+  }, [bodyText, bodyVariables, hasBody])
 
   // Build a preview URL for the uploaded file
   const [filePreviewUrl, setFilePreviewUrl] = useState<string>("")
@@ -263,7 +318,7 @@ function LivePreview({
       {/* Body */}
       <p className="whitespace-pre-wrap text-[13px] leading-relaxed dark:text-zinc-200">
         {hasBody ? (
-          bodyText
+          previewBody
         ) : (
           <span className="italic opacity-40">
             {t("whatsapp.messageTemplate.startTyping")}
@@ -272,7 +327,7 @@ function LivePreview({
       </p>
 
       {/* Footer */}
-      {showFooter && typeof footer === "string" && footer.length > 0 && (
+      {typeof footer === "string" && footer.length > 0 && (
         <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
           {footer}
         </p>
@@ -281,17 +336,27 @@ function LivePreview({
       {/* Buttons */}
       {Array.isArray(buttons) && buttons.length > 0 && (
         <div className="-mx-2.5 mt-2 -mb-2.5 flex flex-col border-zinc-200 border-t dark:border-zinc-600">
-          {(buttons as Array<{ text?: string }>).map(
-            (btn: { text?: string }, i: number) => (
-              <div
-                className="border-zinc-200 border-b py-2 text-center font-medium text-[#00a5f4] text-[13px] last:border-b-0 dark:border-zinc-600"
-                // biome-ignore lint/suspicious/noArrayIndexKey: buttons have no stable ID
-                key={`btn-${i}`}
-              >
-                {btn?.text || "•••"}
-              </div>
-            ),
-          )}
+          {(
+            buttons as Array<{
+              text?: string
+              type?: string
+              url?: string
+              urlDynamic?: boolean
+              example?: string
+            }>
+          ).map((btn, i: number) => (
+            <div
+              className="flex items-center justify-center gap-1.5 border-zinc-200 border-b py-2 text-center font-medium text-[#00a5f4] text-[13px] last:border-b-0 dark:border-zinc-600"
+              // biome-ignore lint/suspicious/noArrayIndexKey: buttons have no stable ID
+              key={`btn-${i}`}
+            >
+              {btn?.type === "url" && <LinkIcon className="size-3 shrink-0" />}
+              {btn?.type === "copyCode" && (
+                <CopyIcon className="size-3 shrink-0" />
+              )}
+              {btn?.text || "•••"}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -449,7 +514,7 @@ function CreateMessageTemplateDialogContent({
                 {form.formState.isSubmitting && (
                   <Loader2Icon className="size-4 animate-spin" />
                 )}
-                {t("actions.create")}
+                {t("whatsapp.messageTemplate.submitForReview")}
               </Button>
             </div>
           )}
@@ -486,14 +551,7 @@ function CreateMessageTemplateDialogContent({
               {/* Template details */}
               <Card>
                 <CardContent className="flex flex-col gap-5 py-5">
-                  <InputField
-                    description={t("whatsapp.messageTemplate.nameHint")}
-                    label={t("fields.name.label")}
-                    name="name"
-                    pattern="[a-z0-9_]+"
-                    placeholder="order_shipping_update"
-                    required
-                  />
+                  <NameFieldWithCounter />
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <WhatsappMessageTemplateLanguageSelect
                       label={t("fields.language.label")}
@@ -506,6 +564,7 @@ function CreateMessageTemplateDialogContent({
                       required
                     />
                   </div>
+                  <LanguageMismatchWarning />
                 </CardContent>
               </Card>
 

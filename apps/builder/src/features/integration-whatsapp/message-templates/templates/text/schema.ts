@@ -25,21 +25,12 @@ export const templateTextSchema = z
       })
     }
   })
-  .superRefine((data, ctx) => {
-    if (data.showFooter && !data.footer?.length) {
-      ctx.addIssue({
-        path: ["footer"],
-        message: "Footer text is required",
-        code: z.ZodIssueCode.custom,
-      })
-    }
-  })
 
 export type TemplateTextSchema = z.infer<typeof templateTextSchema>
 
 export const templateTextDefaultValue = (): TemplateTextSchema => ({
   hideHeader: false,
-  showFooter: false,
+  showFooter: true,
   header: {
     text: "",
     variables: [],

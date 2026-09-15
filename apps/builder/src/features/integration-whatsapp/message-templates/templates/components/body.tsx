@@ -1,7 +1,7 @@
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
 import { useTranslations } from "next-intl"
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useState } from "react"
 import { useFormContext } from "react-hook-form"
 import { useDebouncedCallback } from "use-debounce"
 
@@ -12,22 +12,10 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
   const [localBody, setLocalBody] = useState(
     () => getValues(`${parentName}.text`) || "",
   )
-  const [showForm, setShowForm] = useState(false)
 
   const handleChange = useDebouncedCallback((value) => {
     setValue(`${parentName}.text`, value, { shouldValidate: true })
   }, 200)
-
-  useEffect(() => {
-    if (!showForm) {
-      setLocalBody(getValues(`${parentName}.text`) || "")
-    }
-  }, [getValues, parentName, showForm])
-
-  const handleStartEditing = useCallback(() => {
-    setLocalBody(getValues(`${parentName}.text`) || "")
-    setShowForm(true)
-  }, [getValues, parentName])
 
   const processVariables = useDebouncedCallback((value: string) => {
     const variableMatches = value.match(/\{\{(\d+)\}\}/g) || []
@@ -54,7 +42,6 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
     (value: string) => {
       setLocalBody(value)
       handleChange(value)
-
       processVariables(value)
     },
     [handleChange, processVariables],
@@ -70,39 +57,32 @@ const TemplateBodyComponent = ({ parentName }: { parentName: string }) => {
     })
   }, [getValues, handleChange, localBody, parentName, setValue])
 
-  const displayText = useMemo(
-    () => getValues(`${parentName}.text`) || `---- ${t("actions.edit")} ----`,
-    [getValues, parentName, t],
-  )
-
   return (
     <div className="flex flex-col gap-1">
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
         {t("whatsapp.messageTemplate.sectionBody")}
       </span>
-      {showForm ? (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            autoFocus
-            maxLength={1024}
-            onChange={(e) => onChangeValue(e.target.value)}
-            placeholder={t("actions.enterText")}
-            value={localBody}
-          />
-          <Button onClick={addParam} type="button" variant="link">
-            {t("actions.addVariable")}
-          </Button>
-        </div>
-      ) : (
+      <Textarea
+        maxLength={1024}
+        onChange={(e) => onChangeValue(e.target.value)}
+        placeholder={t("actions.enterText")}
+        rows={4}
+        value={localBody}
+      />
+      <div className="flex items-center justify-between">
         <Button
-          className="cursor-pointer"
-          onClick={handleStartEditing}
+          className="text-xs"
+          onClick={addParam}
+          size="sm"
           type="button"
           variant="link"
         >
-          {displayText}
+          {t("actions.addVariable")}
         </Button>
-      )}
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          {localBody.length}/1024
+        </span>
+      </div>
     </div>
   )
 }

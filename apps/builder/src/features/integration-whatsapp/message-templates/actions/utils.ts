@@ -67,7 +67,30 @@ export const parseComponents = async (
       if ("buttons" in content && content.buttons.length) {
         components.push({
           type: "BUTTONS",
-          buttons: content.buttons,
+          buttons: content.buttons.map((btn: Record<string, unknown>) => {
+            switch (btn.type) {
+              case "copyCode":
+                return { type: "COPY_CODE", example: btn.example }
+              case "url":
+                if (btn.urlDynamic) {
+                  return {
+                    type: "URL",
+                    url: btn.url,
+                    example: [btn.urlSampleValue],
+                  }
+                }
+                return { type: "URL", url: btn.url }
+              case "phoneNumber":
+                return {
+                  type: "PHONE_NUMBER",
+                  phone_number: btn.phone_number,
+                }
+              case "flow":
+                return { type: "FLOW", flow_id: btn.flow_id }
+              default:
+                return { type: "QUICK_REPLY" }
+            }
+          }),
         })
       }
 
@@ -203,7 +226,7 @@ export const parseFooter = (
   components: Record<string, unknown>[],
   content: CreateMessageTemplateRequest["content"],
 ) => {
-  if ("showFooter" in content && content.showFooter) {
+  if ("footer" in content && content.footer && content.footer.length > 0) {
     components.push({
       type: "FOOTER",
       text: content.footer,

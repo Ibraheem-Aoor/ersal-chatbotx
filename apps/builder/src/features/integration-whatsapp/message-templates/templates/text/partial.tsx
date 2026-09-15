@@ -4,7 +4,7 @@ import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
-import { memo, useCallback } from "react"
+import { memo } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 
 const VariableInput = memo(
@@ -25,7 +25,7 @@ const VariableInput = memo(
         <div className="flex-1">
           <InputField
             name={`${parentName}.${type}.variables.${index}`}
-            placeholder={t("actions.typeMessage")}
+            placeholder={t("whatsapp.messageTemplate.samplePlaceholder")}
           />
         </div>
       </div>
@@ -43,7 +43,7 @@ const TemplateTextPartialComponent = (
   const { parentName = "content", ...rest } = props
 
   const t = useTranslations()
-  const { control, setValue } = useFormContext()
+  const { control } = useFormContext()
 
   const headerVariables = useWatch({
     control,
@@ -53,48 +53,21 @@ const TemplateTextPartialComponent = (
     control,
     name: `${parentName}.body.variables`,
   })
-  const _showHeader = useWatch({
-    control,
-    name: `${parentName}.hideHeader`,
-  })
-  const _showFooter = useWatch({
-    control,
-    name: `${parentName}.showFooter`,
-  })
-
-  const _handleHeaderChange = useCallback(
-    (value: boolean) => {
-      setValue(`${parentName}.hideHeader`, value, {
-        shouldValidate: true,
-      })
-    },
-    [parentName, setValue],
-  )
-
-  const _handleFooterChange = useCallback(
-    (value: boolean) => {
-      setValue(`${parentName}.showFooter`, value, {
-        shouldValidate: true,
-      })
-    },
-    [parentName, setValue],
-  )
 
   return (
     <div className="w-full flex-1" {...rest}>
-      <div className="flex gap-4">
-        <SwitchField
-          label={t("whatsapp.showHeader.label")}
-          name={`${parentName}.hideHeader`}
-        />
-        <SwitchField
-          label={t("whatsapp.showFooter.label")}
-          name={`${parentName}.showFooter`}
-        />
-      </div>
+      <SwitchField
+        label={t("whatsapp.showHeader.label")}
+        name={`${parentName}.hideHeader`}
+      />
       {headerVariables?.length > 0 && (
         <>
-          <div className="mt-6">{t("whatsapp.sampleHeaderContent.label")}</div>
+          <div className="mt-6 font-medium text-sm">
+            {t("whatsapp.sampleHeaderContent.label")}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {t("whatsapp.messageTemplate.sampleValuesHint")}
+          </p>
           {headerVariables.map((_variable: string, index: number) => (
             <VariableInput
               index={index}
@@ -108,7 +81,12 @@ const TemplateTextPartialComponent = (
       )}
       {bodyVariables?.length > 0 && (
         <>
-          <div className="mt-6">{t("whatsapp.sampleBodyContent.label")}</div>
+          <div className="mt-6 font-medium text-sm">
+            {t("whatsapp.sampleBodyContent.label")}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {t("whatsapp.messageTemplate.sampleValuesHint")}
+          </p>
           {bodyVariables.map((_variable: string, index: number) => (
             <VariableInput
               index={index}

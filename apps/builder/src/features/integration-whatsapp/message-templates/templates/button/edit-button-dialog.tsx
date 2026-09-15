@@ -2,6 +2,7 @@
 
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
@@ -59,12 +60,17 @@ export function EditButtonDialog({
         label: t("fields.whatsappFlow.label"),
         value: buttonActionTypes.enum.flow,
       },
+      {
+        label: t("whatsapp.messageTemplate.buttonType.copyCode"),
+        value: buttonActionTypes.enum.copyCode,
+      },
     ],
     [t],
   )
 
   const { formState, handleSubmit } = form
   const type = useWatch({ name: "type", control: form.control })
+  const urlDynamic = useWatch({ name: "urlDynamic", control: form.control })
 
   const onSubmit = handleSubmit((data) => {
     setValueOriginEditor(parentName, data)
@@ -82,7 +88,11 @@ export function EditButtonDialog({
         </DialogHeader>
         <Form {...form}>
           <form className="flex-1 space-y-4" onSubmit={onSubmit}>
-            <InputField label={t("fields.text.label")} name="text" />
+            <InputField
+              description={`${(form.watch("text") || "").length}/100`}
+              label={t("fields.text.label")}
+              name="text"
+            />
             {changeType && (
               <SelectField
                 label={t("fields.button.whenPressed")}
@@ -91,12 +101,48 @@ export function EditButtonDialog({
               />
             )}
             {type === buttonActionTypes.enum.url && (
-              <InputField label={t("fields.url.label")} name="url" />
+              <>
+                <InputField
+                  description={t("whatsapp.messageTemplate.dynamicUrl.urlHint")}
+                  label={t("fields.url.label")}
+                  name="url"
+                  placeholder={
+                    urlDynamic
+                      ? "https://example.com/order/{{1}}"
+                      : "https://example.com"
+                  }
+                />
+                <SwitchField
+                  description={t(
+                    "whatsapp.messageTemplate.dynamicUrl.description",
+                  )}
+                  label={t("whatsapp.messageTemplate.dynamicUrl.label")}
+                  name="urlDynamic"
+                />
+                {urlDynamic && (
+                  <InputField
+                    description={t(
+                      "whatsapp.messageTemplate.dynamicUrl.sampleHint",
+                    )}
+                    label={t("whatsapp.messageTemplate.dynamicUrl.sampleLabel")}
+                    name="urlSampleValue"
+                    placeholder="abc123"
+                  />
+                )}
+              </>
             )}
             {type === buttonActionTypes.enum.phoneNumber && (
               <InputField
                 label={t("fields.phoneNumber.label")}
                 name="phone_number"
+              />
+            )}
+            {type === buttonActionTypes.enum.copyCode && (
+              <InputField
+                description={t("whatsapp.messageTemplate.copyCode.description")}
+                label={t("whatsapp.messageTemplate.copyCode.label")}
+                name="example"
+                placeholder="123456"
               />
             )}
             <DialogFooter>

@@ -3684,7 +3684,26 @@
       "sectionBody": "Body",
       "sectionFooter": "Footer",
       "sectionButtons": "Buttons",
-      "formHasErrors": "Please fill in all required fields before submitting"
+      "formHasErrors": "Please fill in all required fields before submitting",
+      "submitForReview": "Submit for Review",
+      "footerPlaceholder": "Add a short text line at the bottom of your template",
+      "samplePlaceholder": "Enter a sample value",
+      "sampleValuesHint": "Meta requires sample values for template review. Fill in realistic examples.",
+      "languageMismatch": "The body text language must match the selected language above.",
+      "buttonType": {
+        "copyCode": "Copy Code"
+      },
+      "copyCode": {
+        "label": "Code example",
+        "description": "Enter an example OTP or coupon code (max 15 characters)"
+      },
+      "dynamicUrl": {
+        "label": "Dynamic URL",
+        "description": "Append a variable suffix {{1}} to personalize the URL per recipient",
+        "urlHint": "Enter the full URL. For dynamic URLs, end with {{1}}",
+        "sampleLabel": "URL sample value",
+        "sampleHint": "Enter a sample value for the {{1}} variable (e.g. order123)"
+      }
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"

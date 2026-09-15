@@ -5,6 +5,7 @@ export const buttonActionTypes = z.enum([
   "url",
   "phoneNumber",
   "flow",
+  "copyCode",
 ])
 
 export const buttonStepSchema = z
@@ -18,7 +19,9 @@ export const buttonStepSchema = z
       }),
       z.object({
         type: z.literal(buttonActionTypes.enum.url),
-        url: z.url(),
+        url: z.string().min(1),
+        urlDynamic: z.boolean().optional(),
+        urlSampleValue: z.string().optional(),
       }),
       z.object({
         type: z.literal(buttonActionTypes.enum.flow),
@@ -34,8 +37,53 @@ export const buttonStepSchema = z
             message: "Invalid phone number format",
           }),
       }),
+      z.object({
+        type: z.literal(buttonActionTypes.enum.copyCode),
+        example: z.string().min(1).max(15),
+      }),
     ]),
   )
+  .superRefine((data, ctx) => {
+    if (data.type === "url") {
+      const urlVal = data.url
+      if (data.urlDynamic) {
+        if (!urlVal.endsWith("{{1}}")) {
+          ctx.addIssue({
+            path: ["url"],
+            message: "Dynamic URL must end with {{1}}",
+            code: z.ZodIssueCode.custom,
+          })
+        }
+        const base = urlVal.replace(/\{\{1\}\}$/, "")
+        try {
+          new URL(base.endsWith("/") ? base : `${base}/`)
+        } catch {
+          ctx.addIssue({
+            path: ["url"],
+            message: "Invalid URL format",
+            code: z.ZodIssueCode.custom,
+          })
+        }
+        if (!data.urlSampleValue?.trim()) {
+          ctx.addIssue({
+            path: ["urlSampleValue"],
+            message: "Sample value is required for dynamic URLs",
+            code: z.ZodIssueCode.custom,
+          })
+        }
+      } else {
+        try {
+          new URL(urlVal)
+        } catch {
+          ctx.addIssue({
+            path: ["url"],
+            message: "Invalid URL format",
+            code: z.ZodIssueCode.custom,
+          })
+        }
+      }
+    }
+  })
 
 export type ButtonStepProps = z.infer<typeof buttonStepSchema>
 

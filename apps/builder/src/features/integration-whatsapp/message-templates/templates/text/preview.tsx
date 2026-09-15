@@ -19,16 +19,12 @@ const TemplateTextPreviewComponent = (
     control,
     name: `${parentName}.hideHeader`,
   })
-  const showFooter = useWatch({
-    control,
-    name: `${parentName}.showFooter`,
-  })
 
   return (
     <div className="flex w-full flex-col gap-4" {...rest}>
       {hideHeader && <TemplateHeader parentName={`${parentName}.header`} />}
       <TemplateBody parentName={`${parentName}.body`} />
-      {showFooter && <TemplateFooter parentName={parentName} />}
+      <TemplateFooter parentName={parentName} />
       <hr />
       <ButtonGroupPreview parentName={`${parentName}.buttons`} />
     </div>

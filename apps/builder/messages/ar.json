@@ -5334,7 +5334,26 @@
       "sectionBody": "المحتوى",
       "sectionFooter": "التذييل",
       "sectionButtons": "الأزرار",
-      "formHasErrors": "يرجى ملء جميع الحقول المطلوبة قبل الإرسال"
+      "formHasErrors": "يرجى ملء جميع الحقول المطلوبة قبل الإرسال",
+      "submitForReview": "إرسال للمراجعة",
+      "footerPlaceholder": "أضف سطر نص قصير أسفل القالب",
+      "samplePlaceholder": "أدخل قيمة نموذجية",
+      "sampleValuesHint": "تتطلب Meta قيمًا نموذجية لمراجعة القالب. أدخل أمثلة واقعية.",
+      "languageMismatch": "يجب أن تتطابق لغة النص مع اللغة المحددة أعلاه.",
+      "buttonType": {
+        "copyCode": "نسخ الرمز"
+      },
+      "copyCode": {
+        "label": "مثال الرمز",
+        "description": "أدخل مثالًا لرمز OTP أو قسيمة (15 حرفًا كحد أقصى)"
+      },
+      "dynamicUrl": {
+        "label": "رابط ديناميكي",
+        "description": "إضافة متغير {{1}} في نهاية الرابط لتخصيصه لكل مستلم",
+        "urlHint": "أدخل الرابط الكامل. للروابط الديناميكية، أنهِ بـ {{1}}",
+        "sampleLabel": "قيمة نموذجية للرابط",
+        "sampleHint": "أدخل قيمة نموذجية للمتغير {{1}} (مثال: order123)"
+      }
     },
     "phoneVerification": {
       "actions": {

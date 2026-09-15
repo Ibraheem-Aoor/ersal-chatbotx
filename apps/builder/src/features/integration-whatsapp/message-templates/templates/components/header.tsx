@@ -1,7 +1,7 @@
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
 import { useTranslations } from "next-intl"
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useState } from "react"
 import { useFormContext } from "react-hook-form"
 import { useDebouncedCallback } from "use-debounce"
 
@@ -12,27 +12,14 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
   const [localHeader, setLocalHeader] = useState(
     () => getValues(`${parentName}.text`) || "",
   )
-  const [showForm, setShowForm] = useState(false)
 
   const handleChange = useDebouncedCallback((value) => {
     setValue(`${parentName}.text`, value, { shouldValidate: true })
   }, 200)
 
-  useEffect(() => {
-    if (!showForm) {
-      setLocalHeader(getValues(`${parentName}.text`) || "")
-    }
-  }, [getValues, parentName, showForm])
-
-  const handleStartEditing = useCallback(() => {
-    setLocalHeader(getValues(`${parentName}.text`) || "")
-    setShowForm(true)
-  }, [getValues, parentName])
-
   const processVariables = useDebouncedCallback((value: string) => {
     if (!value.includes("{{1}}")) {
       setValue(`${parentName}.variables`, [], { shouldValidate: true })
-
       return
     }
     const values = getValues(`${parentName}.variables`)
@@ -62,44 +49,32 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
     }
   }, [getValues, handleChange, localHeader, parentName, setValue])
 
-  const displayText = useMemo(
-    () => getValues(`${parentName}.text`) || `---- ${t("actions.edit")} ----`,
-    [getValues, parentName, t],
-  )
-
   return (
     <div className="flex flex-col gap-1">
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
         {t("whatsapp.messageTemplate.sectionHeader")}
       </span>
-      {showForm ? (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            autoFocus
-            maxLength={1024}
-            onChange={(e) => onChangeValue(e.target.value)}
-            placeholder={t("actions.enterText")}
-            value={localHeader}
-          />
-          <Button
-            className="flex cursor-pointer justify-end text-xs hover:underline"
-            onClick={addParam}
-            type="button"
-            variant="link"
-          >
-            {t("actions.addVariable")}
-          </Button>
-        </div>
-      ) : (
+      <Textarea
+        maxLength={60}
+        onChange={(e) => onChangeValue(e.target.value)}
+        placeholder={t("actions.enterText")}
+        rows={2}
+        value={localHeader}
+      />
+      <div className="flex items-center justify-between">
         <Button
-          className="cursor-pointer font-bold"
-          onClick={handleStartEditing}
+          className="text-xs"
+          onClick={addParam}
+          size="sm"
           type="button"
           variant="link"
         >
-          {displayText}
+          {t("actions.addVariable")}
         </Button>
-      )}
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          {localHeader.length}/60
+        </span>
+      </div>
     </div>
   )
 }

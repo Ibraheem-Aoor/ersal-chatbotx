@@ -1,7 +1,6 @@
-import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
 import { useTranslations } from "next-intl"
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useState } from "react"
 import { useFormContext } from "react-hook-form"
 import { useDebouncedCallback } from "use-debounce"
 
@@ -12,22 +11,10 @@ const TemplateFooterComponent = ({ parentName }: { parentName: string }) => {
   const [localFooter, setLocalFooter] = useState(
     () => getValues(`${parentName}.footer`) || "",
   )
-  const [showForm, setShowForm] = useState(false)
 
   const handleChange = useDebouncedCallback((value) => {
     setValue(`${parentName}.footer`, value, { shouldValidate: true })
   }, 200)
-
-  useEffect(() => {
-    if (!showForm) {
-      setLocalFooter(getValues(`${parentName}.footer`) || "")
-    }
-  }, [getValues, parentName, showForm])
-
-  const handleStartEditing = useCallback(() => {
-    setLocalFooter(getValues(`${parentName}.footer`) || "")
-    setShowForm(true)
-  }, [getValues, parentName])
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -37,36 +24,23 @@ const TemplateFooterComponent = ({ parentName }: { parentName: string }) => {
     [handleChange],
   )
 
-  const displayText = useMemo(
-    () => getValues(`${parentName}.footer`) || `---- ${t("actions.edit")} ----`,
-    [getValues, parentName, t],
-  )
-
   return (
     <div className="flex flex-col gap-1">
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
         {t("whatsapp.messageTemplate.sectionFooter")}
       </span>
-      {showForm ? (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            autoFocus
-            maxLength={60}
-            onChange={handleTextChange}
-            placeholder={t("actions.enterText")}
-            value={localFooter}
-          />
-        </div>
-      ) : (
-        <Button
-          className="cursor-pointer text-gray-300"
-          onClick={handleStartEditing}
-          type="button"
-          variant="link"
-        >
-          {displayText}
-        </Button>
-      )}
+      <Textarea
+        maxLength={60}
+        onChange={handleTextChange}
+        placeholder={t("whatsapp.messageTemplate.footerPlaceholder")}
+        rows={2}
+        value={localFooter}
+      />
+      <div className="flex justify-end">
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          {localFooter.length}/60
+        </span>
+      </div>
     </div>
   )
 }

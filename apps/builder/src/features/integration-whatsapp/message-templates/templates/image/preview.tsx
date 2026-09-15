@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl"
 import { memo, useCallback } from "react"
-import { Controller, useFormContext, useWatch } from "react-hook-form"
+import { Controller, useFormContext } from "react-hook-form"
 import FileDropzone from "@/components/file-dropzone"
 import { ButtonGroupPreview } from "../button/preview"
 import { TemplateBody } from "../components/body"
@@ -24,10 +24,6 @@ const TemplateImagePreviewComponent = (
 
   const t = useTranslations()
   const { register, unregister, control, setValue } = useFormContext()
-  const showFooter = useWatch({
-    control,
-    name: `${parentName}.showFooter`,
-  })
 
   const handleRemove = useCallback(() => {
     setValue(`${parentName}.header.file`, null, {
@@ -75,7 +71,7 @@ const TemplateImagePreviewComponent = (
         />
       </div>
       <TemplateBody parentName={`${parentName}.body`} />
-      {showFooter && <TemplateFooter parentName={parentName} />}
+      <TemplateFooter parentName={parentName} />
       <hr />
       <ButtonGroupPreview
         max={maxButtons}
