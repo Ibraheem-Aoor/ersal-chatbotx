@@ -9,6 +9,7 @@ import {
 } from "@chatbotx.io/database/client"
 import { magicLinkModel } from "@chatbotx.io/database/schema"
 import { zodBigintAsString } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceActionClient } from "@/lib/safe-action"
 import {
@@ -56,9 +57,10 @@ export const updateMagicLink = async (
       .where(and(eq(magicLinkModel.id, link.id)))
   } catch (error) {
     if (isUniqueViolationError(error)) {
+      const t = await getTranslations("validation")
       return returnValidationErrors(updateMagicLinkRequest, {
-        _errors: ["Validation Exception"],
-        name: { _errors: ["Name is already taken"] },
+        _errors: [t("validationException")],
+        name: { _errors: [t("nameAlreadyTaken")] },
       })
     }
 

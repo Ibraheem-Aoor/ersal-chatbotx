@@ -3,6 +3,7 @@
 import { db, isUniqueViolationError } from "@chatbotx.io/database/client"
 import { reflinkModel } from "@chatbotx.io/database/schema"
 import { createId } from "@chatbotx.io/utils"
+import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import {
   type WorkspaceIdRequestParams,
@@ -34,9 +35,10 @@ export const createReflinkAction = workspaceActionClient
         })
       } catch (error) {
         if (isUniqueViolationError(error)) {
+          const t = await getTranslations("validation")
           return returnValidationErrors(createReflinkRequest, {
-            _errors: ["Validation Exception"],
-            name: { _errors: ["Name is already taken"] },
+            _errors: [t("validationException")],
+            name: { _errors: [t("nameAlreadyTaken")] },
           })
         }
 

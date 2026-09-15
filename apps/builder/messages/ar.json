@@ -5084,7 +5084,9 @@
     "invalidApiKey": "مفتاح API غير صالح",
     "maxItemsReached": "الحد الأقصى المسموح به لكل مساحة عمل هو {max} من {feature}",
     "maxMustBeGreaterThanMin": "يجب أن يكون {maxField} أكبر من أو يساوي {minField}",
-    "maxSize": "يتجاوز حجم الملف الحد الأقصى"
+    "maxSize": "يتجاوز حجم الملف الحد الأقصى",
+    "nameAlreadyTaken": "هذا الاسم مستخدم بالفعل.",
+    "validationException": "خطأ في التحقق"
   },
   "webchat": {
     "chatUnavailable": "هذه الدردشة غير متاحة حاليًا.",

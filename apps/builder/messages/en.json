@@ -3520,7 +3520,9 @@
     "maxSize": "File size exceeds maximum limit",
     "maxItemsReached": "Maximum {max} {feature} allowed per workspace",
     "invalidApiKey": "Invalid API key",
-    "maxMustBeGreaterThanMin": "{maxField} must be greater than or equal to {minField}"
+    "maxMustBeGreaterThanMin": "{maxField} must be greater than or equal to {minField}",
+    "nameAlreadyTaken": "Name is already taken.",
+    "validationException": "Validation Exception"
   },
   "webchat": {
     "chatUnavailable": "This chat is currently unavailable.",

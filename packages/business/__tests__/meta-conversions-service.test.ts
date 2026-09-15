@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
+const FLOW_KEY_PATTERN = /^flow:s1:c1:\d{8}$/
+const TRIGGER_KEY_PATTERN = /^trigger:t1:c1:.+$/
+
 const mocks = vi.hoisted(() => ({
   enqueueIntegrationJob: vi.fn(),
   findPendingBySourceKey: vi.fn(),
@@ -887,7 +890,7 @@ describe("MetaConversionsService", () => {
       })
 
       expect(first).toBe(second)
-      expect(first).toMatch(/^flow:s1:c1:\d{8}$/)
+      expect(first).toMatch(FLOW_KEY_PATTERN)
     })
 
     test("messenger and instagram never dedup (a unique key per fire)", () => {
@@ -912,7 +915,7 @@ describe("MetaConversionsService", () => {
 
       expect(messengerFirst).not.toBe(messengerSecond)
       expect(instagram).not.toBe(messengerFirst)
-      expect(messengerFirst).toMatch(/^trigger:t1:c1:.+$/)
+      expect(messengerFirst).toMatch(TRIGGER_KEY_PATTERN)
     })
   })
 })
