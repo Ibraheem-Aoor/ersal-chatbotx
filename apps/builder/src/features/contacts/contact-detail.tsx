@@ -331,7 +331,7 @@ export const ContactDetail = ({
             className="object-cover"
             src={avatarUrl}
           />
-          <AvatarFallback>NA</AvatarFallback>
+          <AvatarFallback colorSeed={contact.firstName ?? contact.lastName ?? undefined}>NA</AvatarFallback>
         </Avatar>
       </div>
       <div className="flex flex-col gap-1 font-medium text-[12px] text-gray-600">

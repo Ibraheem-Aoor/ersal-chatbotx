@@ -124,7 +124,7 @@ export default async function UserDetailPage({
                   alt={user.name ?? user.email}
                   src={user.image ?? undefined}
                 />
-                <AvatarFallback>
+                <AvatarFallback colorSeed={user.name ?? user.email}>
                   {(user.name ?? user.email).slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>

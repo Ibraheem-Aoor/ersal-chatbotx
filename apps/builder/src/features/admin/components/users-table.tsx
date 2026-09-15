@@ -203,7 +203,7 @@ function UserTableRow({ user }: { user: UserRow }) {
               alt={user.name ?? user.email}
               src={user.image ?? undefined}
             />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-xs" colorSeed={user.name ?? user.email}>
               {getInitials(user.name, user.email)}
             </AvatarFallback>
           </Avatar>

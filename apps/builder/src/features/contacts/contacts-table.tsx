@@ -84,7 +84,7 @@ function NameCell({
               className="object-cover"
               src={avatarUrl}
             />
-            <AvatarFallback className="bg-gray-300 text-sm dark:bg-zinc-100 dark:text-zinc-800">
+            <AvatarFallback className="text-sm" colorSeed={contact.fullName ?? undefined}>
               {contact.fullName?.slice(0, 2) ?? "?"}
             </AvatarFallback>
           </Avatar>

@@ -459,7 +459,7 @@ const SelectableContactItem = memo(function SelectableContactItem({
 
       <Avatar className="size-8 shrink-0">
         <AvatarImage src={avatarUrl} />
-        <AvatarFallback>
+        <AvatarFallback colorSeed={contact.firstName ?? undefined}>
           {contact.firstName?.[0]?.toUpperCase() ?? "?"}
         </AvatarFallback>
       </Avatar>

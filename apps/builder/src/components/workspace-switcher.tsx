@@ -63,7 +63,7 @@ export function WorkspaceSwitcher({
                     alt={activeWorkspace?.name}
                     src={activeWorkspace?.logo ?? ""}
                   />
-                  <AvatarFallback className="rounded font-medium">
+                  <AvatarFallback className="rounded font-medium" colorSeed={activeWorkspace?.name || undefined}>
                     {activeWorkspace?.name?.slice(0, 2) || "  "}
                   </AvatarFallback>
                 </Avatar>
@@ -104,7 +104,7 @@ export function WorkspaceSwitcher({
                         alt={workspace.name}
                         src={workspace.logo ?? ""}
                       />
-                      <AvatarFallback className="rounded font-medium">
+                      <AvatarFallback className="rounded font-medium" colorSeed={workspace.name || undefined}>
                         {workspace.name.slice(0, 2) || "  "}
                       </AvatarFallback>
                     </Avatar>

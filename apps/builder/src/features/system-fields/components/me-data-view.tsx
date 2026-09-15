@@ -158,7 +158,7 @@ export function MeDataView({ data }: MeDataViewProps) {
               {data.contact.avatarUrl ? (
                 <AvatarImage alt={contactName} src={data.contact.avatarUrl} />
               ) : null}
-              <AvatarFallback>
+              <AvatarFallback colorSeed={contactName || undefined}>
                 {contactName.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>

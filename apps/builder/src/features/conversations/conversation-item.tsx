@@ -56,7 +56,7 @@ const assignedIcon = (
             <Avatar className="size-4">
               <AvatarImage src={assignedAvatarUrl ?? ""} />
 
-              <AvatarFallback className="text-[0.5rem]">
+              <AvatarFallback className="text-[0.5rem]" colorSeed={conversation.assignedUser?.name ?? undefined}>
                 {conversation.assignedUser?.name?.slice(0, 2) ?? " "}
               </AvatarFallback>
             </Avatar>
@@ -121,7 +121,7 @@ export default function ConversationItem({
           className="object-cover"
           src={avatarUrl}
         />
-        <AvatarFallback className="bg-gray-300 dark:bg-zinc-100 dark:text-zinc-800">
+        <AvatarFallback colorSeed={conversation.contact?.fullName ?? undefined}>
           {conversation.contact?.fullName?.slice(0, 2)}
         </AvatarFallback>
       </Avatar>

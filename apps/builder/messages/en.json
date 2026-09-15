@@ -3550,6 +3550,13 @@
       "description": "These are special keywords that tell the WhatsApp bot what to do",
       "label": "Commands"
     },
+    "window": {
+      "hoursShort": "h",
+      "minutesShort": "m",
+      "openTooltip": "WhatsApp 24-hour messaging window is open",
+      "closed": "Window closed",
+      "closedTooltip": "The 24-hour messaging window has expired. Send a template message to re-engage."
+    },
     "autoConnect": {
       "inProgress": "Connecting…"
     },
@@ -5516,5 +5523,11 @@
     "view": "View",
     "searchColumns": "Search columns...",
     "noColumnsFound": "No columns found."
+  },
+  "validation": {
+    "phoneIncludeCountryCode": "Please include the country code (e.g. +84)",
+    "phoneAlreadyExists": "This phone number already exists",
+    "contactExistsOnInbox": "This contact already exists on the selected inbox",
+    "inboxChannelMismatch": "Selected inbox does not match the selected source"
   }
 }

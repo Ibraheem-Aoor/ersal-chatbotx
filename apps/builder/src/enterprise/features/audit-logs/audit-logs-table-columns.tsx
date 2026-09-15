@@ -27,7 +27,7 @@ function AuditUserCell({
     <div className="flex items-center gap-2">
       <Avatar className="size-6">
         <AvatarImage alt="userImage" src={avatarUrl ?? ""} />
-        <AvatarFallback>{user.name?.[0]}</AvatarFallback>
+        <AvatarFallback colorSeed={user.name ?? undefined}>{user.name?.[0]}</AvatarFallback>
       </Avatar>
       <Tooltip>
         <TooltipTrigger

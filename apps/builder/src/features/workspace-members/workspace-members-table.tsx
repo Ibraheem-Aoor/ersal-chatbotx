@@ -54,7 +54,7 @@ function MemberNameCell({
     <div className="flex items-center gap-2">
       <Avatar className="size-7 justify-items-center">
         <AvatarImage alt="avatar" src={avatarUrl ?? ""} />
-        <AvatarFallback>
+        <AvatarFallback colorSeed={member.user.name || undefined}>
           {(member.user.name || "").charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>

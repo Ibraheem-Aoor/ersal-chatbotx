@@ -88,7 +88,7 @@ export const AccountRail = async ({
         <div className="relative flex items-center gap-3">
           <Avatar className="size-11">
             <AvatarImage alt={displayName} src={avatarUrl ?? ""} />
-            <AvatarFallback className="rounded-full text-sm">
+            <AvatarFallback className="rounded-full text-sm" colorSeed={displayName || undefined}>
               {initials}
             </AvatarFallback>
           </Avatar>

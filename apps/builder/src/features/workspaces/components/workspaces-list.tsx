@@ -159,7 +159,7 @@ const WorkspaceCard = ({
         >
           <Avatar className="size-16 transition-transform duration-200 group-hover:scale-105">
             <AvatarImage alt="" src={workspace.logo ?? ""} />
-            <AvatarFallback className="rounded text-2xl">
+            <AvatarFallback className="rounded text-2xl" colorSeed={workspace.name || undefined}>
               {firstLetter}
             </AvatarFallback>
           </Avatar>

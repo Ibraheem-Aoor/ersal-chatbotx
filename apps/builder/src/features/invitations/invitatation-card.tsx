@@ -96,7 +96,7 @@ export function WorkspaceInvitationCard({
       <div className="flex flex-col items-center justify-center gap-2">
         <Avatar className="size-16">
           <AvatarImage src={logoUrl} />
-          <AvatarFallback className="rounded font-bold text-2xl">
+          <AvatarFallback className="rounded font-bold text-2xl" colorSeed={workspace.name || undefined}>
             {workspace.name.charAt(0)}
           </AvatarFallback>
         </Avatar>

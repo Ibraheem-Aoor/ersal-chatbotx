@@ -32,7 +32,7 @@ export function QuestionnaireApplicantAvatarCell({
     >
       <Avatar className="size-8">
         <AvatarImage alt={name} className="object-cover" src={avatarUrl} />
-        <AvatarFallback>{name.slice(0, 2)}</AvatarFallback>
+        <AvatarFallback colorSeed={name || undefined}>{name.slice(0, 2)}</AvatarFallback>
       </Avatar>
     </button>
   )

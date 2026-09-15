@@ -5241,6 +5241,13 @@
       "description": "هذه كلمات مفتاحية خاصة تخبر بوت WhatsApp بما يجب فعله",
       "label": "الأوامر"
     },
+    "window": {
+      "hoursShort": "س",
+      "minutesShort": "د",
+      "openTooltip": "نافذة المراسلة على واتساب (24 ساعة) مفتوحة",
+      "closed": "النافذة مغلقة",
+      "closedTooltip": "انتهت نافذة المراسلة (24 ساعة). أرسل رسالة قالب لإعادة التواصل."
+    },
     "connect": {
       "errors": {
         "accessTokenRequired": "رمز وصول WhatsApp مطلوب.",
@@ -5516,5 +5523,11 @@
     "view": "عرض",
     "searchColumns": "بحث الأعمدة...",
     "noColumnsFound": "لم يتم العثور على أعمدة."
+  },
+  "validation": {
+    "phoneIncludeCountryCode": "يرجى تضمين رمز الدولة (مثال: 84+)",
+    "phoneAlreadyExists": "رقم الهاتف هذا موجود بالفعل",
+    "contactExistsOnInbox": "جهة الاتصال هذه موجودة بالفعل في صندوق الوارد المحدد",
+    "inboxChannelMismatch": "صندوق الوارد المحدد لا يتطابق مع المصدر المحدد"
   }
 }
