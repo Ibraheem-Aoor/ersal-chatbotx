@@ -15,11 +15,14 @@ import {
 } from "@chatbotx.io/ui/components/ui/dialog"
 import { Input } from "@chatbotx.io/ui/components/ui/input"
 import { Label } from "@chatbotx.io/ui/components/ui/label"
+import { DirectUploadButton } from "@chatbotx.io/ui/components/uploader/direct-upload-button"
 import ky from "ky"
-import { Pencil } from "lucide-react"
+import { FileIcon, ImageIcon, Pencil, VideoIcon, XIcon } from "lucide-react"
+import Image from "next/image"
 import { useTranslations } from "next-intl"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { useFormContext } from "react-hook-form"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useFormContext, useWatch } from "react-hook-form"
+import { toast } from "sonner"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
 import { CreateCustomFieldDialog } from "@/features/custom-fields/create-custom-field"
 import { CustomFieldSelect } from "@/features/custom-fields/custom-field-select"
@@ -35,6 +38,7 @@ import { buildFlowFieldMappings } from "../lib/build-flow-field-mappings"
 type TemplateParamsFormProps = {
   components: TemplateComponent[]
   parentName: string
+  enableMediaUpload?: boolean
 }
 
 function getFieldName(param: ParameterInfo, parentName: string): string {
@@ -345,13 +349,34 @@ function TemplateFlowFieldMappings({
 function CarouselParamField({
   param,
   fieldName,
+  enableMediaUpload,
 }: {
   param: ParameterInfo
   fieldName: string
+  enableMediaUpload?: boolean
 }) {
   const t = useTranslations()
 
   if (param.format === "image" || param.format === "video") {
+    if (enableMediaUpload) {
+      return (
+        <div className="space-y-1">
+          <Label className="text-xs">
+            {t("whatsapp.messageTemplate.params.carouselCard", {
+              index: (param.cardIndex ?? 0) + 1,
+            })}{" "}
+            -{" "}
+            {param.format === "image"
+              ? t("whatsapp.messageTemplate.image.label")
+              : t("whatsapp.messageTemplate.video.label")}
+          </Label>
+          <MediaHeaderField
+            fieldName={`${fieldName}.header[0]`}
+            format={param.format}
+          />
+        </div>
+      )
+    }
     return (
       <div className="space-y-1">
         <Label className="text-xs">
@@ -460,9 +485,120 @@ function LocationParamField({ fieldName }: { fieldName: string }) {
   )
 }
 
+const MEDIA_ACCEPT_TYPES: Record<string, string> = {
+  image: "image/jpeg,image/png,image/webp",
+  video: "video/mp4,video/3gpp",
+  document:
+    "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain",
+}
+
+const MEDIA_MAX_SIZE: Record<string, number> = {
+  image: 5 * 1024 * 1024,
+  video: 16 * 1024 * 1024,
+  document: 100 * 1024 * 1024,
+}
+
+const FORMAT_ICONS: Record<string, typeof ImageIcon> = {
+  image: ImageIcon,
+  video: VideoIcon,
+  document: FileIcon,
+}
+
+function MediaHeaderField({
+  fieldName,
+  format,
+}: {
+  fieldName: string
+  format: string
+}) {
+  const t = useTranslations()
+  const workspaceId = useWorkspaceId()
+  const { setValue, control } = useFormContext()
+  const currentUrl = useWatch({
+    control,
+    name: `${fieldName}.${format}.link`,
+  }) as string | undefined
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  const handleClear = useCallback(() => {
+    setValue(`${fieldName}.${format}.link`, "", {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+  }, [fieldName, format, setValue])
+
+  const FormatIcon = FORMAT_ICONS[format] ?? FileIcon
+
+  if (currentUrl) {
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs">
+          {t(`whatsapp.messageTemplate.${format}.label`)}
+        </Label>
+        <div className="flex items-center gap-2 rounded-md border p-2">
+          {format === "image" ? (
+            <Image
+              alt=""
+              className="size-12 rounded object-cover"
+              height={48}
+              src={currentUrl}
+              width={48}
+            />
+          ) : (
+            <div className="flex size-10 items-center justify-center rounded bg-muted">
+              <FormatIcon className="size-5 text-muted-foreground" />
+            </div>
+          )}
+          <span className="min-w-0 flex-1 truncate text-muted-foreground text-sm">
+            {currentUrl.split("/").pop()}
+          </span>
+          <Button
+            className="size-7"
+            onClick={handleClear}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <XIcon className="size-4" />
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">
+        {t(`whatsapp.messageTemplate.${format}.label`)}
+      </Label>
+      <DirectUploadButton
+        accept={MEDIA_ACCEPT_TYPES[format] ?? "*/*"}
+        label={t("whatsapp.messageTemplate.params.uploadFormat", {
+          format: t(`whatsapp.messageTemplate.${format}.label`),
+        })}
+        maxFiles={1}
+        maxSize={MEDIA_MAX_SIZE[format] ?? 16 * 1024 * 1024}
+        onUploadError={(error, file) => {
+          toast.error(`${file.name}: ${error.message}`)
+        }}
+        onUploadSuccess={(_filePath, _file, publicUrl) => {
+          setValue(`${fieldName}.${format}.link`, publicUrl, {
+            shouldValidate: true,
+            shouldDirty: true,
+          })
+        }}
+        triggerRef={triggerRef}
+        uploadPath={`public/space/${workspaceId}/broadcast-media`}
+        workspaceId={workspaceId}
+      />
+    </div>
+  )
+}
+
 export function TemplateParamsForm({
   components,
   parentName,
+  enableMediaUpload,
 }: TemplateParamsFormProps) {
   const t = useTranslations()
   const { getValues, setValue } = useFormContext()
@@ -518,7 +654,12 @@ export function TemplateParamsForm({
 
         if (param.type === "carousel") {
           return (
-            <CarouselParamField fieldName={fieldName} key={key} param={param} />
+            <CarouselParamField
+              enableMediaUpload={enableMediaUpload}
+              fieldName={fieldName}
+              key={key}
+              param={param}
+            />
           )
         }
 
@@ -534,6 +675,15 @@ export function TemplateParamsForm({
           param.format &&
           ["image", "video", "document"].includes(param.format)
         ) {
+          if (enableMediaUpload) {
+            return (
+              <MediaHeaderField
+                fieldName={fieldName}
+                format={param.format}
+                key={key}
+              />
+            )
+          }
           return (
             <div className="space-y-1" key={key}>
               <TiptapEditorField

@@ -5311,6 +5311,7 @@
         "couponCode": "رمز القسيمة",
         "couponCodePlaceholder": "أدخل رمز القسيمة",
         "enterFormatUrl": "أدخل عنوان URL بتنسيق {format}",
+        "uploadFormat": "رفع {format}",
         "flowNotSynced": "زامن مسارات واتساب لربط الحقول المُرسلة.",
         "flowToken": "رمز المسار",
         "flowTokenPlaceholder": "أدخل رمز المسار",

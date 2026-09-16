@@ -758,6 +758,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
                         components={
                           selectedTemplate.components as TemplateComponent[]
                         }
+                        enableMediaUpload
                         parentName="templateData"
                       />
                       <div>

@@ -3678,7 +3678,8 @@
         "longitude": "Longitude",
         "locationName": "Location name (optional)",
         "locationAddress": "Address (optional)",
-        "enterFormatUrl": "Enter {format} URL"
+        "enterFormatUrl": "Enter {format} URL",
+        "uploadFormat": "Upload {format}"
       },
       "createTitle": "Create Message Template",
       "label": "Message Template",
