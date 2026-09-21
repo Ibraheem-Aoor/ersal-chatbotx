@@ -26,13 +26,20 @@ export async function uploadFile(
   }
 }
 
+function getExtFromName(name: string): string {
+  const dot = name.lastIndexOf(".")
+  return dot > 0 ? name.slice(dot) : ""
+}
+
 export async function uploadMultipleFiles(
   files: File[],
   prefix: string,
   acl = "public-read",
 ): Promise<UploadedFile[]> {
   return await Promise.all(
-    files.map((file) => uploadFile(file, pathJoin(prefix, createId()), acl)),
+    files.map((file) =>
+      uploadFile(file, pathJoin(prefix, createId() + getExtFromName(file.name)), acl),
+    ),
   )
 }
 

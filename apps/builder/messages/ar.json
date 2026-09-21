@@ -3767,6 +3767,16 @@
     "archiveFeature": "أرشفة {feature}",
     "archiveFeatureDescription": "هل أنت متأكد من رغبتك في أرشفة {feature}؟",
     "attachFile": "إرفاق ملف",
+    "voiceRecorder": {
+      "recordVoice": "تسجيل رسالة صوتية",
+      "stopRecording": "إيقاف التسجيل",
+      "requestingPermission": "جارٍ طلب إذن الميكروفون…",
+      "permissionDenied": "تم رفض إذن الميكروفون. يرجى السماح بالوصول إلى الميكروفون من إعدادات المتصفح.",
+      "notSupported": "التسجيل الصوتي غير مدعوم في متصفحك.",
+      "noMicrophone": "لم يتم العثور على ميكروفون. يرجى توصيل ميكروفون والمحاولة مرة أخرى.",
+      "recordingFailed": "فشل التسجيل الصوتي. يرجى المحاولة مرة أخرى.",
+      "formatUnsupported": "الرسائل الصوتية غير مدعومة في هذا المتصفح. يرجى استخدام Chrome أو Firefox أو Edge."
+    },
     "backToConversations": "العودة إلى المحادثات",
     "botCategoryAll": "الكل",
     "botCategoryHuman": "بشري",

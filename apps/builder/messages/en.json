@@ -3169,6 +3169,16 @@
     "changeDefaultDescription": "Are you sure you want to change the default AI agent?",
     "unsetDefaultDescription": "Are you sure you want to unset the default AI agent?",
     "attachFile": "Attach file",
+    "voiceRecorder": {
+      "recordVoice": "Record voice message",
+      "stopRecording": "Stop recording",
+      "requestingPermission": "Requesting microphone access…",
+      "permissionDenied": "Microphone access was denied. Please allow microphone access in your browser settings.",
+      "notSupported": "Voice recording is not supported in your browser.",
+      "noMicrophone": "No microphone was found. Please connect a microphone and try again.",
+      "recordingFailed": "Voice recording failed. Please try again.",
+      "formatUnsupported": "Voice messages are not supported in this browser. Please use Chrome, Firefox, or Edge."
+    },
     "backToConversations": "Back to conversations",
     "botCategoryAll": "All",
     "botCategoryHuman": "Human",

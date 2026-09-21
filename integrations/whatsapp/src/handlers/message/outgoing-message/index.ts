@@ -54,9 +54,11 @@ function* convertMessageToWhatsappMessage(
         case "video":
           yield new Video(attachment.url ?? "")
           continue
-        case "audio":
-          yield new Audio(attachment.url ?? "")
+        case "audio": {
+          const isVoice = attachment.name?.startsWith("voice-recording")
+          yield new Audio(attachment.url ?? "", false, isVoice || undefined)
           continue
+        }
         default:
           yield new Document(attachment.url ?? "")
           continue
