@@ -66,6 +66,7 @@ export function VoiceRecorder({
         "permission-denied": t("messages.voiceRecorder.permissionDenied"),
         "not-supported": t("messages.voiceRecorder.notSupported"),
         "no-audio": t("messages.voiceRecorder.noMicrophone"),
+        "format-unsupported": t("messages.voiceRecorder.formatUnsupported"),
         unknown: t("messages.voiceRecorder.recordingFailed"),
       }
       toast.error(messages[err])

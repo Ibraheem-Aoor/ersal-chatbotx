@@ -14,6 +14,7 @@ export type VoiceRecorderError =
   | "permission-denied"
   | "not-supported"
   | "no-audio"
+  | "format-unsupported"
   | "unknown"
 
 const MAX_RECORDING_SECONDS = 300
@@ -69,11 +70,17 @@ export function useVoiceRecorder() {
         mimeType = "audio/ogg;codecs=opus"
       } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
         mimeType = "audio/mp4"
-      } else if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-        mimeType = "audio/webm;codecs=opus"
       }
 
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
+      if (!mimeType) {
+        for (const track of stream.getTracks()) track.stop()
+        streamRef.current = null
+        setError("format-unsupported")
+        setState("error")
+        return
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType })
       mediaRecorderRef.current = recorder
 
       recorder.ondataavailable = (e) => {
@@ -83,9 +90,9 @@ export function useVoiceRecorder() {
       }
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || "audio/ogg",
-        })
+        const rawType = recorder.mimeType || "audio/ogg"
+        const normalizedType = rawType.split(";")[0]
+        const blob = new Blob(chunksRef.current, { type: normalizedType })
         setAudioBlob(blob)
         setState("stopped")
         cleanup()
