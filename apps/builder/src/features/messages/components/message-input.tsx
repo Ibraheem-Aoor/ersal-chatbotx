@@ -19,6 +19,7 @@ import { createId } from "@chatbotx.io/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
+  MicIcon,
   PaperclipIcon,
   ReplyIcon,
   SendHorizonalIcon,
@@ -48,7 +49,9 @@ import { useChatStore } from "../../chat/store/chat-store-provider"
 import { createMessageAction } from "../actions/create-message.action"
 import { createMessageRequest } from "../schema/mutation"
 import { FileUploadPreview } from "./file-upload"
+import { WindowClosedActions } from "./window-closed-actions"
 import { InputMenu } from "./input-menu"
+import { VoiceRecorder } from "./voice-recorder"
 
 const CHANNEL_WINDOW_SECONDS: Record<ChannelType, number> = {
   omnichannel: 0,
@@ -264,6 +267,23 @@ export const MessageInput = () => {
     conversation?.contactInboxes[0]?.channel === "instagram" &&
     conversation?.sourceId != null
 
+  const [isRecording, setIsRecording] = useState(false)
+
+  const onVoiceRecordingComplete = useCallback(
+    (file: File) => {
+      form.setValue("files", [file], { shouldValidate: true })
+      setIsRecording(false)
+      setTimeout(() => {
+        sendMessage()
+      }, 0)
+    },
+    [form, sendMessage],
+  )
+
+  const onVoiceRecordingCancel = useCallback(() => {
+    setIsRecording(false)
+  }, [])
+
   const [isHumanAgentUnlocked, setIsHumanAgentUnlocked] = useState(false)
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset unlock state when conversation changes
@@ -420,15 +440,12 @@ export const MessageInput = () => {
     )
   }
 
-  if (isDirectChannelWindowClosed) {
+  if (isDirectChannelWindowClosed && conversation) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
-        <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            {t("messages.messagingWindowClosed")}
-          </p>
-        </div>
-      </div>
+      <WindowClosedActions
+        conversationId={conversation.id}
+        inboxId={conversation.contactInboxes[0]?.inboxId ?? ""}
+      />
     )
   }
 
@@ -443,91 +460,111 @@ export const MessageInput = () => {
             sendMessage()
           }}
         >
-          {replyToMessage && (
-            <div className="mx-2.5 mb-1 flex items-start gap-2 rounded-lg border-primary bg-muted px-3 py-2 text-sm">
-              <ReplyIcon className="mt-0.5 size-3.5 shrink-0 text-primary" />
-              <span className="flex-1 truncate text-muted-foreground">
-                {replyToMessage.text || t("messages.facebookComment")}
-              </span>
-              <Button
-                aria-label="Clear reply"
-                className="size-4 shrink-0 p-0"
-                onClick={() => setReplyToMessage(null)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </div>
-          )}
-          <div className="mb-1 w-full px-2.5 py-1">
-            <Controller
-              control={form.control}
-              name="text"
-              render={({ field }) => (
-                <QuickRepliesPopover
-                  inputValue={field.value ?? ""}
-                  onSelect={setContent}
-                >
-                  <Textarea
-                    aria-label={t("actions.typeMessage")}
-                    autoComplete="off"
-                    className="h-16 resize-none border-0 px-1.5 py-1 shadow-none focus:ring-0 focus-visible:ring-0 dark:bg-neutral-900"
-                    placeholder={t("actions.messagePlaceholder")}
-                    {...field}
-                    onKeyDown={onKeyDown}
-                    ref={textareaRef}
-                  />
-                </QuickRepliesPopover>
-              )}
+          {isRecording ? (
+            <VoiceRecorder
+              onCancel={onVoiceRecordingCancel}
+              onRecordingComplete={onVoiceRecordingComplete}
             />
-          </div>
-          {!isInstagramPostComment && (
-            <div className="px-2">
-              <FileUploadPreview ref={fileUploadRef} />
-            </div>
-          )}
-          <div className="flex w-full items-center ps-2.5">
-            <div className="min-w-0 flex-1">
-              <InboxIcon
-                channel={
-                  (conversation?.contactInboxes[0]?.channel ??
-                    "webchat") as ChannelType
-                }
-              />
-            </div>
-
-            <div className="message-toolbar flex items-center gap-2">
-              {!hasFiles && <InputMenu setContent={setContent} />}
-              {!isInstagramPostComment && (
-                <Button
-                  aria-label={t("messages.attachFile")}
-                  className="px-2 py-1.5 [&_svg]:size-5"
-                  onClick={onClickAttachment}
-                  type="button"
-                  variant="ghost"
-                >
-                  <PaperclipIcon aria-hidden="true" />
-                </Button>
+          ) : (
+            <>
+              {replyToMessage && (
+                <div className="mx-2.5 mb-1 flex items-start gap-2 rounded-lg border-primary bg-muted px-3 py-2 text-sm">
+                  <ReplyIcon className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                  <span className="flex-1 truncate text-muted-foreground">
+                    {replyToMessage.text || t("messages.facebookComment")}
+                  </span>
+                  <Button
+                    aria-label="Clear reply"
+                    className="size-4 shrink-0 p-0"
+                    onClick={() => setReplyToMessage(null)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <XIcon className="size-4" />
+                  </Button>
+                </div>
               )}
-              <Button
-                aria-label={t("messages.sendMessageAction")}
-                className="px-2 py-1.5 [&_svg]:size-5"
-                disabled={
-                  !form.formState.isValid || form.formState.isSubmitting
-                }
-                type="submit"
-                variant="ghost"
-              >
-                <SendHorizonalIcon
-                  aria-hidden="true"
-                  height="32px"
-                  width="32px"
+              <div className="mb-1 w-full px-2.5 py-1">
+                <Controller
+                  control={form.control}
+                  name="text"
+                  render={({ field }) => (
+                    <QuickRepliesPopover
+                      inputValue={field.value ?? ""}
+                      onSelect={setContent}
+                    >
+                      <Textarea
+                        aria-label={t("actions.typeMessage")}
+                        autoComplete="off"
+                        className="h-16 resize-none border-0 px-1.5 py-1 shadow-none focus:ring-0 focus-visible:ring-0 dark:bg-neutral-900"
+                        placeholder={t("actions.messagePlaceholder")}
+                        {...field}
+                        onKeyDown={onKeyDown}
+                        ref={textareaRef}
+                      />
+                    </QuickRepliesPopover>
+                  )}
                 />
-              </Button>
-            </div>
-          </div>
+              </div>
+              {!isInstagramPostComment && (
+                <div className="px-2">
+                  <FileUploadPreview ref={fileUploadRef} />
+                </div>
+              )}
+              <div className="flex w-full items-center ps-2.5">
+                <div className="min-w-0 flex-1">
+                  <InboxIcon
+                    channel={
+                      (conversation?.contactInboxes[0]?.channel ??
+                        "webchat") as ChannelType
+                    }
+                  />
+                </div>
+
+                <div className="message-toolbar flex items-center gap-2">
+                  {!hasFiles && <InputMenu setContent={setContent} />}
+                  {!isInstagramPostComment && (
+                    <>
+                      <Button
+                        aria-label={t("messages.attachFile")}
+                        className="px-2 py-1.5 [&_svg]:size-5"
+                        onClick={onClickAttachment}
+                        type="button"
+                        variant="ghost"
+                      >
+                        <PaperclipIcon aria-hidden="true" />
+                      </Button>
+                      <Button
+                        aria-label={t("messages.voiceRecorder.recordVoice")}
+                        className="px-2 py-1.5 [&_svg]:size-5"
+                        onClick={() => setIsRecording(true)}
+                        type="button"
+                        variant="ghost"
+                      >
+                        <MicIcon aria-hidden="true" />
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    aria-label={t("messages.sendMessageAction")}
+                    className="px-2 py-1.5 [&_svg]:size-5"
+                    disabled={
+                      !form.formState.isValid || form.formState.isSubmitting
+                    }
+                    type="submit"
+                    variant="ghost"
+                  >
+                    <SendHorizonalIcon
+                      aria-hidden="true"
+                      height="32px"
+                      width="32px"
+                    />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </form>
       </Form>
     </div>

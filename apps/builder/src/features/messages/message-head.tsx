@@ -21,11 +21,6 @@ import { isConversationActive } from "../conversations/utils/bot-state"
 
 const WHATSAPP_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-/**
- * Computes the remaining time in the WhatsApp 24h messaging window.
- * Returns { open: true, hours, minutes } when the window is still open,
- * or { open: false } when it has closed.
- */
 function computeWindowStatus(lastIncomingAt: Date | string | null | undefined) {
   if (!lastIncomingAt) {
     return { open: false } as const
@@ -43,7 +38,8 @@ function computeWindowStatus(lastIncomingAt: Date | string | null | undefined) {
   }
   const hours = Math.floor(remaining / (60 * 60 * 1000))
   const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
-  return { open: true, hours, minutes } as const
+  const seconds = Math.floor((remaining % (60 * 1000)) / 1000)
+  return { open: true, hours, minutes, seconds } as const
 }
 
 function WhatsappWindowBadge({
@@ -60,10 +56,9 @@ function WhatsappWindowBadge({
 
   const [status, setStatus] = useState(getStatus)
 
-  // Re-compute every 60 seconds so the timer stays current
   useEffect(() => {
     setStatus(getStatus())
-    const interval = setInterval(() => setStatus(getStatus()), 60_000)
+    const interval = setInterval(() => setStatus(getStatus()), 1_000)
     return () => clearInterval(interval)
   }, [getStatus])
 
@@ -79,8 +74,8 @@ function WhatsappWindowBadge({
               <ClockIcon className="size-3" />
               <span className="tabular-nums text-[11px]">
                 {status.hours > 0
-                  ? `${status.hours}${t("whatsapp.window.hoursShort")} ${status.minutes}${t("whatsapp.window.minutesShort")}`
-                  : `${status.minutes}${t("whatsapp.window.minutesShort")}`}
+                  ? `${status.hours}${t("whatsapp.window.hoursShort")} ${status.minutes}${t("whatsapp.window.minutesShort")} ${String(status.seconds).padStart(2, "0")}${t("whatsapp.window.secondsShort")}`
+                  : `${status.minutes}${t("whatsapp.window.minutesShort")} ${String(status.seconds).padStart(2, "0")}${t("whatsapp.window.secondsShort")}`}
               </span>
             </Badge>
           }

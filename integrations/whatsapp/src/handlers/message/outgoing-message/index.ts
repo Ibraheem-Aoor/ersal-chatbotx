@@ -16,6 +16,7 @@ import {
   type MessageHandlers,
   type OutgoingMessage,
 } from "@chatbotx.io/sdk"
+import type { WhatsAppAPI } from "whatsapp-api-js"
 import { Audio, Document, Image, Text, Video } from "whatsapp-api-js/messages"
 import type {
   ClientMessage,
@@ -38,6 +39,28 @@ import { convertFlowStepWaTemplate } from "./send-wa-template"
 import { convertFlowStepWhatsappFlow } from "./whatsapp-flow"
 import { convertFlowStepWhatsappOptionList } from "./whatsapp-option-list"
 
+async function uploadVoiceToMeta(
+  whatsappClient: WhatsAppAPI,
+  phoneNumberId: string,
+  url: string,
+  mimeType: string,
+  name: string,
+): Promise<string> {
+  const response = await fetch(url)
+  const buffer = await response.arrayBuffer()
+  const formData = new FormData()
+  formData.append("file", new Blob([buffer], { type: mimeType }), name)
+  formData.append("messaging_product", "whatsapp")
+  formData.append("type", mimeType)
+
+  const result = (await whatsappClient.uploadMedia(
+    phoneNumberId,
+    formData as Parameters<WhatsAppAPI["uploadMedia"]>[1],
+    false,
+  )) as { id: string }
+  return result.id
+}
+
 function* convertMessageToWhatsappMessage(
   message: OutgoingMessage,
 ): Generator<ClientMessage | null> {
@@ -55,7 +78,7 @@ function* convertMessageToWhatsappMessage(
           yield new Video(attachment.url ?? "")
           continue
         case "audio":
-          yield new Audio(attachment.url ?? "")
+          yield new Audio(attachment.url ?? "", false)
           continue
         default:
           yield new Document(attachment.url ?? "")
@@ -240,22 +263,96 @@ export const sendMessage: MessageHandlers<WhatsappAuthValue>["sendMessage"] =
       data: { contact, message },
     } = props
     const whatsappClient = getWhatsappClient(ctx.auth)
+    const phoneNumberId = ctx.auth.metadata.phoneNumber.id
     const messageIds: string[] = []
 
     try {
-      for (const whatsappMessage of convertMessageToWhatsappMessage(message)) {
+      // Handle voice recordings separately: upload to Meta's media endpoint
+      // to avoid URL-fetching issues (error 131053 with fragmented MP4)
+      for (const attachment of message.attachments || []) {
+        if (
+          attachment.fileType === "audio" &&
+          attachment.name?.startsWith("voice-recording") &&
+          attachment.url
+        ) {
+          try {
+            const mediaId = await uploadVoiceToMeta(
+              whatsappClient,
+              phoneNumberId,
+              attachment.url,
+              attachment.mimeType || "audio/mp4",
+              attachment.name,
+            )
+            const voiceMessage = new Audio(mediaId, true, true)
+            const sendResponse = await whatsappClient.sendMessage(
+              phoneNumberId,
+              contact.sourceId,
+              voiceMessage,
+            )
+
+            const serverError = sendResponse as ServerErrorResponse
+            if (serverError?.error) {
+              throw mapToChannelError(serverError.error)
+            }
+
+            const messageId = (sendResponse as ServerSentMessageResponse)
+              ?.messages?.[0]?.id
+            if (messageId) {
+              messageIds.push(messageId)
+              logger.info(
+                { messageId, messageType: "audio" },
+                "Voice message sent successfully",
+              )
+            }
+          } catch (error) {
+            logger.error(
+              error,
+              "Failed to send voice via media upload, falling back to URL",
+            )
+            const fallback = new Audio(attachment.url, false)
+            const sendResponse = await whatsappClient.sendMessage(
+              phoneNumberId,
+              contact.sourceId,
+              fallback,
+            )
+
+            const serverError = sendResponse as ServerErrorResponse
+            if (serverError?.error) {
+              throw mapToChannelError(serverError.error)
+            }
+
+            const messageId = (sendResponse as ServerSentMessageResponse)
+              ?.messages?.[0]?.id
+            if (messageId) {
+              messageIds.push(messageId)
+            }
+          }
+        }
+      }
+
+      const nonVoiceMessage: OutgoingMessage = {
+        ...message,
+        attachments: message.attachments?.filter(
+          (a) =>
+            !(a.fileType === "audio" && a.name?.startsWith("voice-recording")),
+        ),
+      }
+
+      for (const whatsappMessage of convertMessageToWhatsappMessage(
+        nonVoiceMessage,
+      )) {
         if (!whatsappMessage) {
           logger.error(message, "Unable to parse outgoing message")
           continue
         }
 
         console.log("whatsappMessage", {
-          phoneId: ctx.auth.metadata.phoneNumber.id,
+          phoneId: phoneNumberId,
           recipientId: contact.sourceId,
           message: whatsappMessage,
         })
         const sendResponse = await whatsappClient.sendMessage(
-          ctx.auth.metadata.phoneNumber.id,
+          phoneNumberId,
           contact.sourceId,
           whatsappMessage,
         )
@@ -294,8 +391,6 @@ export const sendMessage: MessageHandlers<WhatsappAuthValue>["sendMessage"] =
       throw mapToChannelError(error)
     }
 
-    // Return the provider message id(s) so the worker can persist messageIds[0]
-    // as the Message row's sourceId (coexist echo dedup — see sendFlowStep).
     return {
       messageIds,
     }
