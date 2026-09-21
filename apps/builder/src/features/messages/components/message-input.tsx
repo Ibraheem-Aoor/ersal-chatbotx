@@ -48,6 +48,7 @@ import { useChatStore } from "../../chat/store/chat-store-provider"
 import { createMessageAction } from "../actions/create-message.action"
 import { createMessageRequest } from "../schema/mutation"
 import { FileUploadPreview } from "./file-upload"
+import { WindowClosedActions } from "./window-closed-actions"
 import { InputMenu } from "./input-menu"
 
 const CHANNEL_WINDOW_SECONDS: Record<ChannelType, number> = {
@@ -420,15 +421,12 @@ export const MessageInput = () => {
     )
   }
 
-  if (isDirectChannelWindowClosed) {
+  if (isDirectChannelWindowClosed && conversation) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
-        <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            {t("messages.messagingWindowClosed")}
-          </p>
-        </div>
-      </div>
+      <WindowClosedActions
+        conversationId={conversation.id}
+        inboxId={conversation.contactInboxes[0]?.inboxId ?? ""}
+      />
     )
   }
 
