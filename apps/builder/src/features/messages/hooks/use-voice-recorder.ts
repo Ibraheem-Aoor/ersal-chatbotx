@@ -65,10 +65,12 @@ export function useVoiceRecorder() {
       streamRef.current = stream
 
       let mimeType = ""
-      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-        mimeType = "audio/webm;codecs=opus"
+      if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+        mimeType = "audio/ogg;codecs=opus"
       } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
         mimeType = "audio/mp4"
+      } else if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        mimeType = "audio/webm;codecs=opus"
       }
 
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
@@ -82,7 +84,7 @@ export function useVoiceRecorder() {
 
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || "audio/webm",
+          type: recorder.mimeType || "audio/ogg",
         })
         setAudioBlob(blob)
         setState("stopped")
