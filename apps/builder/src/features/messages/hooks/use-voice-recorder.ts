@@ -68,12 +68,16 @@ export function useVoiceRecorder() {
       let mimeType = ""
       if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
         mimeType = "audio/ogg;codecs=opus"
+      } else if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        mimeType = "audio/webm;codecs=opus"
       } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
         mimeType = "audio/mp4"
       }
 
       if (!mimeType) {
-        for (const track of stream.getTracks()) track.stop()
+        for (const track of stream.getTracks()) {
+          track.stop()
+        }
         streamRef.current = null
         setError("format-unsupported")
         setState("error")
@@ -104,7 +108,7 @@ export function useVoiceRecorder() {
         cleanup()
       }
 
-      recorder.start(250)
+      recorder.start()
       startTimeRef.current = Date.now()
       setState("recording")
 

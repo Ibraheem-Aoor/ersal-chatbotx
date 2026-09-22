@@ -23,16 +23,16 @@ function formatDuration(seconds: number): string {
 }
 
 function getExtensionFromMime(mimeType: string): string {
+  if (mimeType.includes("ogg")) {
+    return "ogg"
+  }
   if (mimeType.includes("webm")) {
     return "webm"
   }
   if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
     return "m4a"
   }
-  if (mimeType.includes("ogg")) {
-    return "ogg"
-  }
-  return "webm"
+  return "ogg"
 }
 
 export function VoiceRecorder({
