@@ -26,6 +26,7 @@ import { ChevronDown, PlusCircle } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
+import { CreateWorkspaceDialog } from "@/features/workspaces/components/create-workspace-dialog"
 import type { WorkspaceResource } from "@/features/workspaces/schema/resource"
 import { useWorkspaceId } from "@/hooks/routing"
 
@@ -63,7 +64,10 @@ export function WorkspaceSwitcher({
                     alt={activeWorkspace?.name}
                     src={activeWorkspace?.logo ?? ""}
                   />
-                  <AvatarFallback className="rounded font-medium" colorSeed={activeWorkspace?.name || undefined}>
+                  <AvatarFallback
+                    className="rounded font-medium"
+                    colorSeed={activeWorkspace?.name || undefined}
+                  >
                     {activeWorkspace?.name?.slice(0, 2) || "  "}
                   </AvatarFallback>
                 </Avatar>
@@ -104,7 +108,10 @@ export function WorkspaceSwitcher({
                         alt={workspace.name}
                         src={workspace.logo ?? ""}
                       />
-                      <AvatarFallback className="rounded font-medium" colorSeed={workspace.name || undefined}>
+                      <AvatarFallback
+                        className="rounded font-medium"
+                        colorSeed={workspace.name || undefined}
+                      >
                         {workspace.name.slice(0, 2) || "  "}
                       </AvatarFallback>
                     </Avatar>
@@ -114,20 +121,22 @@ export function WorkspaceSwitcher({
               />
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="gap-2 p-2"
-              render={
-                <Link
-                  className="gap-4 font-medium text-muted-foreground"
-                  href="/channels/create"
-                >
-                  <PlusCircle className="ms-2 size-4" />
-                  {t("actions.addFeature", {
-                    feature: t("fields.workspace.label"),
-                  })}
-                </Link>
-              }
-            />
+            <CreateWorkspaceDialog>
+              <DropdownMenuItem
+                className="gap-2 p-2"
+                render={
+                  <button
+                    className="flex w-full items-center gap-4 font-medium text-muted-foreground"
+                    type="button"
+                  >
+                    <PlusCircle className="ms-2 size-4" />
+                    {t("actions.addFeature", {
+                      feature: t("fields.workspace.label"),
+                    })}
+                  </button>
+                }
+              />
+            </CreateWorkspaceDialog>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

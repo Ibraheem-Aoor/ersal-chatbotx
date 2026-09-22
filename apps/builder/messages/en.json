@@ -832,6 +832,9 @@
   "workspaces": {
     "list": {
       "title": "Workspaces List"
+    },
+    "create": {
+      "description": "Give your workspace a name to get started. You can connect channels later."
     }
   },
   "workspaceToken": {
@@ -1056,7 +1059,9 @@
       "label": "Completed"
     },
     "workspace": {
-      "label": "Workspace"
+      "label": "Workspace",
+      "name": "Workspace Name",
+      "namePlaceholder": "My Workspace"
     },
     "workspaceId": {
       "description": "Unique identifier for your workspace.",

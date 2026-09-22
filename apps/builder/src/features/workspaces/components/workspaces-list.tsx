@@ -18,6 +18,7 @@ import { UpgradePlanButton } from "@/enterprise/features/billing/upgrade-plan-di
 import { isCloud, isCommunity } from "@/env"
 import { formatScheduleTime } from "../helpers"
 import type { WorkspaceResource } from "../schema/resource"
+import { CreateWorkspaceDialog } from "./create-workspace-dialog"
 import { WorkspaceStatusSwitch } from "./workspace-status-switch"
 
 type WorkspacesListProps = {
@@ -86,25 +87,27 @@ const CreateWorkspaceCard = ({
   }
 
   return (
-    <Card className={cn(CARD_STYLES, "border-dashed")}>
-      <CardContent className="px-0">
-        <Link
-          aria-label={label}
-          className={cn(
-            LINK_STYLES,
-            "bg-primary/5 text-primary transition-colors group-hover:bg-primary/10",
-          )}
-          href="/channels/create"
-        >
-          <div className="flex size-16 items-center justify-center">
-            <PlusCircleIcon aria-hidden className="size-8" />
-          </div>
-          <div className="truncate text-center font-medium text-sm">
-            {label}
-          </div>
-        </Link>
-      </CardContent>
-    </Card>
+    <CreateWorkspaceDialog>
+      <button aria-label={label} className="text-start" type="button">
+        <Card className={cn(CARD_STYLES, "border-dashed")}>
+          <CardContent className="px-0">
+            <div
+              className={cn(
+                LINK_STYLES,
+                "bg-primary/5 text-primary transition-colors group-hover:bg-primary/10",
+              )}
+            >
+              <div className="flex size-16 items-center justify-center">
+                <PlusCircleIcon aria-hidden className="size-8" />
+              </div>
+              <div className="truncate text-center font-medium text-sm">
+                {label}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </button>
+    </CreateWorkspaceDialog>
   )
 }
 
@@ -159,7 +162,10 @@ const WorkspaceCard = ({
         >
           <Avatar className="size-16 transition-transform duration-200 group-hover:scale-105">
             <AvatarImage alt="" src={workspace.logo ?? ""} />
-            <AvatarFallback className="rounded text-2xl" colorSeed={workspace.name || undefined}>
+            <AvatarFallback
+              className="rounded text-2xl"
+              colorSeed={workspace.name || undefined}
+            >
               {firstLetter}
             </AvatarFallback>
           </Avatar>
