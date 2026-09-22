@@ -23,14 +23,11 @@ function formatDuration(seconds: number): string {
 }
 
 function getExtensionFromMime(mimeType: string): string {
-  if (mimeType.includes("ogg")) {
-    return "ogg"
+  if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+    return "m4a"
   }
   if (mimeType.includes("webm")) {
     return "webm"
-  }
-  if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
-    return "m4a"
   }
   return "ogg"
 }
@@ -114,12 +111,14 @@ export function VoiceRecorder({
     [audioPreviewUrl],
   )
 
-  if (state === "requesting") {
+  if (state === "requesting" || state === "converting") {
     return (
       <div className="flex items-center gap-3 px-3 py-2">
         <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
         <span className="text-muted-foreground text-sm">
-          {t("messages.voiceRecorder.requestingPermission")}
+          {state === "converting"
+            ? t("messages.voiceRecorder.converting")
+            : t("messages.voiceRecorder.requestingPermission")}
         </span>
         <Button
           className="ms-auto size-7 p-0"
