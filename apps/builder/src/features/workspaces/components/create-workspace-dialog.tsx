@@ -18,7 +18,7 @@ import { Loader2Icon, PlusCircleIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
-import type { ReactNode } from "react"
+import type { ReactElement } from "react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -30,15 +30,25 @@ const createWorkspaceSchema = z.object({
 })
 
 type CreateWorkspaceDialogProps = {
-  children?: ReactNode
+  children?: ReactElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function CreateWorkspaceDialog({
   children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: CreateWorkspaceDialogProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled
+    ? (next: boolean) => controlledOnOpenChange?.(next)
+    : setInternalOpen
 
   const form = useForm({
     resolver: zodResolver(createWorkspaceSchema),
@@ -49,7 +59,7 @@ export function CreateWorkspaceDialog({
     onSuccess: ({ data }) => {
       if (data?.workspaceId) {
         toast.success(
-          t("actions.createdSuccessfully", {
+          t("messages.createdSuccess", {
             feature: t("fields.workspace.label"),
           }),
         )
@@ -79,16 +89,17 @@ export function CreateWorkspaceDialog({
       }}
       open={open}
     >
-      <DialogTrigger render={children}>
-        {!children && (
+      {children && <DialogTrigger render={children} />}
+      {!(children || isControlled) && (
+        <DialogTrigger>
           <Button size="sm" variant="outline">
             <PlusCircleIcon className="size-4" />
             {t("actions.createFeature", {
               feature: t("fields.workspace.label"),
             })}
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -103,10 +114,10 @@ export function CreateWorkspaceDialog({
         <Form {...form}>
           <form className="space-y-4" onSubmit={onSubmit}>
             <InputField
-              control={form.control}
               label={t("fields.workspace.name")}
               name="name"
               placeholder={t("fields.workspace.namePlaceholder")}
+              required
             />
             <DialogFooter>
               <DialogClose

@@ -40,6 +40,7 @@ export function WorkspaceSwitcher({
 
   const [activeWorkspace, setActiveWorkspace] =
     useState<WorkspaceResource | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const t = useTranslations()
 
   useEffect(() => {
@@ -75,7 +76,6 @@ export function WorkspaceSwitcher({
                   <span className="truncate font-semibold">
                     {activeWorkspace?.name}
                   </span>
-                  {/* <span className="truncate text-xs">{activeWorkspace?.plan}</span> */}
                 </div>
                 <ChevronDown className="ms-auto" />
               </SidebarMenuButton>
@@ -121,24 +121,24 @@ export function WorkspaceSwitcher({
               />
             ))}
             <DropdownMenuSeparator />
-            <CreateWorkspaceDialog>
-              <DropdownMenuItem
-                className="gap-2 p-2"
-                render={
-                  <button
-                    className="flex w-full items-center gap-4 font-medium text-muted-foreground"
-                    type="button"
-                  >
-                    <PlusCircle className="ms-2 size-4" />
-                    {t("actions.addFeature", {
-                      feature: t("fields.workspace.label"),
-                    })}
-                  </button>
-                }
-              />
-            </CreateWorkspaceDialog>
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => setDialogOpen(true)}
+              render={
+                <button
+                  className="flex w-full items-center gap-4 font-medium text-muted-foreground"
+                  type="button"
+                >
+                  <PlusCircle className="ms-2 size-4" />
+                  {t("actions.addFeature", {
+                    feature: t("fields.workspace.label"),
+                  })}
+                </button>
+              }
+            />
           </DropdownMenuContent>
         </DropdownMenu>
+        <CreateWorkspaceDialog onOpenChange={setDialogOpen} open={dialogOpen} />
       </SidebarMenuItem>
     </SidebarMenu>
   )
