@@ -3775,7 +3775,8 @@
       "notSupported": "التسجيل الصوتي غير مدعوم في متصفحك.",
       "noMicrophone": "لم يتم العثور على ميكروفون. يرجى توصيل ميكروفون والمحاولة مرة أخرى.",
       "recordingFailed": "فشل التسجيل الصوتي. يرجى المحاولة مرة أخرى.",
-      "formatUnsupported": "الرسائل الصوتية غير مدعومة في هذا المتصفح. يرجى استخدام Chrome أو Firefox أو Edge."
+      "formatUnsupported": "الرسائل الصوتية غير مدعومة في هذا المتصفح. يرجى استخدام Chrome أو Firefox أو Edge.",
+      "converting": "جارٍ تحضير الرسالة الصوتية…"
     },
     "backToConversations": "العودة إلى المحادثات",
     "botCategoryAll": "الكل",

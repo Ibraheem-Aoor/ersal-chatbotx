@@ -3177,7 +3177,8 @@
       "notSupported": "Voice recording is not supported in your browser.",
       "noMicrophone": "No microphone was found. Please connect a microphone and try again.",
       "recordingFailed": "Voice recording failed. Please try again.",
-      "formatUnsupported": "Voice messages are not supported in this browser. Please use Chrome, Firefox, or Edge."
+      "formatUnsupported": "Voice messages are not supported in this browser. Please use Chrome, Firefox, or Edge.",
+      "converting": "Preparing voice message…"
     },
     "backToConversations": "Back to conversations",
     "botCategoryAll": "All",

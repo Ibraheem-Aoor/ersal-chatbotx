@@ -1,12 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { remuxToOgg } from "../lib/remux-to-ogg"
 
 export type VoiceRecorderState =
   | "idle"
   | "requesting"
   | "recording"
   | "paused"
+  | "converting"
   | "stopped"
   | "error"
 
@@ -93,13 +95,27 @@ export function useVoiceRecorder() {
         }
       }
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const rawType = recorder.mimeType || "audio/ogg"
         const normalizedType = rawType.split(";")[0]
         const blob = new Blob(chunksRef.current, { type: normalizedType })
-        setAudioBlob(blob)
-        setState("stopped")
         cleanup()
+
+        if (normalizedType === "audio/ogg") {
+          setAudioBlob(blob)
+          setState("stopped")
+          return
+        }
+
+        setState("converting")
+        try {
+          const oggBlob = await remuxToOgg(blob)
+          setAudioBlob(oggBlob)
+          setState("stopped")
+        } catch {
+          setAudioBlob(blob)
+          setState("stopped")
+        }
       }
 
       recorder.onerror = () => {
