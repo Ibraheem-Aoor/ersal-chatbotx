@@ -18,7 +18,7 @@ import { Loader2Icon, PlusCircleIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
-import type { ReactNode } from "react"
+import type { ReactElement } from "react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -30,7 +30,7 @@ const createWorkspaceSchema = z.object({
 })
 
 type CreateWorkspaceDialogProps = {
-  children?: ReactNode
+  children?: ReactElement
 }
 
 export function CreateWorkspaceDialog({
@@ -103,7 +103,6 @@ export function CreateWorkspaceDialog({
         <Form {...form}>
           <form className="space-y-4" onSubmit={onSubmit}>
             <InputField
-              control={form.control}
               label={t("fields.workspace.name")}
               name="name"
               placeholder={t("fields.workspace.namePlaceholder")}

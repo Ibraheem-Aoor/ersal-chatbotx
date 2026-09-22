@@ -14,7 +14,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@chatbotx.io/ui/components/ui/tooltip"
-import { CheckCircle2Icon, InfoIcon, XCircle } from "lucide-react"
+import {
+  AlertTriangleIcon,
+  CheckCircle2Icon,
+  InfoIcon,
+  XCircle,
+} from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { memo, type ReactNode } from "react"
@@ -233,11 +238,12 @@ export const WhatsappAccountHealths = memo(
     const healthEntities = (phoneNumber.health_status?.entities ?? []).filter(
       (entity) => entity.entity_type !== "APP",
     )
-    const hasMessagingBlock = healthEntities.some(
-      (entity) =>
-        entity.can_send_message === "BLOCKED" ||
-        entity.can_send_message === "LIMITED",
+    const isBlocked = healthEntities.some(
+      (entity) => entity.can_send_message === "BLOCKED",
     )
+    const isLimited =
+      !isBlocked &&
+      healthEntities.some((entity) => entity.can_send_message === "LIMITED")
 
     const canSendMessageLabels: Record<string, string> = {
       AVAILABLE: t("canSendMessage.AVAILABLE"),
@@ -268,10 +274,16 @@ export const WhatsappAccountHealths = memo(
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-1">
             <FieldRow label={t("health.label")} tooltip={t("health.tooltip")}>
-              {hasMessagingBlock && (
-                <div className="mt-4 mb-2 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600 text-sm">
-                  <XCircle className="size-4 shrink-0 text-red-500" />
+              {isBlocked && (
+                <div className="mt-4 mb-2 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600 text-sm dark:border-red-900 dark:bg-red-950/50 dark:text-red-400">
+                  <XCircle className="size-4 shrink-0" />
                   {t("health.blockedMessage")}
+                </div>
+              )}
+              {isLimited && (
+                <div className="mt-4 mb-2 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700 text-sm dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-400">
+                  <AlertTriangleIcon className="size-4 shrink-0" />
+                  {t("health.limitedMessage")}
                 </div>
               )}
               <div className="grid grid-cols-1 gap-4">

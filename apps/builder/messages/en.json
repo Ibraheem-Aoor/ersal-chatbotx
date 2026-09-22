@@ -3886,7 +3886,8 @@
       "health": {
         "label": "Business Status",
         "tooltip": "Overview of your WhatsApp account health and messaging capability.",
-        "blockedMessage": "Your phone number has been blocked from sending messages.",
+        "blockedMessage": "Messaging is currently restricted on this number. Check the details below or visit Meta Business Manager.",
+        "limitedMessage": "Messaging capacity is temporarily limited. You can still send messages, but at a reduced rate.",
         "problem": "Problem:",
         "possibleSolution": "Possible solution:",
         "noIssues": "No issues detected",

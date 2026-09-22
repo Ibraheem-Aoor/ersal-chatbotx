@@ -5218,7 +5218,8 @@
       },
       "goToBusinessManager": "الانتقال إلى مدير أعمال Meta",
       "health": {
-        "blockedMessage": "تم حظر رقم هاتفك من إرسال الرسائل.",
+        "blockedMessage": "الرسائل مقيّدة حاليًا على هذا الرقم. راجع التفاصيل أدناه أو قم بزيارة مدير أعمال Meta.",
+        "limitedMessage": "سعة الرسائل محدودة مؤقتًا. لا يزال بإمكانك إرسال الرسائل، ولكن بمعدل أقل.",
         "entityHeadline": "{type} (المعرّف: {id})",
         "entityHeadlineNoId": "{type}",
         "entityTooltip": "ما إذا كان {type} يستطيع إرسال الرسائل وأي مشكلات تؤثر فيه.",
