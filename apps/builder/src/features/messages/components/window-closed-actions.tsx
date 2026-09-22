@@ -80,6 +80,7 @@ function SendTemplateButton({
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [selectedTemplateName, setSelectedTemplateName] = useState<string>("")
 
   const { data: templates, isLoading } = useSWR(
     open ? (["approved-templates", workspaceId, inboxId] as const) : null,
@@ -94,8 +95,13 @@ function SendTemplateButton({
   )
 
   const handleTemplateChange = useCallback(
-    (value: unknown) => setSelectedTemplateId(String(value)),
-    [],
+    (value: unknown) => {
+      const id = String(value)
+      setSelectedTemplateId(id)
+      const tpl = templates?.find((t) => t.id === id)
+      setSelectedTemplateName(tpl ? `${tpl.name} (${tpl.language})` : "")
+    },
+    [templates],
   )
 
   const { execute: sendTemplate, isExecuting } = useAction(
@@ -105,6 +111,7 @@ function SendTemplateButton({
         toast.success(t("messages.templateSentSuccess"))
         setOpen(false)
         setSelectedTemplateId("")
+        setSelectedTemplateName("")
       },
       onError: ({ error }) => {
         toast.error(error.serverError ?? t("messages.templateSentError"))
@@ -146,8 +153,12 @@ function SendTemplateButton({
               onValueChange={handleTemplateChange}
               value={selectedTemplateId}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={t("messages.selectTemplate")} />
+              <SelectTrigger className="w-full">
+                {selectedTemplateName ? (
+                  <span className="line-clamp-1">{selectedTemplateName}</span>
+                ) : (
+                  <SelectValue placeholder={t("messages.selectTemplate")} />
+                )}
               </SelectTrigger>
               <SelectContent>
                 {templates.map((tpl) => (
@@ -191,6 +202,7 @@ function SendFlowButton({
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [selectedFlowId, setSelectedFlowId] = useState<string>("")
+  const [selectedFlowName, setSelectedFlowName] = useState<string>("")
 
   const { data: flowsData, isLoading } = useSWR(
     open ? (["active-flows", workspaceId] as const) : null,
@@ -204,8 +216,13 @@ function SendFlowButton({
   const flows = flowsData?.data ?? []
 
   const handleFlowChange = useCallback(
-    (value: unknown) => setSelectedFlowId(String(value)),
-    [],
+    (value: unknown) => {
+      const id = String(value)
+      setSelectedFlowId(id)
+      const flow = flows.find((f) => f.id === id)
+      setSelectedFlowName(flow?.name ?? "")
+    },
+    [flows],
   )
 
   const { execute: sendFlow, isExecuting } = useAction(
@@ -215,6 +232,7 @@ function SendFlowButton({
         toast.success(t("messages.flowTriggeredSuccess"))
         setOpen(false)
         setSelectedFlowId("")
+        setSelectedFlowName("")
       },
       onError: ({ error }) => {
         toast.error(error.serverError ?? t("messages.flowTriggeredError"))
@@ -253,8 +271,12 @@ function SendFlowButton({
           )}
           {!isLoading && flows.length > 0 && (
             <Select onValueChange={handleFlowChange} value={selectedFlowId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("messages.selectFlow")} />
+              <SelectTrigger className="w-full">
+                {selectedFlowName ? (
+                  <span className="line-clamp-1">{selectedFlowName}</span>
+                ) : (
+                  <SelectValue placeholder={t("messages.selectFlow")} />
+                )}
               </SelectTrigger>
               <SelectContent>
                 {flows.map((flow) => (
