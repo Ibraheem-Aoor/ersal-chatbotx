@@ -2698,6 +2698,12 @@
     "publishableKey": {
       "label": "المفتاح القابل للنشر"
     },
+    "waUserId": {
+      "label": "معرف مستخدم واتساب"
+    },
+    "waUserName": {
+      "label": "اسم مستخدم واتساب"
+    },
     "purpose": {
       "label": "الغرض",
       "placeholder": "ماذا تفعل هذه الوظيفة؟"
