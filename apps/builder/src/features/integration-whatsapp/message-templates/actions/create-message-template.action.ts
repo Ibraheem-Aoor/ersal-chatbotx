@@ -1,6 +1,7 @@
 "use server"
 
 import { buildContext } from "@chatbotx.io/business"
+import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, findOrFail } from "@chatbotx.io/database/client"
 import {
   integrationWhatsappModel,
@@ -10,6 +11,7 @@ import type {
   CreateMessageTemplateProps,
   WhatsappAuthValue,
 } from "@chatbotx.io/integration-whatsapp"
+import { SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import {
   type WorkspaceIdAndIdRequestParams,
@@ -21,6 +23,10 @@ import {
   type CreateMessageTemplateRequest,
   createMessageTemplateRequest,
 } from "../schema/mutation"
+import {
+  extractMetaErrorDetails,
+  mapTemplateError,
+} from "./template-error-mapper"
 import { parseComponents } from "./utils"
 
 export const createMessageTemplateAction = workspaceActionClient
@@ -68,13 +74,20 @@ export const createMessageTemplateAction = workspaceActionClient
         JSON.stringify(body, null, 2),
       )
 
-      const res = await integrations.whatsapp.runAction(
-        "createMessageTemplate",
-        {
+      let res: { id: string; status: string }
+      try {
+        res = await integrations.whatsapp.runAction("createMessageTemplate", {
           ctx,
           data: body,
-        },
-      )
+        })
+      } catch (error) {
+        if (error instanceof SdkException) {
+          throw new ChatbotXException(
+            mapTemplateError(extractMetaErrorDetails(error)),
+          )
+        }
+        throw error
+      }
 
       await db.insert(whatsappMessageTemplateModel).values({
         id: createId(),
