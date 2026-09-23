@@ -1,5 +1,5 @@
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
+import { Input } from "@chatbotx.io/ui/components/ui/input"
 import { useTranslations } from "next-intl"
 import { memo, useCallback, useState } from "react"
 import { useFormContext } from "react-hook-form"
@@ -30,11 +30,29 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
 
   const onChangeValue = useCallback(
     (value: string) => {
-      setLocalHeader(value)
-      handleChange(value)
-      processVariables(value)
+      const sanitized = value.replace(/[\n\r]/g, "")
+      setLocalHeader(sanitized)
+      handleChange(sanitized)
+      processVariables(sanitized)
     },
     [handleChange, processVariables],
+  )
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      const pasted = e.clipboardData.getData("text")
+      if (pasted.includes("\n") || pasted.includes("\r")) {
+        e.preventDefault()
+        const sanitized = pasted.replace(/[\n\r]/g, " ").trim()
+        const input = e.currentTarget
+        const start = input.selectionStart ?? localHeader.length
+        const end = input.selectionEnd ?? localHeader.length
+        const newValue =
+          localHeader.slice(0, start) + sanitized + localHeader.slice(end)
+        onChangeValue(newValue.slice(0, 60))
+      }
+    },
+    [localHeader, onChangeValue],
   )
 
   const addParam = useCallback(() => {
@@ -54,11 +72,11 @@ const TemplateHeaderComponent = ({ parentName }: { parentName: string }) => {
       <span className="font-medium text-xs text-zinc-500 dark:text-zinc-400">
         {t("whatsapp.messageTemplate.sectionHeader")}
       </span>
-      <Textarea
+      <Input
         maxLength={60}
         onChange={(e) => onChangeValue(e.target.value)}
+        onPaste={handlePaste}
         placeholder={t("actions.enterText")}
-        rows={2}
         value={localHeader}
       />
       <div className="flex items-center justify-between">

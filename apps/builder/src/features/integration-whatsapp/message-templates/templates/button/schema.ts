@@ -12,7 +12,7 @@ export const buttonActionTypes = z.enum([
 
 export const buttonStepSchema = z
   .object({
-    text: z.string().min(1).max(100),
+    text: z.string().min(1).max(25),
   })
   .and(
     z.discriminatedUnion("type", [
@@ -21,7 +21,7 @@ export const buttonStepSchema = z
       }),
       z.object({
         type: z.literal(buttonActionTypes.enum.url),
-        url: z.string().min(1),
+        url: z.string().min(1).max(2000),
         urlDynamic: z.boolean().optional(),
         urlSampleValue: z.string().optional(),
       }),

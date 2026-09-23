@@ -1,5 +1,10 @@
 import { z } from "zod"
 import { buttonStepSchema, validateButtonLimits } from "../button/schema"
+import {
+  refineBodyText,
+  refineFooterText,
+  refineSampleValues,
+} from "../validation"
 
 export const templateDocumentSchema = z
   .object({
@@ -27,6 +32,9 @@ export const templateDocumentSchema = z
     buttons: z.array(buttonStepSchema).max(10),
   })
   .superRefine((data, ctx) => {
+    refineBodyText(data.body.text, ctx)
+    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
 
@@ -62,6 +70,9 @@ export const templateDocumentEditSchema = z
     buttons: z.array(buttonStepSchema).max(10),
   })
   .superRefine((data, ctx) => {
+    refineBodyText(data.body.text, ctx)
+    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
 
