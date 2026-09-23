@@ -18,8 +18,8 @@ export const templateVideoSchema = z
             message: "يجب أن يكون الملف فيديو بصيغة mp4",
           },
         )
-        .refine((file) => file && file.size <= 20 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 20 ميجابايت",
+        .refine((file) => file && file.size <= 16 * 1024 * 1024, {
+          message: "يجب ألا يتجاوز حجم الملف 16 ميجابايت",
         }),
     }),
     body: z.object({
@@ -51,9 +51,9 @@ export const templateVideoEditSchema = z
           },
         )
         .refine(
-          (file) => file === null || (file && file.size <= 20 * 1024 * 1024),
+          (file) => file === null || (file && file.size <= 16 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 20 ميجابايت",
+            message: "يجب ألا يتجاوز حجم الملف 16 ميجابايت",
           },
         ),
     }),

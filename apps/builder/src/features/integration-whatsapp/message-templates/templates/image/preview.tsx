@@ -58,6 +58,7 @@ const TemplateImagePreviewComponent = (
                   "image/jpg": [".jpg"],
                   "image/jpeg": [".jpeg"],
                 },
+                maxSize: 5,
                 isCard: true,
                 containerClassName: "aspect-video min-h-[120px] max-h-[240px]",
               }}
