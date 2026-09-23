@@ -46,6 +46,12 @@ export const editMessageTemplateAction = workspaceActionClient
         message: "Template not found",
       })
 
+      if (template.status === "PENDING") {
+        throw new Error(
+          "Cannot edit a template that is pending review. Only APPROVED or REJECTED templates can be edited.",
+        )
+      }
+
       const ctx = await buildContext({
         workspaceId,
         integrationType: "whatsapp",

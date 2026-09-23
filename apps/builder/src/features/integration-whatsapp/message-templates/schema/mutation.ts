@@ -7,11 +7,20 @@ import {
 import { templateCarouselImageSchema } from "../templates/carousel-image/schema"
 import { templateCarouselVideoSchema } from "../templates/carousel-video/schema"
 import { templateCatalogSchema } from "../templates/catalog/schema"
-import { templateDocumentSchema } from "../templates/document/schema"
-import { templateImageSchema } from "../templates/image/schema"
+import {
+  templateDocumentEditSchema,
+  templateDocumentSchema,
+} from "../templates/document/schema"
+import {
+  templateImageEditSchema,
+  templateImageSchema,
+} from "../templates/image/schema"
 import { templateProductSchema } from "../templates/product/schema"
 import { templateTextSchema } from "../templates/text/schema"
-import { templateVideoSchema } from "../templates/video/schema"
+import {
+  templateVideoEditSchema,
+  templateVideoSchema,
+} from "../templates/video/schema"
 
 export const createMessageTemplateRequest = z
   .object({
@@ -91,15 +100,15 @@ export const editMessageTemplateRequest = z
       }),
       z.object({
         templateType: z.literal(templateTypes.enum.Image),
-        content: templateImageSchema,
+        content: templateImageEditSchema,
       }),
       z.object({
         templateType: z.literal(templateTypes.enum.Video),
-        content: templateVideoSchema,
+        content: templateVideoEditSchema,
       }),
       z.object({
         templateType: z.literal(templateTypes.enum.Document),
-        content: templateDocumentSchema,
+        content: templateDocumentEditSchema,
       }),
       z.object({
         templateType: z.literal(templateTypes.enum.CarouselImage),

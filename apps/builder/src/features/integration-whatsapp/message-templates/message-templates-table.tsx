@@ -144,11 +144,13 @@ export function WhatsappMessageTemplatesTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <EditMessageTemplateDialog
-                      integrationWhatsappId={integrationWhatsapp.id}
-                      template={mt}
-                      workspaceId={integrationWhatsapp.workspaceId}
-                    />
+                    {mt.status !== "PENDING" && (
+                      <EditMessageTemplateDialog
+                        integrationWhatsappId={integrationWhatsapp.id}
+                        template={mt}
+                        workspaceId={integrationWhatsapp.workspaceId}
+                      />
+                    )}
                     <Link
                       href={`https://business.facebook.com/latest/whatsapp_manager/template_details/?business_id=${integrationWhatsapp.businessId}&tab=mt-edit&id=${mt.id}&nav_ref=whatsapp_manager&asset_id=${integrationWhatsapp.wabaId}`}
                       target="_blank"

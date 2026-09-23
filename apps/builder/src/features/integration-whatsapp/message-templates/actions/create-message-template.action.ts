@@ -84,6 +84,7 @@ export const createMessageTemplateAction = workspaceActionClient
         category: parsedInput.category,
         status: res.status,
         sourceId: res.id,
+        components: JSON.stringify(body.components),
       })
     },
   )
