@@ -1,6 +1,11 @@
 "use client"
 
 import {
+  extractTemplateParams,
+  type TemplateComponent,
+  type WaTemplateParams,
+} from "@chatbotx.io/flow-config"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -22,9 +27,13 @@ import {
 import { FileTextIcon, Loader2Icon, LockIcon, WorkflowIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { FormProvider, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import useSWR from "swr"
+import { WhatsappFlowStoreProvider } from "@/features/flows/react-flow/stores/whatsapp-flow-store-provider"
+import { TemplateParamsForm } from "@/features/integration-whatsapp/message-templates/components/template-params-form"
+import { TemplatePreview } from "@/features/integration-whatsapp/message-templates/components/template-preview"
 import { useWorkspaceId } from "@/hooks/routing"
 import { client } from "@/lib/orpc/orpc"
 import { createMessageAction } from "../actions/create-message.action"
@@ -68,6 +77,17 @@ export function WindowClosedActions({
   )
 }
 
+type TemplateWithComponents = {
+  id: string
+  name: string
+  language: string
+  components: TemplateComponent[]
+}
+
+type SendTemplateFormValues = {
+  templateData: WaTemplateParams
+}
+
 function SendTemplateButton({
   workspaceId,
   conversationId,
@@ -80,7 +100,17 @@ function SendTemplateButton({
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
-  const [selectedTemplateName, setSelectedTemplateName] = useState<string>("")
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<TemplateWithComponents | null>(null)
+
+  const form = useForm<SendTemplateFormValues>({
+    defaultValues: { templateData: {} },
+  })
+
+  const watchedTemplateData = useWatch({
+    control: form.control,
+    name: "templateData",
+  })
 
   const { data: templates, isLoading } = useSWR(
     open ? (["approved-templates", workspaceId, inboxId] as const) : null,
@@ -99,9 +129,22 @@ function SendTemplateButton({
       const id = String(value)
       setSelectedTemplateId(id)
       const tpl = templates?.find((t) => t.id === id)
-      setSelectedTemplateName(tpl ? `${tpl.name} (${tpl.language})` : "")
+      if (tpl) {
+        const components = (tpl.components ?? []) as TemplateComponent[]
+        setSelectedTemplate({
+          id: tpl.id,
+          name: tpl.name,
+          language: tpl.language,
+          components,
+        })
+        const initialParams = extractTemplateParams(components)
+        form.setValue("templateData", initialParams)
+      } else {
+        setSelectedTemplate(null)
+        form.setValue("templateData", {})
+      }
     },
-    [templates],
+    [templates, form],
   )
 
   const { execute: sendTemplate, isExecuting } = useAction(
@@ -111,7 +154,8 @@ function SendTemplateButton({
         toast.success(t("messages.templateSentSuccess"))
         setOpen(false)
         setSelectedTemplateId("")
-        setSelectedTemplateName("")
+        setSelectedTemplate(null)
+        form.reset({ templateData: {} })
       },
       onError: ({ error }) => {
         toast.error(error.serverError ?? t("messages.templateSentError"))
@@ -121,12 +165,35 @@ function SendTemplateButton({
 
   const handleSend = useCallback(() => {
     if (selectedTemplateId) {
-      sendTemplate({ templateId: selectedTemplateId })
+      sendTemplate({
+        templateId: selectedTemplateId,
+        templateData: form.getValues("templateData"),
+      })
     }
-  }, [selectedTemplateId, sendTemplate])
+  }, [selectedTemplateId, sendTemplate, form])
+
+  const handleOpenChange = useCallback(
+    (value: boolean) => {
+      setOpen(value)
+      if (!value) {
+        setSelectedTemplateId("")
+        setSelectedTemplate(null)
+        form.reset({ templateData: {} })
+      }
+    },
+    [form],
+  )
+
+  const selectedTemplateName = useMemo(
+    () =>
+      selectedTemplate
+        ? `${selectedTemplate.name} (${selectedTemplate.language})`
+        : "",
+    [selectedTemplate],
+  )
 
   return (
-    <AlertDialog onOpenChange={setOpen} open={open}>
+    <AlertDialog onOpenChange={handleOpenChange} open={open}>
       <AlertDialogTrigger
         render={
           <Button size="sm" variant="outline">
@@ -135,14 +202,14 @@ function SendTemplateButton({
           </Button>
         }
       />
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>{t("messages.sendTemplate")}</AlertDialogTitle>
           <AlertDialogDescription>
             {t("messages.sendTemplateDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="py-2">
+        <div className="space-y-4 py-2">
           {isLoading && (
             <div className="flex items-center justify-center py-4">
               <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
@@ -173,6 +240,36 @@ function SendTemplateButton({
             <p className="py-4 text-center text-muted-foreground text-sm">
               {t("messages.noApprovedTemplates")}
             </p>
+          )}
+
+          {selectedTemplate && (
+            <WhatsappFlowStoreProvider workspaceId={workspaceId}>
+              <FormProvider {...form}>
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-2 font-medium text-xs">
+                      {t("messages.templateVariables")}
+                    </div>
+                    <TemplateParamsForm
+                      components={selectedTemplate.components}
+                      enableMediaUpload
+                      parentName="templateData"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-2 font-medium text-xs">
+                      {t("messages.templatePreview")}
+                    </div>
+                    <TemplatePreview
+                      bodyParams={watchedTemplateData?.body ?? []}
+                      buttonParams={watchedTemplateData?.button ?? []}
+                      components={selectedTemplate.components}
+                      headerParams={watchedTemplateData?.header ?? []}
+                    />
+                  </div>
+                </div>
+              </FormProvider>
+            </WhatsappFlowStoreProvider>
           )}
         </div>
         <AlertDialogFooter>

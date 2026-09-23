@@ -3,6 +3,7 @@
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, findOrFail } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
+import { waTemplateParamsSchema } from "@chatbotx.io/flow-config"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
 import { z } from "zod"
@@ -10,6 +11,7 @@ import { workspaceActionClient } from "@/lib/safe-action"
 
 const sendTemplateInput = z.object({
   templateId: zodBigintAsString(),
+  templateData: waTemplateParamsSchema.optional(),
 })
 
 export const sendTemplateAction = workspaceActionClient
@@ -40,6 +42,7 @@ export const sendTemplateAction = workspaceActionClient
           conversation,
           contactInbox,
           templateId: parsedInput.templateId,
+          templateData: parsedInput.templateData,
           broadcastId: "",
         },
       })

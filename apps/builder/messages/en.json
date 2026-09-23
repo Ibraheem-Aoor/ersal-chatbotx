@@ -3232,6 +3232,8 @@
     "noApprovedTemplates": "No approved templates found.",
     "templateSentSuccess": "Template message sent successfully.",
     "templateSentError": "Failed to send template message.",
+    "templateVariables": "Template Variables",
+    "templatePreview": "Preview",
     "triggerFlow": "Trigger Flow",
     "triggerFlowDescription": "Select an active flow to trigger for this conversation.",
     "selectFlow": "Select a flow...",
