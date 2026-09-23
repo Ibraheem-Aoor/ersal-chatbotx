@@ -178,3 +178,34 @@ export const editMessageTemplate = (
       .json(),
   )
 }
+
+export type DeleteMessageTemplateProps = {
+  name: string
+  hsmId?: string
+}
+
+export const deleteMessageTemplate = (
+  auth: WhatsappAuthValue,
+  data: DeleteMessageTemplateProps,
+): Promise<{ success: boolean }> => {
+  const { version = DEFAULT_API_VERSION } = auth
+
+  const searchParams: Record<string, string> = { name: data.name }
+  if (data.hsmId) {
+    searchParams.hsm_id = data.hsmId
+  }
+
+  return rescue(() =>
+    ky
+      .delete(
+        `${API_URL}/${version}/${auth.metadata.wabaId}/message_templates`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.tokens.accessToken}`,
+          },
+          searchParams,
+        },
+      )
+      .json(),
+  )
+}

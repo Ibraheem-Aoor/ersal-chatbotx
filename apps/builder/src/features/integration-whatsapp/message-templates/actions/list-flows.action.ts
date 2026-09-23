@@ -1,11 +1,11 @@
 "use server"
 
-import { whatsappFlowService } from "@/features/integration-whatsapp/flows/queries"
-import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type WorkspaceIdAndIdRequestParams,
   workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
+import { whatsappFlowService } from "@/features/integration-whatsapp/flows/queries"
+import { workspaceActionClient } from "@/lib/safe-action"
 
 export const listWhatsappFlowsForTemplateAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdAndIdRequestParams)

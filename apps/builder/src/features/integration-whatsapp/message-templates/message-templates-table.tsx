@@ -1,5 +1,15 @@
 "use client"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@chatbotx.io/ui/components/ui/alert-dialog"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
@@ -10,11 +20,15 @@ import {
   TableHeader,
   TableRow,
 } from "@chatbotx.io/ui/components/ui/table"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Loader2Icon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import React from "react"
+import { useAction } from "next-safe-action/hooks"
+import React, { useState } from "react"
+import { toast } from "sonner"
 import type { IntegrationWhatsappLinkable } from "@/features/integration-whatsapp/queries"
+import { deleteMessageTemplateAction } from "./actions/delete-message-template.action"
 import { EditMessageTemplateDialog } from "./create-message-template-dialog"
 import { WhatsappMessageTemplatesTableToolbarActions } from "./message-templates-table-toolbar-actions"
 import type { WhatsappMessageTemplateResource } from "./schema/resource"
@@ -63,7 +77,31 @@ export function WhatsappMessageTemplatesTable({
   promises,
 }: WhatsappMessageTemplatesTableProps) {
   const t = useTranslations()
+  const router = useRouter()
   const data = React.use(promises)
+  const [deleteTarget, setDeleteTarget] =
+    useState<WhatsappMessageTemplateResource | null>(null)
+
+  const { execute: executeDelete, isPending: isDeleting } = useAction(
+    deleteMessageTemplateAction.bind(
+      null,
+      integrationWhatsapp.workspaceId,
+      integrationWhatsapp.id,
+    ),
+    {
+      onSuccess() {
+        toast.success(t("whatsapp.messageTemplate.delete.success"))
+        setDeleteTarget(null)
+        router.refresh()
+      },
+      onError({ error }) {
+        if (error.serverError) {
+          toast.error(error.serverError)
+        }
+        setDeleteTarget(null)
+      },
+    },
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -117,6 +155,14 @@ export function WhatsappMessageTemplatesTable({
                     >
                       <ExternalLink className="size-4" />
                     </Link>
+                    <Button
+                      disabled={isDeleting}
+                      onClick={() => setDeleteTarget(mt)}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <Trash2Icon className="size-4 text-destructive" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -131,6 +177,47 @@ export function WhatsappMessageTemplatesTable({
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+          }
+        }}
+        open={Boolean(deleteTarget)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("whatsapp.messageTemplate.delete.title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("whatsapp.messageTemplate.delete.description", {
+                name: deleteTarget?.name ?? "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t("actions.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeleting}
+              onClick={() => {
+                if (deleteTarget) {
+                  executeDelete({ templateId: deleteTarget.id })
+                }
+              }}
+            >
+              {isDeleting && (
+                <Loader2Icon className="me-2 size-4 animate-spin" />
+              )}
+              {t("actions.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

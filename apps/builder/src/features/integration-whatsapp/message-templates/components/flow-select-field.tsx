@@ -3,10 +3,10 @@
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useEffect, useMemo, useState } from "react"
 import { useAction } from "next-safe-action/hooks"
-import { useWhatsappTemplateDialog } from "../context"
+import { useEffect, useMemo, useState } from "react"
 import { listWhatsappFlowsForTemplateAction } from "../actions/list-flows.action"
+import { useWhatsappTemplateDialog } from "../context"
 
 type FlowOption = {
   sourceId: string
@@ -47,7 +47,7 @@ export function FlowSelectField({ name }: { name: string }) {
     () =>
       flows.map((f) => ({
         value: f.sourceId,
-        label: `${f.name}${f.status !== "PUBLISHED" ? ` (${f.status})` : ""}`,
+        label: `${f.name}${f.status === "PUBLISHED" ? "" : ` (${f.status})`}`,
       })),
     [flows],
   )

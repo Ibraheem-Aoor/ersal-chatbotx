@@ -182,9 +182,7 @@ function InlineButtonRow({
 
         {/* Flow-specific field */}
         {type === "flow" && (
-          <FlowSelectField
-            name={`${parentName}.${index}.flow_id`}
-          />
+          <FlowSelectField name={`${parentName}.${index}.flow_id`} />
         )}
       </div>
     </div>
