@@ -3861,6 +3861,8 @@
     "noApprovedTemplates": "لم يتم العثور على قوالب معتمدة.",
     "templateSentSuccess": "تم إرسال رسالة القالب بنجاح.",
     "templateSentError": "فشل في إرسال رسالة القالب.",
+    "templateVariables": "متغيرات القالب",
+    "templatePreview": "معاينة",
     "triggerFlow": "تشغيل مسار",
     "triggerFlowDescription": "اختر مسارًا نشطًا لتشغيله في هذه المحادثة.",
     "selectFlow": "اختر مسارًا...",
