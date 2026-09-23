@@ -43,7 +43,6 @@ import {
 } from "@/features/integration-whatsapp/message-templates/schema/mutation"
 import { WhatsappTemplateDialogProvider } from "./context"
 import type { WhatsappMessageTemplateResource } from "./schema/resource"
-import { metaComponentsToFormValues } from "./utils/parse-meta-to-form"
 import { TemplateCarouselImagePartial } from "./templates/carousel-image/partial"
 import { TemplateCarouselImagePreview } from "./templates/carousel-image/preview"
 import { templateCarouselImageDefaultValue } from "./templates/carousel-image/schema"
@@ -69,6 +68,7 @@ import { TemplateVideoPartial } from "./templates/video/partial"
 import { TemplateVideoPreview } from "./templates/video/preview"
 import { templateVideoDefaultValue } from "./templates/video/schema"
 import { type TemplateType, templateTypes } from "./type"
+import { metaComponentsToFormValues } from "./utils/parse-meta-to-form"
 
 type PartialProps = { parentName: string }
 
@@ -723,12 +723,7 @@ function EditMessageTemplateDialogContent({
           {/* ---- Fixed header bar ---- */}
           <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
             <div className="flex items-center gap-3">
-              <Button
-                onClick={onClose}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
+              <Button onClick={onClose} size="sm" type="button" variant="ghost">
                 <ArrowLeftIcon className="size-4" />
                 {t("actions.back")}
               </Button>

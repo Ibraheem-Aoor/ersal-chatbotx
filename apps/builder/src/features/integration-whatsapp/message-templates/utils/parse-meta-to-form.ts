@@ -19,7 +19,7 @@ export function metaComponentsToFormValues(
   templateType: TemplateType,
 ) {
   if (!Array.isArray(components)) {
-    return undefined
+    return
   }
 
   const header = components.find((c) => c.type === "HEADER")
@@ -58,14 +58,12 @@ export function metaComponentsToFormValues(
         footer: footerValue,
         buttons,
       }
-
-    case templateTypes.enum.Text:
     default:
       return {
         hideHeader: !!header,
         showFooter: true,
         header: {
-          text: header?.format === "TEXT" ? ((header.text as string) || "") : "",
+          text: header?.format === "TEXT" ? (header.text as string) || "" : "",
           variables: Array.isArray(header?.example?.header_text)
             ? (header.example.header_text as string[])
             : [],
@@ -96,7 +94,7 @@ function mapMetaButtonToForm(
         url,
         urlDynamic: isDynamic,
         urlSampleValue: isDynamic
-          ? ((btn.example?.[0] as string) || "")
+          ? (btn.example?.[0] as string) || ""
           : undefined,
       }
     }
@@ -121,8 +119,6 @@ function mapMetaButtonToForm(
         text,
         flow_id: (btn.flow_id as string) || "",
       }
-
-    case "QUICK_REPLY":
     default:
       return {
         type: "quickReply",

@@ -12,6 +12,7 @@ import {
 } from "./api/phone-number"
 import {
   createMessageTemplate,
+  deleteMessageTemplate,
   editMessageTemplate,
   listFlows,
   listMessageTemplates,
@@ -60,6 +61,8 @@ const config: IntegrationDefinition<
       await createMessageTemplate(ctx.auth, data),
     editMessageTemplate: async ({ ctx, data }) =>
       await editMessageTemplate(ctx.auth, data),
+    deleteMessageTemplate: async ({ ctx, data }) =>
+      await deleteMessageTemplate(ctx.auth, data),
   },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")

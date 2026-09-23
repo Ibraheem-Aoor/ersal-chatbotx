@@ -12,6 +12,7 @@ import type {
 } from "./api/phone-number"
 import type {
   CreateMessageTemplateProps,
+  DeleteMessageTemplateProps,
   EditMessageTemplateProps,
 } from "./api/waba"
 
@@ -277,5 +278,12 @@ export type WhatsappActions = {
       data: EditMessageTemplateProps
     },
     MessageTemplateEntity
+  >
+  deleteMessageTemplate: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      data: DeleteMessageTemplateProps
+    },
+    { success: boolean }
   >
 }

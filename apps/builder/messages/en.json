@@ -3754,7 +3754,12 @@
       "editTitle": "Edit Message Template",
       "editApprovedNotice": "Editing an approved template will submit a new version for Meta review",
       "lockedField": "This field cannot be changed after approval",
-      "noFlowsAvailable": "No WhatsApp Flows available. Sync flows first from the Flows page."
+      "noFlowsAvailable": "No WhatsApp Flows available. Sync flows first from the Flows page.",
+      "delete": {
+        "title": "Delete Message Template",
+        "description": "Are you sure you want to delete the template \"{name}\"? This will permanently remove it from Meta and cannot be undone. All language variants of this template will be deleted.",
+        "success": "Message template deleted successfully"
+      }
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"
