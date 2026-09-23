@@ -60,7 +60,7 @@ export function metaComponentsToFormValues(
       }
     default:
       return {
-        hideHeader: !!header,
+        hideHeader: true,
         showFooter: true,
         header: {
           text: header?.format === "TEXT" ? (header.text as string) || "" : "",

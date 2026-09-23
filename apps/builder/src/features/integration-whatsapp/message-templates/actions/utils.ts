@@ -130,45 +130,41 @@ export const parseHeader = async (
     return components
   }
   switch (templateType) {
-    case templateTypes.enum.Image:
-      components.push(
-        await parseHeaderMedia(
-          ctx,
-          (content as TemplateImageSchema).header.file,
-          "IMAGE",
-        ),
-      )
-
+    case templateTypes.enum.Image: {
+      const file = (content as TemplateImageSchema).header.file
+      if (file) {
+        components.push(await parseHeaderMedia(ctx, file, "IMAGE"))
+      }
       return components
+    }
 
-    case templateTypes.enum.Video:
-      components.push(
-        await parseHeaderMedia(
-          ctx,
-          (content as TemplateVideoSchema).header.file,
-          "VIDEO",
-        ),
-      )
-
+    case templateTypes.enum.Video: {
+      const file = (content as TemplateVideoSchema).header.file
+      if (file) {
+        components.push(await parseHeaderMedia(ctx, file, "VIDEO"))
+      }
       return components
+    }
 
-    case templateTypes.enum.Document:
-      components.push(
-        await parseHeaderMedia(
-          ctx,
-          (content as TemplateDocumentSchema).header.file,
-          "DOCUMENT",
-        ),
-      )
-
+    case templateTypes.enum.Document: {
+      const file = (content as TemplateDocumentSchema).header.file
+      if (file) {
+        components.push(await parseHeaderMedia(ctx, file, "DOCUMENT"))
+      }
       return components
+    }
 
     default: {
+      const headerText = (content as TemplateTextSchema).header.text
+      if (!headerText || headerText.trim().length === 0) {
+        return components
+      }
+
       // biome-ignore lint/suspicious/noExplicitAny: wip
       let header: any = {
         type: "HEADER",
         format: "TEXT",
-        text: (content as TemplateTextSchema).header.text,
+        text: headerText,
       }
 
       if ((content as TemplateTextSchema).header.variables?.length) {
