@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "20mb",
     },
+    middlewareClientMaxBodySize: "20mb",
     // Additive to Next's built-in default list, which already covers
     // lucide-react. `@chatbotx.io/ui` doesn't belong here: it's imported via
     // per-file subpaths and its root export is not a re-export barrel, so
