@@ -92,12 +92,14 @@ export function EditButtonDialog({
               description={`${(form.watch("text") || "").length}/100`}
               label={t("fields.text.label")}
               name="text"
+              required
             />
             {changeType && (
               <SelectField
                 label={t("fields.button.whenPressed")}
                 name="type"
                 options={buttonOptions}
+                required
               />
             )}
             {type === buttonActionTypes.enum.url && (
@@ -111,6 +113,7 @@ export function EditButtonDialog({
                       ? "https://example.com/order/{{1}}"
                       : "https://example.com"
                   }
+                  required
                 />
                 <SwitchField
                   description={t(
@@ -127,6 +130,7 @@ export function EditButtonDialog({
                     label={t("whatsapp.messageTemplate.dynamicUrl.sampleLabel")}
                     name="urlSampleValue"
                     placeholder="abc123"
+                    required
                   />
                 )}
               </>
@@ -135,6 +139,7 @@ export function EditButtonDialog({
               <InputField
                 label={t("fields.phoneNumber.label")}
                 name="phone_number"
+                required
               />
             )}
             {type === buttonActionTypes.enum.copyCode && (
@@ -143,6 +148,7 @@ export function EditButtonDialog({
                 label={t("whatsapp.messageTemplate.copyCode.label")}
                 name="example"
                 placeholder="123456"
+                required
               />
             )}
             <DialogFooter>

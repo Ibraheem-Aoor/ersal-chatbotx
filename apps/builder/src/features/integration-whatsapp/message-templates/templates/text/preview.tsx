@@ -1,5 +1,4 @@
 import { memo } from "react"
-import { useFormContext, useWatch } from "react-hook-form"
 import { ButtonGroupPreview } from "../button/preview"
 import { TemplateBody } from "../components/body"
 import { TemplateFooter } from "../components/footer"
@@ -14,15 +13,9 @@ const TemplateTextPreviewComponent = (
 ) => {
   const { parentName = "content", ...rest } = props
 
-  const { control } = useFormContext()
-  const hideHeader = useWatch({
-    control,
-    name: `${parentName}.hideHeader`,
-  })
-
   return (
     <div className="flex w-full flex-col gap-4" {...rest}>
-      {hideHeader && <TemplateHeader parentName={`${parentName}.header`} />}
+      <TemplateHeader parentName={`${parentName}.header`} />
       <TemplateBody parentName={`${parentName}.body`} />
       <TemplateFooter parentName={parentName} />
       <hr />
