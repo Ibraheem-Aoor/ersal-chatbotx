@@ -17,20 +17,13 @@ export const templateTextSchema = z
     buttons: z.array(buttonStepSchema).max(10),
   })
   .superRefine((data, ctx) => {
-    if (data.hideHeader && !data.header.text?.length) {
-      ctx.addIssue({
-        path: ["header", "text"],
-        message: "نص العنوان مطلوب",
-        code: z.ZodIssueCode.custom,
-      })
-    }
     validateButtonLimits(data.buttons, ctx)
   })
 
 export type TemplateTextSchema = z.infer<typeof templateTextSchema>
 
 export const templateTextDefaultValue = (): TemplateTextSchema => ({
-  hideHeader: false,
+  hideHeader: true,
   showFooter: true,
   header: {
     text: "",

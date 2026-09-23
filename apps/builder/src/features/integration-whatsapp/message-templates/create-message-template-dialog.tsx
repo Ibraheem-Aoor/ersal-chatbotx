@@ -2,6 +2,7 @@
 
 import { whatsappTemplateCategories } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { Badge } from "@chatbotx.io/ui/components/ui/badge"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
@@ -36,7 +37,6 @@ import { createMessageTemplateAction } from "@/features/integration-whatsapp/mes
 import { editMessageTemplateAction } from "@/features/integration-whatsapp/message-templates/actions/edit-message-template.action"
 import { WhatsappMessageTemplateCategorySelect } from "@/features/integration-whatsapp/message-templates/components/category-select"
 import { WhatsappMessageTemplateLanguageSelect } from "@/features/integration-whatsapp/message-templates/components/language-select"
-import { WhatsappMessageTemplateTypeSelect } from "@/features/integration-whatsapp/message-templates/components/template-type-select"
 import {
   createMessageTemplateRequest,
   editMessageTemplateRequest,
@@ -194,7 +194,6 @@ function LivePreview({
   })
   const footer = useWatch({ control, name: `${parentName}.footer` })
   const buttons = useWatch({ control, name: `${parentName}.buttons` })
-  const hideHeader = useWatch({ control, name: `${parentName}.hideHeader` })
 
   const isMedia =
     templateType === templateTypes.enum.Image ||
@@ -316,9 +315,8 @@ function LivePreview({
         </div>
       )}
 
-      {/* Header text (text-type templates only — hideHeader=true means header IS visible) */}
+      {/* Header text (text-type templates only) */}
       {!(isMedia || isCarousel) &&
-        hideHeader &&
         typeof headerText === "string" &&
         headerText.length > 0 && (
           <p className="mb-1 font-bold text-[13px] leading-snug dark:text-zinc-100">
@@ -390,7 +388,9 @@ function CreateMessageTemplateDialogContent({
   onSuccess: () => void
 }) {
   const t = useTranslations()
-  const [templateType, setTemplateType] = useState<TemplateType | null>(null)
+  const [templateType, setTemplateType] = useState<TemplateType>(
+    templateTypes.enum.Text,
+  )
 
   const {
     form,
@@ -408,7 +408,7 @@ function CreateMessageTemplateDialogContent({
               feature: t("whatsapp.messageTemplate.label"),
             }),
           )
-          setTemplateType(null)
+          setTemplateType(templateTypes.enum.Text)
           resetFormAndAction()
           onSuccess()
         },
@@ -423,31 +423,58 @@ function CreateMessageTemplateDialogContent({
         defaultValues: {
           name: "",
           language: "ar",
-          category: "UTILITY",
-          content: {
-            footer: "",
-            header: {
-              text: "",
-              variables: [],
-            },
-            body: {
-              text: "",
-              variables: [],
-            },
-            buttons: [],
-          },
-          templateType: undefined,
+          category: "MARKETING",
+          // biome-ignore lint/suspicious/noExplicitAny: template type discriminated union
+          templateType: templateTypes.enum.Text as any,
+          content: templateTextDefaultValue(),
         },
       },
       errorMapProps: {},
     },
   )
 
+  const templateTypeOptions = useMemo(
+    () => [
+      {
+        label: t("whatsapp.messageTemplate.text.label"),
+        value: templateTypes.enum.Text,
+      },
+      {
+        label: t("whatsapp.messageTemplate.image.label"),
+        value: templateTypes.enum.Image,
+      },
+      {
+        label: t("whatsapp.messageTemplate.video.label"),
+        value: templateTypes.enum.Video,
+      },
+      {
+        label: t("whatsapp.messageTemplate.document.label"),
+        value: templateTypes.enum.Document,
+      },
+      {
+        label: t("whatsapp.messageTemplate.carouselImage.label"),
+        value: templateTypes.enum.CarouselImage,
+      },
+      {
+        label: t("whatsapp.messageTemplate.carouselVideo.label"),
+        value: templateTypes.enum.CarouselVideo,
+      },
+      {
+        label: t("whatsapp.messageTemplate.viewCatalog.label"),
+        value: templateTypes.enum.ViewCatalog,
+      },
+      {
+        label: t("whatsapp.messageTemplate.viewProduct.label"),
+        value: templateTypes.enum.ViewProduct,
+      },
+    ],
+    [t],
+  )
+
   const onSelectTemplateType = (type: TemplateType) => {
     setTemplateType(type)
     // biome-ignore lint/suspicious/noExplicitAny: template type discriminated union
     setValue("templateType", type as any)
-    setValue("name", "")
     setValue("category", whatsappTemplateCategories.enum.MARKETING)
 
     switch (type) {
@@ -480,8 +507,8 @@ function CreateMessageTemplateDialogContent({
     }
   }
 
-  const PartialComponent = templateType ? partials[templateType] : undefined
-  const PreviewComponent = templateType ? previews[templateType] : undefined
+  const PartialComponent = partials[templateType]
+  const PreviewComponent = previews[templateType]
 
   return (
     <WhatsappTemplateDialogProvider
@@ -496,12 +523,7 @@ function CreateMessageTemplateDialogContent({
           {/* ---- Fixed header bar ---- */}
           <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
             <div className="flex items-center gap-3">
-              <Button
-                onClick={templateType ? () => setTemplateType(null) : onClose}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
+              <Button onClick={onClose} size="sm" type="button" variant="ghost">
                 <ArrowLeftIcon className="size-4" />
                 {t("actions.back")}
               </Button>
@@ -509,103 +531,91 @@ function CreateMessageTemplateDialogContent({
                 {t("whatsapp.messageTemplate.createTitle")}
               </h2>
             </div>
-            {templateType && (
-              <div className="flex items-center gap-3">
-                {form.formState.isDirty &&
-                  !form.formState.isValid &&
-                  !form.formState.isSubmitting && (
-                    <span className="flex items-center gap-1.5 text-destructive text-xs">
-                      <AlertCircleIcon className="size-3.5" />
-                      {t("whatsapp.messageTemplate.formHasErrors")}
-                    </span>
-                  )}
-                <Button
-                  disabled={
-                    !form.formState.isValid || form.formState.isSubmitting
-                  }
-                  size="sm"
-                  type="submit"
-                >
-                  {form.formState.isSubmitting && (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  )}
-                  {t("whatsapp.messageTemplate.submitForReview")}
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {form.formState.isDirty &&
+                !form.formState.isValid &&
+                !form.formState.isSubmitting && (
+                  <span className="flex items-center gap-1.5 text-destructive text-xs">
+                    <AlertCircleIcon className="size-3.5" />
+                    {t("whatsapp.messageTemplate.formHasErrors")}
+                  </span>
+                )}
+              <Button
+                disabled={
+                  !form.formState.isValid || form.formState.isSubmitting
+                }
+                size="sm"
+                type="submit"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
+                {t("whatsapp.messageTemplate.submitForReview")}
+              </Button>
+            </div>
           </div>
 
-          {/* ---- Step 1: Choose template type ---- */}
-          {!templateType && (
-            <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
-              <div className="mb-6 text-center">
-                <h3 className="font-semibold text-xl">
-                  {t("whatsapp.messageTemplate.selectType")}
-                </h3>
-              </div>
-              <div className="w-full max-w-2xl">
-                <WhatsappMessageTemplateTypeSelect
-                  onSelectTemplateType={onSelectTemplateType}
-                />
-              </div>
-            </div>
-          )}
+          {/* ---- Single-step layout: inputs (start) + preview (end) ---- */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Inputs — renders first; in RTL this becomes the right side */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+              {/* Template details */}
+              <Card>
+                <CardContent className="flex flex-col gap-4 py-4">
+                  <NameFieldWithCounter />
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <SelectField
+                      label={t("fields.type.label")}
+                      name="templateType"
+                      options={templateTypeOptions}
+                      required
+                      triggerValueChange={(value) => {
+                        if (value) {
+                          onSelectTemplateType(value as TemplateType)
+                        }
+                      }}
+                    />
+                    <WhatsappMessageTemplateLanguageSelect
+                      label={t("fields.language.label")}
+                      name="language"
+                      required
+                    />
+                    <WhatsappMessageTemplateCategorySelect
+                      label={t("fields.category.label")}
+                      name="category"
+                      required
+                    />
+                  </div>
+                  <LanguageMismatchWarning />
+                </CardContent>
+              </Card>
 
-          {/* ---- Step 2: Read-only preview (left) + All inputs (right) ---- */}
-          {templateType && (
-            <div className="flex flex-1 overflow-hidden">
-              {/* LEFT: Read-only phone preview */}
-              <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
-                <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                  <LivePreview
-                    parentName="content"
-                    templateType={templateType}
-                  />
-                </PhoneFrame>
-              </div>
-
-              {/* RIGHT: All input fields */}
-              <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-                {/* Template details */}
+              {/* Template content editor (body, header, footer, buttons, files) */}
+              {PreviewComponent && (
                 <Card>
-                  <CardContent className="flex flex-col gap-5 py-5">
-                    <NameFieldWithCounter />
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <WhatsappMessageTemplateLanguageSelect
-                        label={t("fields.language.label")}
-                        name="language"
-                        required
-                      />
-                      <WhatsappMessageTemplateCategorySelect
-                        label={t("fields.category.label")}
-                        name="category"
-                        required
-                      />
-                    </div>
-                    <LanguageMismatchWarning />
+                  <CardContent className="py-4">
+                    <PreviewComponent parentName="content" />
                   </CardContent>
                 </Card>
+              )}
 
-                {/* Template content editor (body, header, footer, buttons, files) */}
-                {PreviewComponent && (
-                  <Card>
-                    <CardContent className="py-5">
-                      <PreviewComponent parentName="content" />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Template options (toggles, variable sample values) */}
-                {PartialComponent && (
-                  <Card>
-                    <CardContent className="py-5">
-                      <PartialComponent parentName="content" />
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              {/* Template options (toggles, variable sample values) */}
+              {PartialComponent && (
+                <Card>
+                  <CardContent className="py-4">
+                    <PartialComponent parentName="content" />
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          )}
+
+            {/* Preview — renders second; in RTL this becomes the left side */}
+            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-s bg-muted/40 p-6 lg:flex">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={templateType} />
+              </PhoneFrame>
+            </div>
+          </div>
         </form>
       </Form>
     </WhatsappTemplateDialogProvider>
@@ -767,17 +777,10 @@ function EditMessageTemplateDialogContent({
             </div>
           </div>
 
-          {/* ---- Two-column layout ---- */}
+          {/* ---- Two-column layout: inputs (start) + preview (end) ---- */}
           <div className="flex flex-1 overflow-hidden">
-            {/* LEFT: Read-only phone preview */}
-            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-e bg-muted/40 p-6 lg:flex">
-              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
-                <LivePreview parentName="content" templateType={inferredType} />
-              </PhoneFrame>
-            </div>
-
-            {/* RIGHT: Input fields */}
-            <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+            {/* Inputs — renders first; in RTL this becomes the right side */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {/* Re-review notice for approved templates */}
               {isApproved && (
                 <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
@@ -790,12 +793,13 @@ function EditMessageTemplateDialogContent({
 
               {/* Template details — locked fields */}
               <Card>
-                <CardContent className="flex flex-col gap-5 py-5">
+                <CardContent className="flex flex-col gap-4 py-4">
                   <div className="relative">
                     <InputField
                       disabled
                       label={t("fields.name.label")}
                       name="name"
+                      required
                     />
                     <LockIcon className="absolute end-3 top-9 size-3.5 text-muted-foreground" />
                   </div>
@@ -827,7 +831,7 @@ function EditMessageTemplateDialogContent({
               {/* Template content editor */}
               {PreviewComponent && (
                 <Card>
-                  <CardContent className="py-5">
+                  <CardContent className="py-4">
                     <PreviewComponent parentName="content" />
                   </CardContent>
                 </Card>
@@ -836,11 +840,18 @@ function EditMessageTemplateDialogContent({
               {/* Template options */}
               {PartialComponent && (
                 <Card>
-                  <CardContent className="py-5">
+                  <CardContent className="py-4">
                     <PartialComponent parentName="content" />
                   </CardContent>
                 </Card>
               )}
+            </div>
+
+            {/* Preview — renders second; in RTL this becomes the left side */}
+            <div className="hidden w-[420px] shrink-0 items-start justify-center overflow-y-auto border-s bg-muted/40 p-6 lg:flex">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={inferredType} />
+              </PhoneFrame>
             </div>
           </div>
         </form>
