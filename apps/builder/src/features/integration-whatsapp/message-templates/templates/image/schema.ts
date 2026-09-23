@@ -21,8 +21,8 @@ export const templateImageSchema = z
             message: "يجب أن يكون الملف صورة بصيغة png أو jpg أو jpeg",
           },
         )
-        .refine((file) => file && file.size <= 2 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 2 ميجابايت",
+        .refine((file) => file && file.size <= 5 * 1024 * 1024, {
+          message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
         }),
     }),
     body: z.object({
@@ -55,9 +55,9 @@ export const templateImageEditSchema = z
           },
         )
         .refine(
-          (file) => file === null || (file && file.size <= 2 * 1024 * 1024),
+          (file) => file === null || (file && file.size <= 5 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 2 ميجابايت",
+            message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
           },
         ),
     }),

@@ -15,8 +15,8 @@ export const templateDocumentSchema = z
             message: "يجب أن يكون الملف مستند PDF",
           },
         )
-        .refine((file) => file && file.size <= 5 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
+        .refine((file) => file && file.size <= 100 * 1024 * 1024, {
+          message: "يجب ألا يتجاوز حجم الملف 100 ميجابايت",
         }),
     }),
     body: z.object({
@@ -48,9 +48,9 @@ export const templateDocumentEditSchema = z
           },
         )
         .refine(
-          (file) => file === null || (file && file.size <= 5 * 1024 * 1024),
+          (file) => file === null || (file && file.size <= 100 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
+            message: "يجب ألا يتجاوز حجم الملف 100 ميجابايت",
           },
         ),
     }),
