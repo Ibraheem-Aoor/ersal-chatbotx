@@ -832,6 +832,9 @@
   "workspaces": {
     "list": {
       "title": "Workspaces List"
+    },
+    "create": {
+      "description": "Give your workspace a name to get started. You can connect channels later."
     }
   },
   "workspaceToken": {
@@ -1056,7 +1059,9 @@
       "label": "Completed"
     },
     "workspace": {
-      "label": "Workspace"
+      "label": "Workspace",
+      "name": "Workspace Name",
+      "namePlaceholder": "My Workspace"
     },
     "workspaceId": {
       "description": "Unique identifier for your workspace.",
@@ -3177,7 +3182,8 @@
       "notSupported": "Voice recording is not supported in your browser.",
       "noMicrophone": "No microphone was found. Please connect a microphone and try again.",
       "recordingFailed": "Voice recording failed. Please try again.",
-      "formatUnsupported": "Voice messages are not supported in this browser. Please use Chrome, Firefox, or Edge."
+      "formatUnsupported": "Voice messages are not supported in this browser. Please use Chrome, Firefox, or Edge.",
+      "converting": "Preparing voice message…"
     },
     "backToConversations": "Back to conversations",
     "botCategoryAll": "All",
@@ -3226,6 +3232,8 @@
     "noApprovedTemplates": "No approved templates found.",
     "templateSentSuccess": "Template message sent successfully.",
     "templateSentError": "Failed to send template message.",
+    "templateVariables": "Template Variables",
+    "templatePreview": "Preview",
     "triggerFlow": "Trigger Flow",
     "triggerFlowDescription": "Select an active flow to trigger for this conversation.",
     "selectFlow": "Select a flow...",
@@ -3748,7 +3756,13 @@
       "editTitle": "Edit Message Template",
       "editApprovedNotice": "Editing an approved template will submit a new version for Meta review",
       "lockedField": "This field cannot be changed after approval",
-      "noFlowsAvailable": "No WhatsApp Flows available. Sync flows first from the Flows page."
+      "mediaKeptHint": "Current media will be kept unless you upload a new file",
+      "noFlowsAvailable": "No WhatsApp Flows available. Sync flows first from the Flows page.",
+      "delete": {
+        "title": "Delete Message Template",
+        "description": "Are you sure you want to delete the template \"{name}\"? This will permanently remove it from Meta and cannot be undone. All language variants of this template will be deleted.",
+        "success": "Message template deleted successfully"
+      }
     },
     "sampleBodyCardContent": {
       "label": "Sample body card content"
@@ -3880,7 +3894,8 @@
       "health": {
         "label": "Business Status",
         "tooltip": "Overview of your WhatsApp account health and messaging capability.",
-        "blockedMessage": "Your phone number has been blocked from sending messages.",
+        "blockedMessage": "Messaging is currently restricted on this number. Check the details below or visit Meta Business Manager.",
+        "limitedMessage": "Messaging capacity is temporarily limited. You can still send messages, but at a reduced rate.",
         "problem": "Problem:",
         "possibleSolution": "Possible solution:",
         "noIssues": "No issues detected",

@@ -56,6 +56,7 @@ const TemplateVideoPreviewComponent = (
                 accept: {
                   "video/mp4": [".mp4"],
                 },
+                maxSize: 16,
                 isCard: true,
                 containerClassName: "aspect-video min-h-[120px] max-h-[240px]",
               }}

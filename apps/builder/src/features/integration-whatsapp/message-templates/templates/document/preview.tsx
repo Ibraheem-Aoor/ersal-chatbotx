@@ -49,6 +49,7 @@ const TemplateDocumentPreviewComponent = (
                 accept: {
                   "application/pdf": [".pdf"],
                 },
+                maxSize: 100,
                 isCard: true,
                 containerClassName: "min-h-[100px]",
               }}

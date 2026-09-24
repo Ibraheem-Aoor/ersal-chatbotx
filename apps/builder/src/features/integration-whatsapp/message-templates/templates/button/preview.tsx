@@ -129,6 +129,7 @@ function InlineButtonRow({
           label={t("whatsapp.messageTemplate.buttonText")}
           name={`${parentName}.${index}.text`}
           placeholder={t("whatsapp.messageTemplate.buttonTextPlaceholder")}
+          required
         />
 
         {/* URL-specific fields */}
@@ -142,6 +143,7 @@ function InlineButtonRow({
                   ? "https://example.com/order/{{1}}"
                   : "https://example.com"
               }
+              required
             />
             <SwitchField
               description={t("whatsapp.messageTemplate.dynamicUrl.description")}
@@ -156,6 +158,7 @@ function InlineButtonRow({
                 label={t("whatsapp.messageTemplate.dynamicUrl.sampleLabel")}
                 name={`${parentName}.${index}.urlSampleValue`}
                 placeholder="abc123"
+                required
               />
             )}
           </>
@@ -167,6 +170,7 @@ function InlineButtonRow({
             label={t("fields.phoneNumber.label")}
             name={`${parentName}.${index}.phone_number`}
             placeholder="+1234567890"
+            required
           />
         )}
 
@@ -177,14 +181,13 @@ function InlineButtonRow({
             label={t("whatsapp.messageTemplate.copyCode.label")}
             name={`${parentName}.${index}.example`}
             placeholder="123456"
+            required
           />
         )}
 
         {/* Flow-specific field */}
         {type === "flow" && (
-          <FlowSelectField
-            name={`${parentName}.${index}.flow_id`}
-          />
+          <FlowSelectField name={`${parentName}.${index}.flow_id`} />
         )}
       </div>
     </div>

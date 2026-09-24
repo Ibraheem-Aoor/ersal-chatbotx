@@ -40,7 +40,7 @@ import {
 import { logger } from "../../lib/logger"
 import { shouldSuppressRetryableChannelError } from "../utils/retry"
 import { convertButtonsToTemplate } from "./send-flow-step"
-import { sendFlowStepToChannel } from "./send-message"
+import { recordMessageSendError, sendFlowStepToChannel } from "./send-message"
 
 type EnqueueTemplateSentEvaluationInput = {
   workspaceId: string
@@ -340,6 +340,14 @@ export async function processWhatsappTemplate(
       errorData,
       occurredAt: new Date(),
     })
+
+    await recordMessageSendError(
+      newMessage?.id,
+      undefined,
+      conversation.workspaceId,
+      newMessage?.createdAt,
+      errorData.message,
+    )
 
     throw error
   }

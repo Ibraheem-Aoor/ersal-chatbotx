@@ -1,7 +1,6 @@
 "use client"
 
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
-import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { useTranslations } from "next-intl"
 import { memo } from "react"
@@ -56,10 +55,6 @@ const TemplateTextPartialComponent = (
 
   return (
     <div className="w-full flex-1" {...rest}>
-      <SwitchField
-        label={t("whatsapp.showHeader.label")}
-        name={`${parentName}.hideHeader`}
-      />
       {headerVariables?.length > 0 && (
         <>
           <div className="mt-6 font-medium text-sm">

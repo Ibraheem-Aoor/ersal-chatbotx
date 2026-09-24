@@ -1,6 +1,7 @@
 "use server"
 
 import { buildContext } from "@chatbotx.io/business"
+import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import {
   integrationWhatsappModel,
@@ -10,6 +11,7 @@ import type {
   EditMessageTemplateProps,
   WhatsappAuthValue,
 } from "@chatbotx.io/integration-whatsapp"
+import { SdkException } from "@chatbotx.io/sdk"
 import {
   type WorkspaceIdAndIdRequestParams,
   workspaceIdAndIdRequestParams,
@@ -20,6 +22,10 @@ import {
   type EditMessageTemplateRequest,
   editMessageTemplateRequest,
 } from "../schema/mutation"
+import {
+  extractMetaErrorDetails,
+  mapTemplateError,
+} from "./template-error-mapper"
 import { parseComponents } from "./utils"
 
 export const editMessageTemplateAction = workspaceActionClient
@@ -46,6 +52,12 @@ export const editMessageTemplateAction = workspaceActionClient
         message: "Template not found",
       })
 
+      if (template.status === "PENDING") {
+        throw new Error(
+          "Cannot edit a template that is pending review. Only APPROVED or REJECTED templates can be edited.",
+        )
+      }
+
       const ctx = await buildContext({
         workspaceId,
         integrationType: "whatsapp",
@@ -71,10 +83,19 @@ export const editMessageTemplateAction = workspaceActionClient
         JSON.stringify(editData, null, 2),
       )
 
-      await integrations.whatsapp.runAction("editMessageTemplate", {
-        ctx,
-        data: editData,
-      })
+      try {
+        await integrations.whatsapp.runAction("editMessageTemplate", {
+          ctx,
+          data: editData,
+        })
+      } catch (error) {
+        if (error instanceof SdkException) {
+          throw new ChatbotXException(
+            mapTemplateError(extractMetaErrorDetails(error)),
+          )
+        }
+        throw error
+      }
 
       // After editing, status goes back to PENDING for approved templates
       await db
