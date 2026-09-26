@@ -366,8 +366,12 @@ function BroadcastFlowTypeSelector({
   ]
 
   const [selectedType, setSelectedType] = useState<BroadcastFlowType>(
-    broadcastFlowTypes.enum.flow,
+    broadcastFlowTypes.enum.template,
   )
+
+  useEffect(() => {
+    setValue("templateType", broadcastFlowTypes.enum.template)
+  }, [setValue])
 
   const handleTypeChange = useCallback(
     (type: BroadcastFlowType) => {

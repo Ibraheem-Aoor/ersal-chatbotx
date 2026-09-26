@@ -27,6 +27,7 @@ import {
   PencilIcon,
   PlusIcon,
   RotateCwIcon,
+  UploadIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -349,7 +350,14 @@ export function BroadcastsTable({ promises }: BroadcastsTableProps) {
     >
       <DataTable table={table}>
         <DataTableToolbar table={table}>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Link
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+              href={`/space/${workspaceId}/contacts/import`}
+            >
+              <UploadIcon />
+              {t("actions.import")}
+            </Link>
             <Link
               className={buttonVariants({ size: "sm" })}
               href={`/space/${workspaceId}/broadcasts/create`}
