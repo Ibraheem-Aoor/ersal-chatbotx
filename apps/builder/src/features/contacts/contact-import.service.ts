@@ -68,6 +68,7 @@ export const contactImportService = {
         lastName: input.lastName,
       },
       fieldMapping: input.fieldMapping,
+      tagId: input.tagId,
     }
 
     await db.insert(importModel).values({
