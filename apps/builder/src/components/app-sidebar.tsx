@@ -89,28 +89,41 @@ export function AppSidebar({
     },
     navMain: [
       {
-        title: t("fields.analytics.label"),
-        url: `/space/${workspaceId}/dashboard`,
-        icon: ChartPieIcon,
-        permission: PERMISSION_NAV.dashboard,
-      },
-      {
         title: t("fields.inbox.label"),
         url: `/space/${workspaceId}/inbox`,
         icon: MessageCircleMoreIcon,
         badge: unreadCount,
       },
       {
-        title: t("fields.flows.label"),
-        url: `/space/${workspaceId}/flows`,
-        icon: WorkflowIcon,
-        permission: PERMISSION_NAV.flows,
-      },
-      {
         title: t("fields.contacts.label"),
         url: `/space/${workspaceId}/contacts`,
         icon: UsersIcon,
         permission: PERMISSION_NAV.contacts,
+      },
+      {
+        title: t("broadcasts.title"),
+        url: `/space/${workspaceId}/broadcasts`,
+        icon: RadioIcon,
+        permission: PERMISSION_NAV.broadcasts,
+      },
+      // FORK PATCH: WhatsApp Templates quick-access. URL resolves based on
+      // how many WA integrations the workspace has:
+      //  - 1 integration → link directly to its templates page
+      //  - 0 or 2+ → link to the WA channel settings (connect / pick one)
+      {
+        title: t("whatsapp.tabs.messageTemplates"),
+        url:
+          whatsappIntegrationIds.length === 1
+            ? `/space/${workspaceId}/whatsapps/${whatsappIntegrationIds[0]}/message-templates`
+            : `/space/${workspaceId}/settings/channels/whatsapp`,
+        icon: LayoutTemplateIcon,
+        permission: "superAdmin",
+      },
+      {
+        title: t("fields.flows.label"),
+        url: `/space/${workspaceId}/flows`,
+        icon: WorkflowIcon,
+        permission: PERMISSION_NAV.flows,
       },
       {
         title: t("aiAgent.title"),
@@ -121,12 +134,6 @@ export function AppSidebar({
         title: t("keywords.title"),
         url: `/space/${workspaceId}/automated-responses`,
         icon: AtomIcon,
-      },
-      {
-        title: t("broadcasts.title"),
-        url: `/space/${workspaceId}/broadcasts`,
-        icon: RadioIcon,
-        permission: PERMISSION_NAV.broadcasts,
       },
       {
         title: t("sequences.title"),
@@ -144,23 +151,16 @@ export function AppSidebar({
         url: `/space/${workspaceId}/webhooks`,
         icon: WebhookIcon,
       },
-      // FORK PATCH: WhatsApp Templates quick-access. URL resolves based on
-      // how many WA integrations the workspace has:
-      //  - 1 integration → link directly to its templates page
-      //  - 0 or 2+ → link to the WA channel settings (connect / pick one)
-      {
-        title: t("whatsapp.tabs.messageTemplates"),
-        url:
-          whatsappIntegrationIds.length === 1
-            ? `/space/${workspaceId}/whatsapps/${whatsappIntegrationIds[0]}/message-templates`
-            : `/space/${workspaceId}/settings/channels/whatsapp`,
-        icon: LayoutTemplateIcon,
-        permission: "superAdmin",
-      },
       {
         title: t("tools.title"),
         url: `/space/${workspaceId}/tools`,
         icon: WrenchIcon,
+      },
+      {
+        title: t("fields.analytics.label"),
+        url: `/space/${workspaceId}/dashboard`,
+        icon: ChartPieIcon,
+        permission: PERMISSION_NAV.dashboard,
       },
       {
         title: t("ads.title"),

@@ -926,6 +926,24 @@ variable, file type mismatch, button limits, etc.). All error messages must appe
 the correct language. Default button texts ("عرض الكتالوج" / "View catalog") must be
 in the correct locale.
 
+## 32. UX — Sidebar reorder
+
+**Files:**
+- `apps/builder/src/components/app-sidebar.tsx`
+
+**What:**
+- Reordered sidebar navigation items to match client's requested priority:
+  Inbox → Contacts → Campaigns → Message Templates → Flows → AI Agents →
+  Keywords → Sequences → Triggers → Webhooks → Tools → Analytics → Ads → Settings.
+- All permission gates preserved unchanged (contacts, broadcasts, sequences, flows,
+  dashboard, superAdmin).
+
+**Why:** Client wants most-used items (Inbox, Contacts, Campaigns, Templates) at the
+top of the sidebar for faster access. Analytics moved down as it's less frequently used.
+
+**Verify after sync:** Sidebar renders in the new order. All permission-gated items
+still respect their gates (non-superadmin sees correct subset).
+
 ---
 
 ## Data Patches (non-edition, re-apply if overwritten)
