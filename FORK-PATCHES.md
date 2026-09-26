@@ -1046,6 +1046,32 @@ visible next to "Create Broadcast", links to contacts import.
 
 ---
 
+## 36. Fix — Contact import tagId silently dropped (E3 prerequisite)
+
+**Files:**
+- `apps/builder/src/features/contacts/contact-import.service.ts`
+
+**What:**
+- **E3 fix**: The `startImport` function builds `meta` from the import input but
+  omits `tagId`, even though the form collects it (line 20 of schema), the meta
+  schema supports it (line 62 of `import.ts` partial), and the worker reads it
+  (handler.ts lines 65-67, 258-262). This means the tag a user selects during
+  contact import was **silently dropped** and never applied.
+- Added `tagId: input.tagId` to the `meta` object so the worker receives it and
+  tags imported contacts as expected.
+
+**Why:** This bug blocked the tag-based broadcast audience workflow: import
+contacts with a campaign tag → filter broadcast by that tag. The 24h session
+window rule is already enforced via `requiresRecentInteractionWindow` in
+`broadcast-filter-fields.ts` — template broadcasts bypass it (correct),
+session-based broadcasts enforce it (correct). No worker code change needed.
+
+**Verify after sync:** Import contacts with a tag selected → tag appears on
+the imported contacts. Create a broadcast → filter by that tag → contacts
+appear in the estimated audience count.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
