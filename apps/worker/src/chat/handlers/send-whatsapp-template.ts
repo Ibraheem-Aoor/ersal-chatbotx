@@ -171,6 +171,7 @@ export async function processWhatsappTemplate(
         language: template.language,
         id: template.id,
         params: replacedParams,
+        components: validated.template.components,
       },
       stepId: step?.id,
       nodeId: step?.nodeId,

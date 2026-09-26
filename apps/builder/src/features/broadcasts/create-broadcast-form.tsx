@@ -59,6 +59,10 @@ import { TemplatePreview } from "../integration-whatsapp/message-templates/compo
 import type { MessageTemplateWithComponents } from "../integration-whatsapp/message-templates/schema/resource"
 import { useIntegrationStore } from "../integration-whatsapp/provider/integration-store-context"
 import { MessengerBroadcastFlowButtons } from "./components/messenger-broadcast-flow-buttons"
+import {
+  extractWhatsappFlowButtons,
+  WhatsappBroadcastFlowButtons,
+} from "./components/whatsapp-broadcast-flow-buttons"
 import { getBroadcastExcludedFilterFields } from "./lib/broadcast-filter-fields"
 import { buildCreateBroadcastDefaultValues } from "./lib/create-broadcast-defaults"
 
@@ -652,9 +656,16 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
           template.components as TemplateComponent[],
         )
         setValue("templateData", initialParams)
+        setValue(
+          "buttons",
+          extractWhatsappFlowButtons(
+            template.components as TemplateComponent[],
+          ).map((b) => ({ id: b.id, label: b.label, flowId: "" })),
+        )
       } else {
         setSelectedTemplate(null)
         setValue("templateData", undefined)
+        setValue("buttons", [])
       }
     }
   }, [watchedTemplateId, whatsappTemplates, setValue])
@@ -774,6 +785,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
                           headerParams={watchedTemplateData?.header || []}
                         />
                       </div>
+                      <WhatsappBroadcastFlowButtons />
                     </div>
                   )}
                 </>

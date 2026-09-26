@@ -27,6 +27,7 @@ import {
   PencilIcon,
   PlayCircleIcon,
   PlusIcon,
+  SmartphoneIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -572,6 +573,29 @@ function CreateMessageTemplateDialogContent({
                     {t("whatsapp.messageTemplate.formHasErrors")}
                   </span>
                 )}
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      className="lg:hidden"
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <SmartphoneIcon className="size-4" />
+                      {t("whatsapp.messageTemplate.preview")}
+                    </Button>
+                  }
+                />
+                <SheetContent className="w-full max-w-[400px] overflow-y-auto p-4 sm:max-w-[400px]">
+                  <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                    <LivePreview
+                      parentName="content"
+                      templateType={templateType}
+                    />
+                  </PhoneFrame>
+                </SheetContent>
+              </Sheet>
               <Button
                 disabled={
                   !form.formState.isValid || form.formState.isSubmitting
@@ -794,6 +818,29 @@ function EditMessageTemplateDialogContent({
                     {t("whatsapp.messageTemplate.formHasErrors")}
                   </span>
                 )}
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      className="lg:hidden"
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <SmartphoneIcon className="size-4" />
+                      {t("whatsapp.messageTemplate.preview")}
+                    </Button>
+                  }
+                />
+                <SheetContent className="w-full max-w-[400px] overflow-y-auto p-4 sm:max-w-[400px]">
+                  <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                    <LivePreview
+                      parentName="content"
+                      templateType={inferredType}
+                    />
+                  </PhoneFrame>
+                </SheetContent>
+              </Sheet>
               <Button
                 disabled={
                   !form.formState.isValid || form.formState.isSubmitting
