@@ -84,18 +84,23 @@ function NameCell({
               className="object-cover"
               src={avatarUrl}
             />
-            <AvatarFallback className="text-sm" colorSeed={contact.fullName ?? undefined}>
+            <AvatarFallback
+              className="text-sm"
+              colorSeed={contact.fullName ?? undefined}
+            >
               {contact.fullName?.slice(0, 2) ?? "?"}
             </AvatarFallback>
           </Avatar>
           {channel && (
             <div className="absolute end-0 bottom-0 ltr:translate-x-1 rtl:-translate-x-1">
-              <InboxIcon
-                channel={channel}
-                iconClassName="size-3"
-                showLabel={false}
-                size="small"
-              />
+              <span className="flex size-5 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border">
+                <InboxIcon
+                  channel={channel}
+                  iconClassName="size-3"
+                  showLabel={false}
+                  size="small"
+                />
+              </span>
             </div>
           )}
         </div>

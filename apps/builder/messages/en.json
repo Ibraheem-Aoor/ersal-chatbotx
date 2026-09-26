@@ -3127,6 +3127,17 @@
     "commentHidden": "This comment was hidden",
     "messageDeleted": "The message has been deleted.",
     "sendFailed": "Failed to send",
+    "sendErrors": {
+      "outsideWindow": "Conversation window expired (24 hours) — send a template to reopen.",
+      "notOnWhatsapp": "Phone number is not registered on WhatsApp.",
+      "rateLimited": "Send rate limit exceeded — try again later.",
+      "invalidPhone": "Invalid phone number.",
+      "mediaFailed": "Media upload failed — check the file and try again.",
+      "templateNotApproved": "Template not found or not approved.",
+      "receiverIncapable": "This recipient cannot receive messages at this time.",
+      "spamRateLimited": "Sending restricted due to suspected spam.",
+      "unknown": "An unexpected error occurred while sending."
+    },
     "testRequestFailed": "Request test failed — check the URL and try again",
     "repliedToStory": "Replied to your story",
     "sentAttachments": "Sent {count, plural, one {1 attachment} other {# attachments}}",

@@ -3913,6 +3913,17 @@
     "selectConversationDescription": "اختر محادثة من القائمة على اليمين لعرض الرسائل وبدء الدردشة.",
     "selectConversationTitle": "اختر محادثة",
     "sendFailed": "فشل الإرسال",
+    "sendErrors": {
+      "outsideWindow": "انتهت نافذة المحادثة (٢٤ ساعة) — أرسل قالباً لإعادة فتحها.",
+      "notOnWhatsapp": "رقم الهاتف غير مسجّل على واتساب.",
+      "rateLimited": "تم تجاوز حد الإرسال — حاول مرة أخرى لاحقاً.",
+      "invalidPhone": "رقم الهاتف غير صالح.",
+      "mediaFailed": "فشل تحميل الوسائط — تحقق من الملف وحاول مرة أخرى.",
+      "templateNotApproved": "القالب غير موجود أو لم تتم الموافقة عليه.",
+      "receiverIncapable": "لا يمكن لهذا المستلم تلقي الرسائل حالياً.",
+      "spamRateLimited": "تم تقييد الإرسال بسبب اشتباه بالإزعاج.",
+      "unknown": "حدث خطأ غير متوقع أثناء الإرسال."
+    },
     "testRequestFailed": "فشل اختبار الطلب — تحقق من الرابط وحاول مرة أخرى",
     "sendHumanAgentTag": "إرسال رسالة واحدة باستخدام وسم HUMAN_AGENT",
     "sentAttachments": "تم إرسال {count, plural, one {مرفق واحد} other {# مرفقات}}",

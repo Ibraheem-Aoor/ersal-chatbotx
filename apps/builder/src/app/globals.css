@@ -17,3 +17,21 @@
  * you can always add it with the @source directive.
  */
 @source "../../node_modules/@chatbotx.io/ui";
+
+/* FORK PATCH: WhatsApp-style beige conversation background */
+.whatsapp-chat-bg {
+  background-color: #ece5dd;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' opacity='0.06'%3E%3Cpath d='M20 0l10 10-10 10L10 10zm40 0l10 10-10 10L40 10zm-20 20l10 10-10 10L20 30zm40 0l10 10-10 10L60 30zM0 20l10 10L0 40l-10-10zm20 20l10 10-10 10L20 50zm40 0l10 10-10 10L60 50zM0 60l10 10L0 80l-10-10zm40-20l10 10-10 10L40 50z' fill='%2325d366'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .whatsapp-chat-bg {
+    background-color: #0b141a;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' opacity='0.04'%3E%3Cpath d='M20 0l10 10-10 10L10 10zm40 0l10 10-10 10L40 10zm-20 20l10 10-10 10L20 30zm40 0l10 10-10 10L60 30zM0 20l10 10L0 40l-10-10zm20 20l10 10-10 10L20 50zm40 0l10 10-10 10L60 50zM0 60l10 10L0 80l-10-10zm40-20l10 10-10 10L40 50z' fill='%2325d366'/%3E%3C/svg%3E");
+  }
+}
+
+:root[data-theme="dark"] .whatsapp-chat-bg {
+  background-color: #0b141a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' opacity='0.04'%3E%3Cpath d='M20 0l10 10-10 10L10 10zm40 0l10 10-10 10L40 10zm-20 20l10 10-10 10L20 30zm40 0l10 10-10 10L60 30zM0 20l10 10L0 40l-10-10zm20 20l10 10-10 10L20 50zm40 0l10 10-10 10L60 50zM0 60l10 10L0 80l-10-10zm40-20l10 10-10 10L40 50z' fill='%2325d366'/%3E%3C/svg%3E");
+}

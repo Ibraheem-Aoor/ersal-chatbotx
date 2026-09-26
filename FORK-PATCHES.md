@@ -944,6 +944,39 @@ top of the sidebar for faster access. Analytics moved down as it's less frequent
 **Verify after sync:** Sidebar renders in the new order. All permission-gated items
 still respect their gates (non-superadmin sees correct subset).
 
+## 33. UX — Inbox visual improvements (channel badge, WhatsApp background, Arabic sendError)
+
+**Files:**
+- `apps/builder/src/features/conversations/conversation-item.tsx`
+- `apps/builder/src/features/contacts/contacts-table.tsx`
+- `apps/builder/src/features/messages/message-list.tsx`
+- `apps/builder/src/features/messages/components/message-item.tsx`
+- `apps/builder/src/app/globals.css`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
+
+**What:**
+- **C1**: Channel icon badge on contact avatars now has a white circular background
+  with a subtle border ring, making it clearly visible regardless of avatar color.
+  Applied to both conversation list and contacts table.
+- **C2**: WhatsApp conversations get a distinctive beige wallpaper background
+  (`#ECE5DD`) with a subtle doodle pattern. Dark mode uses WhatsApp's native dark
+  background (`#0B141A`). Non-WhatsApp channels keep the default background.
+- **C4**: Common Meta API send errors are now translated to Arabic in the message
+  error tooltip. Pattern-matching maps known errors (24h window, not on WhatsApp,
+  rate limit, invalid phone, media failure, template not approved, receiver
+  incapable, spam restriction) to bilingual i18n keys. Unknown errors fall back
+  to the raw API text.
+
+**Why:** Visual improvements to make the inbox more intuitive — channel badges
+pop on any avatar color, WhatsApp conversations feel native, and Arabic-speaking
+agents see error reasons in their language.
+
+**Verify after sync:** Open WhatsApp conversation → beige background visible,
+dark mode → dark WhatsApp background. Conversation list & contacts table →
+channel icons have visible white ring. Failed message tooltip → Arabic error
+reason (test by checking a message with sendError in DB).
+
 ---
 
 ## Data Patches (non-edition, re-apply if overwritten)

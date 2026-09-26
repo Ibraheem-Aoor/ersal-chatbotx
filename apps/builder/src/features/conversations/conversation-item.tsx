@@ -56,7 +56,10 @@ const assignedIcon = (
             <Avatar className="size-4">
               <AvatarImage src={assignedAvatarUrl ?? ""} />
 
-              <AvatarFallback className="text-[0.5rem]" colorSeed={conversation.assignedUser?.name ?? undefined}>
+              <AvatarFallback
+                className="text-[0.5rem]"
+                colorSeed={conversation.assignedUser?.name ?? undefined}
+              >
                 {conversation.assignedUser?.name?.slice(0, 2) ?? " "}
               </AvatarFallback>
             </Avatar>
@@ -175,7 +178,7 @@ export default function ConversationItem({
               <Tooltip key={contactInbox.id}>
                 <TooltipTrigger
                   render={
-                    <span>
+                    <span className="flex size-5 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border">
                       <InboxIcon
                         channel={contactInbox.channel as ChannelType}
                         showLabel={false}
