@@ -1017,6 +1017,35 @@ buttons appear below the preview.
 
 ---
 
+## 35. UX — Broadcast defaults and import shortcut
+
+**Files:**
+- `packages/database/src/partials/broadcast.ts`
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+- `apps/builder/src/features/broadcasts/broadcasts-table.tsx`
+
+**What:**
+- **E1**: Reordered `broadcastChannelCapabilities` so WhatsApp is the first
+  channel in the broadcast channel picker (was third behind omnichannel and
+  Messenger).
+- **E2**: Default broadcast flow type changed from "Flow" to "Template" in
+  `BroadcastFlowTypeSelector`. The form value is also synced on mount via
+  `useEffect` so `watchedTemplateType` starts with `template`.
+- **F1**: Added an "Import" button (outline variant with UploadIcon) to the
+  broadcasts table toolbar. Links to `/space/{workspaceId}/contacts/import`
+  for quick access to the existing contacts import flow.
+
+**Why:** WhatsApp is the primary channel for ErsalTech clients. Template
+broadcasts are the most common use case and should be the default selection.
+Import shortcut reduces the number of clicks to get contacts into the system
+before broadcasting.
+
+**Verify after sync:** Open broadcast creation → WhatsApp is the first channel
+option, "Template" is pre-selected. Broadcasts list page → "Import" button
+visible next to "Create Broadcast", links to contacts import.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

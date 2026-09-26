@@ -61,10 +61,10 @@ export type BroadcastChannelCapability = {
 export const broadcastChannelCapabilities: readonly BroadcastChannelCapability[] =
   [
     {
-      channel: "omnichannel",
-      subactions: ["allContacts"],
-      defaultSubaction: "allContacts",
-      supportsTemplateBroadcast: false,
+      channel: "whatsapp",
+      subactions: ["whatsappTemplateMessage", "whatsappWithin24Hours"],
+      defaultSubaction: "whatsappTemplateMessage",
+      supportsTemplateBroadcast: true,
     },
     {
       channel: "messenger",
@@ -73,10 +73,10 @@ export const broadcastChannelCapabilities: readonly BroadcastChannelCapability[]
       supportsTemplateBroadcast: true,
     },
     {
-      channel: "whatsapp",
-      subactions: ["whatsappTemplateMessage", "whatsappWithin24Hours"],
-      defaultSubaction: "whatsappTemplateMessage",
-      supportsTemplateBroadcast: true,
+      channel: "omnichannel",
+      subactions: ["allContacts"],
+      defaultSubaction: "allContacts",
+      supportsTemplateBroadcast: false,
     },
     {
       channel: "zalo",
