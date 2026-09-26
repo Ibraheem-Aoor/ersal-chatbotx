@@ -979,6 +979,44 @@ reason (test by checking a message with sendError in DB).
 
 ---
 
+## 34. UX — Template rendering, mobile preview, broadcast flow buttons
+
+**Files:**
+- `apps/worker/src/chat/handlers/send-whatsapp-template.ts`
+- `apps/builder/src/features/messages/components/message-item.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/components/template-preview.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+- `apps/builder/src/features/broadcasts/components/whatsapp-broadcast-flow-buttons.tsx` (new)
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+
+**What:**
+- **C3**: Worker now persists full template `components` in `contentAttributes.template`
+  when sending a WhatsApp template message. Inbox message-item renders `whatsapp_template`
+  content type with rich TemplatePreview (header/body/footer/buttons) instead of
+  plain "Template: name" text. Fallback card shown for messages sent before this patch.
+- **D1**: Template create/edit dialog now has a mobile preview button (SmartphoneIcon)
+  visible below the `lg` breakpoint. Opens a Sheet with the PhoneFrame + LivePreview
+  so mobile users can see the template preview without the side panel.
+- **D2**: Template button styling uses type-specific icons (ExternalLinkIcon for URL,
+  PhoneIcon for PHONE_NUMBER, ReplyIcon for quick reply) with sky-blue text and
+  border dividers instead of the old gray boxes.
+- **D3**: WhatsApp broadcasts now support linking quick-reply template buttons to
+  flows, mirroring the existing Messenger pattern. `extractWhatsappFlowButtons`
+  extracts QUICK_REPLY buttons from template components. `WhatsappBroadcastFlowButtons`
+  renders them with a flow-select dialog. Only quick-reply buttons get link-to-flow
+  (URL and phone buttons are excluded).
+
+**Why:** Template messages in the inbox were opaque — agents saw "Template: name"
+with no content. Mobile users couldn't preview templates during creation. WhatsApp
+broadcasts lacked the button→flow linking that Messenger already had.
+
+**Verify after sync:** Send a WhatsApp template → inbox shows rich preview with
+header/body/buttons. Open template create on mobile → "Preview" button opens sheet.
+Create WhatsApp broadcast with template that has quick-reply buttons → flow-select
+buttons appear below the preview.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

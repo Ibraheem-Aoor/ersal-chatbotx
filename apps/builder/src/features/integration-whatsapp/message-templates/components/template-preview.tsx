@@ -1,6 +1,7 @@
 "use client"
 
 import type { TemplateComponent } from "@chatbotx.io/flow-config"
+import { ExternalLinkIcon, PhoneIcon, ReplyIcon } from "lucide-react"
 import Image from "next/image"
 import { substituteTemplateText } from "./template-preview-utils"
 
@@ -87,7 +88,10 @@ export function TemplatePreview({
         }
         if (component.type === "BUTTONS" && component.buttons) {
           return (
-            <div className="mt-2 space-y-1" key={`buttons-${component.type}`}>
+            <div
+              className="mt-2 border-border/40 border-t pt-1"
+              key={`buttons-${component.type}`}
+            >
               {component.buttons.map((button, btnIdx) => {
                 let url = button.url || ""
                 if (
@@ -97,13 +101,19 @@ export function TemplatePreview({
                 ) {
                   url = url.replace("{{1}}", buttonParams[btnIdx].text)
                 }
+                const buttonIconMap: Record<string, typeof ExternalLinkIcon> = {
+                  URL: ExternalLinkIcon,
+                  PHONE_NUMBER: PhoneIcon,
+                }
+                const ButtonIcon = buttonIconMap[button.type] ?? ReplyIcon
                 return (
                   <div
-                    className="rounded border bg-gray-300 px-2 py-1 text-center text-blue-600 text-xs"
+                    className="flex items-center justify-center gap-1.5 border-border/20 border-t px-2 py-1.5 text-center text-sky-600 text-xs first:border-t-0 dark:text-sky-400"
                     // biome-ignore lint/suspicious/noArrayIndexKey: safe index
                     key={`button-${component.type}-${btnIdx}-${button.text}`}
                   >
-                    {button.text} {url && `→ ${url}`}
+                    <ButtonIcon className="size-3 shrink-0" />
+                    <span className="truncate">{button.text}</span>
                   </div>
                 )
               })}
