@@ -3548,11 +3548,43 @@
     "system": "System"
   },
   "validation": {
-    "maxSize": "File size exceeds maximum limit",
-    "maxItemsReached": "Maximum {max} {feature} allowed per workspace",
+    "contactExistsOnInbox": "This contact already exists on the selected inbox",
+    "inboxChannelMismatch": "Selected inbox does not match the selected source",
     "invalidApiKey": "Invalid API key",
+    "maxItemsReached": "Maximum {max} {feature} allowed per workspace",
     "maxMustBeGreaterThanMin": "{maxField} must be greater than or equal to {minField}",
+    "maxSize": "File size exceeds maximum limit",
     "nameAlreadyTaken": "Name is already taken.",
+    "phoneAlreadyExists": "This phone number already exists",
+    "phoneIncludeCountryCode": "Please include the country code (e.g. +84)",
+    "template": {
+      "authMustBeCopyCode": "Authentication button must be copy code type (OTP)",
+      "authOneButton": "Authentication templates must have exactly one button (copy OTP code)",
+      "buttonGrouping": "Quick reply and action buttons must be grouped together",
+      "buttonLimitCopyCode": "Maximum 1 copy code button allowed",
+      "buttonLimitFlow": "Maximum 1 flow button allowed",
+      "buttonLimitPhoneNumber": "Maximum 1 phone number button allowed",
+      "buttonLimitQuickReply": "Maximum 10 quick reply buttons allowed",
+      "buttonLimitUrl": "Maximum 2 URL buttons allowed",
+      "cardsButtonCountMismatch": "All cards must have the same number of buttons",
+      "dynamicUrlSampleRequired": "Sample value is required for dynamic URLs",
+      "dynamicUrlSuffix": "Dynamic URL must end with {{1}}",
+      "fileDocumentType": "File must be a PDF document",
+      "fileImageType": "File must be an image in PNG, JPG, or JPEG format",
+      "fileSizeDocument": "File size must not exceed 100 MB",
+      "fileSizeImage": "File size must not exceed 5 MB",
+      "fileSizeVideo": "File size must not exceed 16 MB",
+      "fileVideoType": "File must be a video in MP4 format",
+      "footerNoVariables": "Footer does not accept variables.",
+      "headerNoEmojiOrFormat": "Header must be a single line without emoji or formatting.",
+      "headerOneVariable": "Header accepts only one variable {{1}}.",
+      "invalidUrl": "Invalid URL format",
+      "nameFormat": "Only lowercase letters, numbers, and underscores allowed",
+      "noLeadingTrailingVariable": "Text cannot start or end with a variable — add a word before or after it.",
+      "phoneFormat": "Invalid phone number format. Example: +1234567890",
+      "sampleValueRequired": "Enter a sample value for each variable — required for Meta review.",
+      "sequentialVariables": "Variables must be numbered sequentially {{1}} then {{2}}, without gaps or duplicates."
+    },
     "validationException": "Validation Exception"
   },
   "webchat": {
@@ -3714,6 +3746,9 @@
         "uploadFormat": "Upload {format}"
       },
       "createTitle": "Create Message Template",
+      "defaultButtonText": "Button {index}",
+      "defaultViewCatalog": "View catalog",
+      "defaultViewItems": "View Items",
       "label": "Message Template",
       "nameHint": "Lowercase letters, numbers and underscores only (e.g. order_update)",
       "selectType": "Select template type",
@@ -5563,11 +5598,5 @@
     "view": "View",
     "searchColumns": "Search columns...",
     "noColumnsFound": "No columns found."
-  },
-  "validation": {
-    "phoneIncludeCountryCode": "Please include the country code (e.g. +84)",
-    "phoneAlreadyExists": "This phone number already exists",
-    "contactExistsOnInbox": "This contact already exists on the selected inbox",
-    "inboxChannelMismatch": "Selected inbox does not match the selected source"
   }
 }

@@ -4,6 +4,7 @@ import localFont from "next/font/local"
 import { NextIntlClientProvider } from "next-intl"
 import { getLocale } from "next-intl/server"
 import type { ReactNode } from "react"
+import { FormTranslationProvider } from "@/components/form-translation-provider"
 import { PublicEnvScript } from "@/components/public-env-script"
 import { SupportChatScript } from "@/components/support-chat-script"
 import { UILabelsConfig } from "@/components/ui-labels-config"
@@ -111,7 +112,7 @@ export default async function RootLayout({ children }: Props) {
               <NextIntlClientProvider>
                 <UILabelsConfig>
                   <ZodErrorMapProvider />
-                  {children}
+                  <FormTranslationProvider>{children}</FormTranslationProvider>
                 </UILabelsConfig>
               </NextIntlClientProvider>
             </UiProvider>

@@ -36,7 +36,7 @@ export const buttonStepSchema = z
           .trim()
           .max(20)
           .regex(/^\+?[1-9][0-9]{7,18}$/, {
-            message: "صيغة رقم الهاتف غير صحيحة. مثال: +1234567890",
+            message: "validation.template.phoneFormat",
           }),
       }),
       z.object({
@@ -52,7 +52,7 @@ export const buttonStepSchema = z
         if (!urlVal.endsWith("{{1}}")) {
           ctx.addIssue({
             path: ["url"],
-            message: "يجب أن ينتهي الرابط الديناميكي بـ {{1}}",
+            message: "validation.template.dynamicUrlSuffix",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -62,14 +62,14 @@ export const buttonStepSchema = z
         } catch {
           ctx.addIssue({
             path: ["url"],
-            message: "صيغة الرابط غير صحيحة",
+            message: "validation.template.invalidUrl",
             code: z.ZodIssueCode.custom,
           })
         }
         if (!data.urlSampleValue?.trim()) {
           ctx.addIssue({
             path: ["urlSampleValue"],
-            message: "القيمة النموذجية مطلوبة للروابط الديناميكية",
+            message: "validation.template.dynamicUrlSampleRequired",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -79,7 +79,7 @@ export const buttonStepSchema = z
         } catch {
           ctx.addIssue({
             path: ["url"],
-            message: "صيغة الرابط غير صحيحة",
+            message: "validation.template.invalidUrl",
             code: z.ZodIssueCode.custom,
           })
         }
@@ -133,26 +133,25 @@ export function validateButtonLimits(
     if (buttons.length !== 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "قوالب المصادقة يجب أن تحتوي على زر واحد فقط (نسخ رمز OTP)",
+        message: "validation.template.authOneButton",
       })
     }
     if (buttons.length > 0 && buttons[0]?.type !== "copyCode") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "زر قالب المصادقة يجب أن يكون من نوع نسخ الرمز (OTP)",
+        message: "validation.template.authMustBeCopyCode",
         path: [0, "type"],
       })
     }
     return
   }
 
-  // Button type names for validation messages
-  const typeNames: Record<string, string> = {
-    quickReply: "رد سريع",
-    url: "رابط",
-    phoneNumber: "رقم هاتف",
-    copyCode: "نسخ رمز",
-    flow: "مسار",
+  const buttonLimitKeys: Record<string, string> = {
+    quickReply: "validation.template.buttonLimitQuickReply",
+    url: "validation.template.buttonLimitUrl",
+    phoneNumber: "validation.template.buttonLimitPhoneNumber",
+    copyCode: "validation.template.buttonLimitCopyCode",
+    flow: "validation.template.buttonLimitFlow",
   }
 
   // Count by type
@@ -164,10 +163,9 @@ export function validateButtonLimits(
   // Per-type validation
   for (const [type, max] of Object.entries(BUTTON_LIMITS.perType)) {
     if ((counts[type] || 0) > max) {
-      const name = typeNames[type] || type
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `الحد الأقصى ${max} زر ${name} مسموح`,
+        message: buttonLimitKeys[type] || type,
       })
     }
   }
@@ -192,7 +190,7 @@ export function validateButtonLimits(
   if (sawQrAfterCta && sawCtaAfterQr) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "يجب تجميع أزرار الرد السريع وأزرار الإجراء معًا",
+      message: "validation.template.buttonGrouping",
     })
   }
 }

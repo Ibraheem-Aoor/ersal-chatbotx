@@ -22,5 +22,5 @@ export const templateCatalogDefaultValue = (): TemplateCatalogSchema => ({
     variables: [],
   },
   footer: "",
-  buttons: [{ text: "View catalog", type: buttonActionTypes.enum.quickReply }],
+  buttons: [{ text: "", type: buttonActionTypes.enum.quickReply }],
 })

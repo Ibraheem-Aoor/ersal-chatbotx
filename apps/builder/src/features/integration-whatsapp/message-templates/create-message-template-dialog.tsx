@@ -490,18 +490,50 @@ function CreateMessageTemplateDialogContent({
       case templateTypes.enum.Document:
         setValue("content", templateDocumentDefaultValue())
         break
-      case templateTypes.enum.CarouselImage:
-        setValue("content", templateCarouselImageDefaultValue())
+      case templateTypes.enum.CarouselImage: {
+        const carouselImageDefaults = templateCarouselImageDefaultValue()
+        const carouselImageBtnText = t(
+          "whatsapp.messageTemplate.defaultButtonText",
+          { index: 1 },
+        )
+        for (const card of carouselImageDefaults.cards) {
+          for (const btn of card.buttons) {
+            btn.text = carouselImageBtnText
+          }
+        }
+        setValue("content", carouselImageDefaults)
         break
-      case templateTypes.enum.CarouselVideo:
-        setValue("content", templateCarouselVideoDefaultValue())
+      }
+      case templateTypes.enum.CarouselVideo: {
+        const carouselVideoDefaults = templateCarouselVideoDefaultValue()
+        const carouselVideoBtnText = t(
+          "whatsapp.messageTemplate.defaultButtonText",
+          { index: 1 },
+        )
+        for (const card of carouselVideoDefaults.cards) {
+          for (const btn of card.buttons) {
+            btn.text = carouselVideoBtnText
+          }
+        }
+        setValue("content", carouselVideoDefaults)
         break
-      case templateTypes.enum.ViewCatalog:
-        setValue("content", templateCatalogDefaultValue())
+      }
+      case templateTypes.enum.ViewCatalog: {
+        const catalogDefaults = templateCatalogDefaultValue()
+        catalogDefaults.buttons[0].text = t(
+          "whatsapp.messageTemplate.defaultViewCatalog",
+        )
+        setValue("content", catalogDefaults)
         break
-      case templateTypes.enum.ViewProduct:
-        setValue("content", templateProductDefaultValue())
+      }
+      case templateTypes.enum.ViewProduct: {
+        const productDefaults = templateProductDefaultValue()
+        productDefaults.buttons[0].text = t(
+          "whatsapp.messageTemplate.defaultViewItems",
+        )
+        setValue("content", productDefaults)
         break
+      }
       default:
         break
     }

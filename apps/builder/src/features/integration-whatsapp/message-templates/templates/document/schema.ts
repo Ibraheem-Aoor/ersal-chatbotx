@@ -17,11 +17,11 @@ export const templateDocumentSchema = z
           (file) =>
             file && file instanceof File && file.type === "application/pdf",
           {
-            message: "يجب أن يكون الملف مستند PDF",
+            message: "validation.template.fileDocumentType",
           },
         )
         .refine((file) => file && file.size <= 100 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 100 ميجابايت",
+          message: "validation.template.fileSizeDocument",
         }),
     }),
     body: z.object({
@@ -33,7 +33,10 @@ export const templateDocumentSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
@@ -52,13 +55,13 @@ export const templateDocumentEditSchema = z
             file === null ||
             (file instanceof File && file.type === "application/pdf"),
           {
-            message: "يجب أن يكون الملف مستند PDF",
+            message: "validation.template.fileDocumentType",
           },
         )
         .refine(
           (file) => file === null || (file && file.size <= 100 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 100 ميجابايت",
+            message: "validation.template.fileSizeDocument",
           },
         ),
     }),
@@ -71,7 +74,10 @@ export const templateDocumentEditSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })

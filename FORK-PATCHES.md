@@ -876,6 +876,58 @@ to Arabic. Submit creates the template successfully.
 
 ---
 
+## 31. i18n — template validation keys + bilingual form error translation
+
+**Files:**
+- `packages/ui/src/components/ui/form.tsx`
+- `apps/builder/src/components/form-translation-provider.tsx` (new)
+- `apps/builder/src/app/layout.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/schema/mutation.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/validation.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/button/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/image/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/video/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/document/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/catalog/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/product/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/carousel-image/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/carousel-video/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
+
+**What:**
+- Added `FormMessageTranslatorContext` to `FormMessage` (packages/ui) — if a provider
+  supplies a translator function, `FormMessage` pipes the error message through it before
+  rendering. Backward-compatible: without a provider it renders as before.
+- Created `FormTranslationProvider` in the builder app — wraps `useTranslations()` to
+  resolve i18n keys (`validation.template.*`) found in Zod error messages at render time.
+  Added to the root layout alongside `ZodErrorMapProvider`.
+- Replaced every hardcoded Arabic validation string in template schemas and validation.ts
+  with an i18n key (e.g. `"validation.template.nameFormat"`). This includes: name regex,
+  header constraints, body/footer variable rules, phone format, URL validation, button
+  limits, file type/size checks, and carousel card button-count mismatch.
+- Moved default button texts ("View catalog", "View Items", "Button #1") from schema
+  default functions into the create dialog component where `t()` is available.
+- Added 27 `validation.template.*` keys and 3 `whatsapp.messageTemplate.default*` keys
+  to both ar.json and en.json.
+- Fixed pre-existing duplicate top-level `validation` key in both ar.json and en.json
+  (JSON duplicate keys — only the last one was active). Merged into single objects.
+- Renamed "البث" → "الحملات" and "وسوم" → "التصنيفات" in ar.json (A2/A3).
+
+**Why:** Hardcoded Arabic in schemas broke English locale — EN users saw Arabic errors.
+The bilingual approach: ZodErrorMapProvider handles standard validators (.min/.max/.length)
+automatically; custom messages (regex, superRefine, refine) emit i18n keys that
+FormTranslationProvider resolves from ar.json/en.json at render time.
+
+**Verify after sync:** Open WhatsApp → Message Templates → Create in both AR and EN
+locale. Trigger every validation (empty name, special chars in name, body with leading
+variable, file type mismatch, button limits, etc.). All error messages must appear in
+the correct language. Default button texts ("عرض الكتالوج" / "View catalog") must be
+in the correct locale.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten

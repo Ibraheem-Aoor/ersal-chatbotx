@@ -15,7 +15,7 @@
     "addMore": "إضافة المزيد",
     "addNew": "إضافة جديد",
     "addSequence": "إضافة تسلسل",
-    "addTag": "إضافة وسم",
+    "addTag": "إضافة تصنيف",
     "addTextReply": "إضافة رد نصي",
     "addVariable": "إضافة متغير",
     "admin": "مسؤول",
@@ -113,7 +113,7 @@
     "removeAssignee": "إزالة المسؤول",
     "removeFromFollowUp": "إزالة من المتابعة",
     "removeSequence": "إزالة التسلسل",
-    "removeTag": "إزالة الوسم",
+    "removeTag": "إزالة التصنيف",
     "rename": "إعادة تسمية",
     "resend": "إعادة الإرسال",
     "reset": "إعادة تعيين",
@@ -188,7 +188,7 @@
       "optional": "اختياري",
       "phone": "رقم الهاتف",
       "phoneField": "حقل رقم الهاتف",
-      "tags": "الوسوم"
+      "tags": "التصنيفات"
     },
     "lists": {
       "empty": "لم يتم العثور على أي قوائم في ActiveCampaign.",
@@ -204,9 +204,9 @@
       "label": "ActiveCampaign"
     },
     "tags": {
-      "empty": "لم يتم العثور على أي وسوم في ActiveCampaign.",
-      "error": "فشل تحميل وسوم ActiveCampaign. تحقق من أن التكامل متصل.",
-      "loading": "جارٍ تحميل وسوم ActiveCampaign..."
+      "empty": "لم يتم العثور على أي تصنيفات في ActiveCampaign.",
+      "error": "فشل تحميل تصنيفات ActiveCampaign. تحقق من أن التكامل متصل.",
+      "loading": "جارٍ تحميل تصنيفات ActiveCampaign..."
     },
     "title": "ActiveCampaign"
   },
@@ -359,7 +359,7 @@
       },
       "noKeywordRules": "لم يتم العثور على قواعد كلمات مفتاحية واردة.",
       "noRules": "لا توجد قواعد تحويل لهذا أصل WhatsApp حتى الآن.",
-      "noTags": "لم يتم العثور على وسوم.",
+      "noTags": "لم يتم العثور على تصنيفات.",
       "noTemplates": "لم يتم العثور على قوالب معتمدة.",
       "qualifyingAnyReply": "ترسل جهة الاتصال رسالة",
       "qualifyingFirstReply": "ترسل جهة الاتصال رسالتها الأولى",
@@ -367,14 +367,14 @@
       "replyOptions": "خيارات الرد",
       "selectAll": "تحديد الكل",
       "selectKeywordRules": "اختر قواعد الكلمات المفتاحية",
-      "selectTags": "اختر الوسوم",
+      "selectTags": "اختر التصنيفات",
       "selectTemplates": "اختر القوالب",
       "selectWhatsappAsset": "اختر أصل WhatsApp",
       "tabs": {
         "facebook": "Facebook",
         "whatsapp": "WhatsApp"
       },
-      "tags": "الوسوم",
+      "tags": "التصنيفات",
       "templates": "القوالب",
       "title": "أحداث التحويل",
       "toggleRule": "تفعيل أو تعطيل القاعدة",
@@ -397,7 +397,7 @@
       "whenOptions": {
         "contactReplied": "ترسل جهة الاتصال رسالة",
         "keywordMatched": "تطابق رسالة جهة الاتصال قاعدة كلمة مفتاحية",
-        "tagApplied": "تُصنَّف جهة الاتصال بوسم",
+        "tagApplied": "تُصنَّف جهة الاتصال بتصنيف",
         "templateSent": "يتم إرسال رسالة القالب المؤهِّلة"
       }
     },
@@ -1051,7 +1051,7 @@
       "noTemplate": "لا يوجد قالب",
       "subaction": "الإجراء الفرعي",
       "template": "القالب",
-      "title": "تفاصيل البث"
+      "title": "تفاصيل الحملة"
     },
     "flowType": {
       "flow": {
@@ -1076,7 +1076,7 @@
       "title": "جهات اتصال ماسنجر النشطة"
     },
     "messengerConfirmedEventUpdate": {
-      "description": "إرسال تذكيرات أو تحديثات للمستخدم بشأن حدث سجّل فيه (مثل التذاكر المشتراة). يمكن استخدام هذا الوسم للأحداث القادمة والأحداث الجارية.",
+      "description": "إرسال تذكيرات أو تحديثات للمستخدم بشأن حدث سجّل فيه (مثل التذاكر المشتراة). يمكن استخدام هذا التصنيف للأحداث القادمة والأحداث الجارية.",
       "title": "تحديث حدث مؤكد على ماسنجر"
     },
     "messengerList": {
@@ -1105,9 +1105,9 @@
       "selectedAll": "تم تحديد الكل",
       "selectedCount": "تم تحديد {count}",
       "sent": "مُرسَل",
-      "tagAllDialogDescription": "ستتم إضافة الوسوم إلى جميع جهات الاتصال المحددة.",
-      "tagDialogDescription": "ستتم إضافة الوسوم إلى {count} جهة/جهات اتصال.",
-      "tagQueued": "جارٍ وسم {count} جهة اتصال في الخلفية."
+      "tagAllDialogDescription": "ستتم إضافة التصنيفات إلى جميع جهات الاتصال المحددة.",
+      "tagDialogDescription": "ستتم إضافة التصنيفات إلى {count} جهة/جهات اتصال.",
+      "tagQueued": "جارٍ تصنيف {count} جهة اتصال في الخلفية."
     },
     "status": {
       "cancelled": "ملغى",
@@ -1120,10 +1120,10 @@
       "title": "Telegram"
     },
     "tiktokActiveContacts": {
-      "description": "قد تتضمن عروضًا ترويجية، ولن تُرسل إلا إلى المستخدمين الذين راسلوا البوت خلال آخر 24 ساعة. تدعم عمليات البث على TikTok النصوص والصور فقط.",
+      "description": "قد تتضمن عروضًا ترويجية، ولن تُرسل إلا إلى المستخدمين الذين راسلوا البوت خلال آخر 24 ساعة. تدعم الحملات على TikTok النصوص والصور فقط.",
       "title": "TikTok"
     },
-    "title": "البث",
+    "title": "الحملات",
     "whatsappTemplateMessage": {
       "description": "إرسال رسالة قالب WhatsApp إلى جهات اتصالك",
       "title": "رسالة قالب"
@@ -1215,7 +1215,7 @@
     "datetimePlaceholder": "YYYY-MM-DD HH:mm",
     "fieldGroups": {
       "analytics": "التحليلات",
-      "broadcastWhatsapp": "البث (واتساب)",
+      "broadcastWhatsapp": "الحملات (واتساب)",
       "ctwaAds": "إعلانات Click to WhatsApp",
       "customFields": "الحقول المخصصة",
       "ecommerce": "التجارة الإلكترونية",
@@ -1234,11 +1234,11 @@
       "blocked": "محظور",
       "bought": "اشترى",
       "boughtItems": "اشترى العناصر",
-      "broadcastClicked": "تم النقر على البث",
-      "broadcastDelivered": "تم تسليم البث",
-      "broadcastFailed": "فشل البث",
-      "broadcastSeen": "تمت مشاهدة البث",
-      "broadcastSent": "تم إرسال البث",
+      "broadcastClicked": "تم النقر على الحملة",
+      "broadcastDelivered": "تم تسليم الحملة",
+      "broadcastFailed": "فشلت الحملة",
+      "broadcastSeen": "تمت مشاهدة الحملة",
+      "broadcastSent": "تم إرسال الحملة",
       "businessFollowsUserOnInstagram": "النشاط التجاري يتابع المستخدم على إنستغرام",
       "commentedOnPost": "علّق على المنشور",
       "completedWhatsAppFlows": "أكمل تدفقات واتساب",
@@ -1300,8 +1300,8 @@
       "lastSeenMinutesAgo": "آخر ظهور (منذ عدد من الدقائق)",
       "lastSent": "آخر إرسال",
       "lastSentMessageFailed": "فشل آخر رسالة تم إرسالها",
-      "lastTotalNewTaggedUsers": "آخر إجمالي للمستخدمين الموسومين الجدد",
-      "lastTotalTaggedUsers": "آخر إجمالي للمستخدمين الموسومين",
+      "lastTotalNewTaggedUsers": "آخر إجمالي للمستخدمين المصنّفين الجدد",
+      "lastTotalTaggedUsers": "آخر إجمالي للمستخدمين المصنّفين",
       "lastUserInput": "آخر إدخال من المستخدم",
       "lastUserInputType": "نوع آخر إدخال من المستخدم",
       "lastUserInputTypes": {
@@ -1333,9 +1333,9 @@
       "shoppingCartTotal": "إجمالي سلة التسوق",
       "source": "المصدر",
       "subjectToEuRules": "خاضع لقواعد الاتحاد الأوروبي",
-      "subscribedToBroadcast": "مشترك في البث",
+      "subscribedToBroadcast": "مشترك في الحملة",
       "subscribedToDripCampaign": "مشترك في حملة التنقيط",
-      "tags": "الوسوم",
+      "tags": "التصنيفات",
       "timezone": "المنطقة الزمنية",
       "totalSpent": "إجمالي الإنفاق",
       "unread": "غير مقروء",
@@ -1513,16 +1513,16 @@
       "nothingSelected": "لم يتم تحديد شيء",
       "optional": "اختياري",
       "phone": "رقم الهاتف",
-      "tags": "الوسوم"
+      "tags": "التصنيفات"
     },
     "setting": {
       "description": "يتيح لك هذا التكامل حفظ جهات اتصال العملاء من الروبوت الخاص بك إلى Drip.",
       "label": "Drip"
     },
     "tags": {
-      "empty": "لم يتم العثور على أي وسوم في Drip.",
-      "error": "فشل تحميل وسوم Drip. تحقق من أن التكامل متصل.",
-      "loading": "جارٍ تحميل وسوم Drip..."
+      "empty": "لم يتم العثور على أي تصنيفات في Drip.",
+      "error": "فشل تحميل تصنيفات Drip. تحقق من أن التكامل متصل.",
+      "loading": "جارٍ تحميل تصنيفات Drip..."
     },
     "title": "Drip"
   },
@@ -1553,12 +1553,12 @@
       "download": "تنزيل بياناتي"
     },
     "deleteDialog": {
-      "description": "يؤدي هذا إلى حذف تفاصيل الاتصال بملفك الشخصي والوسوم والحقول المخصصة والمرفقات وجميع رسائل سجل جهة الاتصال هذا نهائيًا.",
+      "description": "يؤدي هذا إلى حذف تفاصيل الاتصال بملفك الشخصي والتصنيفات والحقول المخصصة والمرفقات وجميع رسائل سجل جهة الاتصال هذا نهائيًا.",
       "title": "هل تريد حذف بياناتك؟"
     },
     "empty": {
       "customFields": "لا توجد حقول مخصصة",
-      "tags": "لا توجد وسوم"
+      "tags": "لا توجد تصنيفات"
     },
     "fields": {
       "email": "البريد الإلكتروني",
@@ -1569,7 +1569,7 @@
     },
     "sections": {
       "customFields": "الحقول المخصصة",
-      "tags": "وسوم المستخدم"
+      "tags": "تصنيفات المستخدم"
     },
     "unknown": "غير معروف"
   },
@@ -1884,7 +1884,7 @@
       "placeholder": "أدخل اسم العلامة التجارية"
     },
     "broadcast": {
-      "label": "البث"
+      "label": "الحملات"
     },
     "businessId": {
       "label": "معرّف النشاط التجاري"
@@ -2629,7 +2629,7 @@
     },
     "permissions": {
       "analytics": "التحليلات",
-      "broadcast": "البث",
+      "broadcast": "الحملات",
       "contacts": "جهات الاتصال",
       "ecommerce": "التجارة الإلكترونية",
       "emailAndPhone": "البريد الإلكتروني والهاتف",
@@ -2895,10 +2895,10 @@
       "label": "رمز مستخدم النظام"
     },
     "tag": {
-      "label": "الوسم"
+      "label": "التصنيف"
     },
     "tags": {
-      "label": "الوسوم"
+      "label": "التصنيفات"
     },
     "targetCountry": {
       "description": "البلد الذي تعيش فيه معظم جهات اتصالك.",
@@ -2976,10 +2976,10 @@
       "placeholder": "اختر الأدوات"
     },
     "totalNewTagged": {
-      "label": "إجمالي الموسومين الجدد"
+      "label": "إجمالي المصنّفين الجدد"
     },
     "totalTagged": {
-      "label": "إجمالي الموسومين"
+      "label": "إجمالي المصنّفين"
     },
     "trigger": {
       "label": "المشغّل"
@@ -3029,7 +3029,7 @@
       "label": "مصدر المستخدم"
     },
     "userTags": {
-      "label": "الوسوم المطبقة على المستخدم"
+      "label": "التصنيفات المطبقة على المستخدم"
     },
     "username": {
       "label": "اسم المستخدم",
@@ -3139,7 +3139,7 @@
       "actions": "الإجراءات",
       "activeCampaignSyncContact": "إضافة جهة الاتصال إلى ActiveCampaign",
       "addContactNotes": "إضافة ملاحظات لجهة الاتصال",
-      "addContactTag": "إضافة وسم لجهة الاتصال",
+      "addContactTag": "إضافة تصنيف لجهة الاتصال",
       "aiAnalyzeImage": "تحليل صورة بالذكاء الاصطناعي",
       "aiDeleteMessageHistory": "حذف سجل الرسائل",
       "aiEditImage": "تعديل صورة بالذكاء الاصطناعي",
@@ -3153,7 +3153,7 @@
       "assignConversation": "إسناد المحادثة",
       "autoAssignConversation": "إسناد المحادثة تلقائيًا",
       "blockContact": "حظر جهة الاتصال",
-      "broadcastActions": "إجراءات البث",
+      "broadcastActions": "إجراءات الحملة",
       "callApi": "طلب API خارجي",
       "chooseChannel": "اختيار القناة",
       "clearCustomField": "مسح الحقل المخصص",
@@ -3192,7 +3192,7 @@
       "optOutEmail": "إلغاء اشتراك البريد الإلكتروني",
       "performAction": "تنفيذ إجراء",
       "questionnaires": "الاستبيانات",
-      "removeContactTag": "إزالة وسم جهة الاتصال",
+      "removeContactTag": "إزالة تصنيف جهة الاتصال",
       "sendAudio": "إرسال ملف صوتي",
       "sendCard": "إرسال بطاقة",
       "sendCarousel": "إرسال عرض دوّار",
@@ -3223,7 +3223,7 @@
       "startExternalFlow": "بدء مسار خارجي",
       "startExternalNode": "بدء عقدة خارجية",
       "startFlow": "بدء المسار",
-      "subscribeBroadcast": "الاشتراك في البث",
+      "subscribeBroadcast": "الاشتراك في الحملة",
       "subscribeSequence": "الاشتراك في التسلسل",
       "tools": "الأدوات",
       "transferConversationToBot": "نقل المحادثة إلى الروبوت",
@@ -3234,7 +3234,7 @@
       "unarchiveConversation": "إلغاء أرشفة المحادثة",
       "unassignConversation": "إلغاء إسناد المحادثة",
       "unfollowConversation": "إلغاء متابعة المحادثة",
-      "unsubscribeBroadcast": "إلغاء الاشتراك في البث",
+      "unsubscribeBroadcast": "إلغاء الاشتراك في الحملة",
       "unsubscribeSequence": "إلغاء الاشتراك في التسلسل",
       "updateMessengerContactData": "تحديث بيانات جهة الاتصال",
       "whatsappFlow": "مسار واتساب",
@@ -3411,18 +3411,18 @@
       "list": "القائمة",
       "listPlaceholder": "اختر قائمة",
       "optional": "اختياري",
-      "tags": "الوسوم",
-      "tagsPlaceholder": "اختر الوسوم"
+      "tags": "التصنيفات",
+      "tagsPlaceholder": "اختر التصنيفات"
     },
     "setting": {
       "description": "يتيح لك هذا التكامل حفظ جهات اتصال العملاء من الروبوت الخاص بك إلى GetResponse.",
       "label": "GetResponse"
     },
     "tags": {
-      "empty": "لم يتم العثور على أي وسوم في GetResponse.",
-      "error": "فشل تحميل وسوم GetResponse. تحقق من أن التكامل متصل.",
-      "limited": "يتم عرض الصفحة الأولى فقط من وسوم GetResponse.",
-      "loading": "جارٍ تحميل وسوم GetResponse..."
+      "empty": "لم يتم العثور على أي تصنيفات في GetResponse.",
+      "error": "فشل تحميل تصنيفات GetResponse. تحقق من أن التكامل متصل.",
+      "limited": "يتم عرض الصفحة الأولى فقط من تصنيفات GetResponse.",
+      "loading": "جارٍ تحميل تصنيفات GetResponse..."
     },
     "title": "GetResponse"
   },
@@ -3707,7 +3707,7 @@
       "off": "إيقاف",
       "on": "تشغيل",
       "optional": "اختياري",
-      "tags": "الوسوم"
+      "tags": "التصنيفات"
     },
     "setting": {
       "description": "يتيح لك هذا التكامل حفظ جهات اتصال العملاء من الروبوت الخاص بك إلى MailChimp.",
@@ -4003,15 +4003,15 @@
       "messageTemplates": "قوالب الرسائل"
     },
     "tagSync": {
-      "description": "مزامنة ثنائية الاتجاه للوسوم بين مساحة العمل هذه والقناة المتصلة.",
+      "description": "مزامنة ثنائية الاتجاه للتصنيفات بين مساحة العمل هذه والقناة المتصلة.",
       "disabled": "معطّلة",
       "enabledSince": "مفعّلة منذ {date}",
-      "labelSync": "مزامنة الوسوم",
+      "labelSync": "مزامنة التصنيفات",
       "off": "إيقاف",
       "on": "تشغيل",
       "termsRequired": "يجب على مسؤول الصفحة قبول شروط جهات اتصال صفحة Facebook:",
-      "title": "مزامنة الوسوم",
-      "toggleSuccess": "تم تحديث إعداد مزامنة الوسوم."
+      "title": "مزامنة التصنيفات",
+      "toggleSuccess": "تم تحديث إعداد مزامنة التصنيفات."
     },
     "title": "Facebook Messenger",
     "welcomeMessage": "رسالة الترحيب",
@@ -4347,7 +4347,7 @@
       "channels": "القنوات",
       "teamMembers": "أعضاء الفريق",
       "flows": "التدفقات",
-      "broadcasts": "البث",
+      "broadcasts": "الحملات",
       "aiAgents": "وكلاء الذكاء الاصطناعي",
       "removeBranding": "إزالة العلامة التجارية"
     },
@@ -4719,7 +4719,7 @@
         "label": "الفئة الفرعية",
         "placeholder": "بدون"
       },
-      "tagsDescription": "يمكن البحث باستخدام الوسوم.",
+      "tagsDescription": "يمكن البحث باستخدام التصنيفات.",
       "taxes": {
         "label": "الضرائب (0-100%)"
       },
@@ -4742,7 +4742,7 @@
       "inventory": "المخزون",
       "moreOptions": "خيارات إضافية",
       "pricing": "التسعير",
-      "tags": "الوسوم",
+      "tags": "التصنيفات",
       "variants": "المتغيرات"
     },
     "title": "المنتجات"
@@ -4915,9 +4915,9 @@
       "selectedAll": "تم تحديد الكل",
       "selectedCount": "تم تحديد {count}",
       "sent": "مُرسلة",
-      "tagAllDialogDescription": "ستُضاف الوسوم إلى جميع جهات الاتصال المحددة.",
-      "tagDialogDescription": "ستُضاف الوسوم إلى {count} جهة اتصال.",
-      "tagQueued": "جارٍ وسم {count} جهة اتصال في الخلفية."
+      "tagAllDialogDescription": "ستُضاف التصنيفات إلى جميع جهات الاتصال المحددة.",
+      "tagDialogDescription": "ستُضاف التصنيفات إلى {count} جهة اتصال.",
+      "tagQueued": "جارٍ تصنيف {count} جهة اتصال في الخلفية."
     },
     "step": "رسالة",
     "subscribers": "المشتركون",
@@ -5005,7 +5005,7 @@
     }
   },
   "tags": {
-    "title": "الوسوم"
+    "title": "التصنيفات"
   },
   "telegram": {
     "description": "يتيح لك هذا التكامل إنشاء بوتات Telegram.",
@@ -5033,10 +5033,10 @@
   },
   "trigger": {
     "actions": {
-      "addTag": "إضافة وسم",
+      "addTag": "إضافة تصنيف",
       "clearCustomField": "مسح حقل مخصص",
       "notifyAdmins": "إشعار المسؤولين",
-      "removeTag": "إزالة وسم",
+      "removeTag": "إزالة تصنيف",
       "sendMetaCapiEvent": "إرسال حدث Meta CAPI",
       "setCustomField": "تعيين حقل مخصص",
       "startAnotherFlow": "بدء مسار آخر",
@@ -5055,7 +5055,7 @@
       "contactInfoUpdated": "تم تحديث الهاتف أو البريد الإلكتروني",
       "contactReferredANewContact": "أحالت جهة الاتصال جهة اتصال جديدة",
       "contactReferredExistingContact": "أحالت جهة الاتصال جهة اتصال موجودة",
-      "contactUnsubscribedFormBroadcast": "ألغت جهة اتصال اشتراكها في البث",
+      "contactUnsubscribedFormBroadcast": "ألغت جهة اتصال اشتراكها في الحملة",
       "conversationAssigned": "تم إسناد المحادثة",
       "conversationTransferredToBot": "تم نقل المحادثة إلى البوت",
       "conversationTransferredToHuman": "تم نقل المحادثة إلى موظف",
@@ -5075,8 +5075,8 @@
       "productOrdered": "تم طلب منتج",
       "productRemovedFromCart": "تمت إزالة منتج من السلة",
       "subscribedToSequence": "تم الاشتراك في تسلسل",
-      "tagApplied": "تم تطبيق وسم",
-      "tagRemoved": "تمت إزالة وسم",
+      "tagApplied": "تم تطبيق تصنيف",
+      "tagRemoved": "تمت إزالة تصنيف",
       "ticketCreated": "تم إنشاء تذكرة",
       "ticketMovedToStage": "تم نقل التذكرة إلى مرحلة",
       "ticketPriorityChanged": "تم تغيير أولوية التذكرة",
@@ -5114,7 +5114,39 @@
     "maxMustBeGreaterThanMin": "يجب أن يكون {maxField} أكبر من أو يساوي {minField}",
     "maxSize": "يتجاوز حجم الملف الحد الأقصى",
     "nameAlreadyTaken": "هذا الاسم مستخدم بالفعل.",
-    "validationException": "خطأ في التحقق"
+    "template": {
+      "authMustBeCopyCode": "زر قالب المصادقة يجب أن يكون من نوع نسخ الرمز (OTP)",
+      "authOneButton": "قوالب المصادقة يجب أن تحتوي على زر واحد فقط (نسخ رمز OTP)",
+      "buttonGrouping": "يجب تجميع أزرار الرد السريع وأزرار الإجراء معًا",
+      "buttonLimitCopyCode": "الحد الأقصى 1 زر نسخ رمز مسموح",
+      "buttonLimitFlow": "الحد الأقصى 1 زر مسار مسموح",
+      "buttonLimitPhoneNumber": "الحد الأقصى 1 زر رقم هاتف مسموح",
+      "buttonLimitQuickReply": "الحد الأقصى 10 أزرار رد سريع مسموح",
+      "buttonLimitUrl": "الحد الأقصى 2 زر رابط مسموح",
+      "cardsButtonCountMismatch": "يجب أن تحتوي جميع البطاقات على نفس عدد الأزرار",
+      "dynamicUrlSampleRequired": "القيمة النموذجية مطلوبة للروابط الديناميكية",
+      "dynamicUrlSuffix": "يجب أن ينتهي الرابط الديناميكي بـ {{1}}",
+      "fileDocumentType": "يجب أن يكون الملف مستند PDF",
+      "fileImageType": "يجب أن يكون الملف صورة بصيغة PNG أو JPG أو JPEG",
+      "fileSizeDocument": "يجب ألا يتجاوز حجم الملف 100 ميجابايت",
+      "fileSizeImage": "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
+      "fileSizeVideo": "يجب ألا يتجاوز حجم الملف 16 ميجابايت",
+      "fileVideoType": "يجب أن يكون الملف فيديو بصيغة MP4",
+      "footerNoVariables": "التذييل لا يقبل متغيرات.",
+      "headerNoEmojiOrFormat": "العنوان يجب أن يكون سطراً واحداً بدون رموز تعبيرية أو تنسيق.",
+      "headerOneVariable": "العنوان يقبل متغيراً واحداً فقط {{1}}.",
+      "invalidUrl": "صيغة الرابط غير صحيحة",
+      "nameFormat": "يُسمح فقط بأحرف إنجليزية صغيرة وأرقام وشرطة سفلية",
+      "noLeadingTrailingVariable": "لا يمكن أن يبدأ النص أو ينتهي بمتغير — أضف كلمة قبله أو بعده.",
+      "phoneFormat": "صيغة رقم الهاتف غير صحيحة. مثال: +1234567890",
+      "sampleValueRequired": "أدخل قيمة مثال لكل متغير — مطلوبة لمراجعة Meta.",
+      "sequentialVariables": "يجب ترقيم المتغيرات بالتسلسل {{1}} ثم {{2}} بدون فجوات أو تكرار."
+    },
+    "validationException": "خطأ في التحقق",
+    "phoneIncludeCountryCode": "يرجى تضمين رمز الدولة (مثال: 84+)",
+    "phoneAlreadyExists": "رقم الهاتف هذا موجود بالفعل",
+    "contactExistsOnInbox": "جهة الاتصال هذه موجودة بالفعل في صندوق الوارد المحدد",
+    "inboxChannelMismatch": "صندوق الوارد المحدد لا يتطابق مع المصدر المحدد"
   },
   "webchat": {
     "chatUnavailable": "هذه الدردشة غير متاحة حاليًا.",
@@ -5319,6 +5351,9 @@
         "label": "فيديو العرض الدوّار"
       },
       "createTitle": "إنشاء قالب رسالة",
+      "defaultButtonText": "الزر {index}",
+      "defaultViewCatalog": "عرض الكتالوج",
+      "defaultViewItems": "عرض المنتجات",
       "document": {
         "label": "مستند"
       },
@@ -5530,18 +5565,18 @@
     "duplicated": "حساب Zalo OA هذا مرتبط بالفعل بمساحة عمل أخرى.",
     "refreshPermissions": "تحديث الأذونات",
     "tagSync": {
-      "description": "مزامنة تعيينات الوسوم المحلية مع حساب Zalo OA هذا.",
+      "description": "مزامنة تعيينات التصنيفات المحلية مع حساب Zalo OA هذا.",
       "disabled": "معطّلة",
       "enabledSince": "مفعّلة منذ {date}",
-      "title": "مزامنة الوسوم",
-      "toggleSuccess": "تم تحديث إعداد مزامنة الوسوم."
+      "title": "مزامنة التصنيفات",
+      "toggleSuccess": "تم تحديث إعداد مزامنة التصنيفات."
     },
     "title": "Zalo OA"
   },
   "ui": {
     "optional": "(اختياري)",
     "close": "إغلاق",
-    "tags": "وسوم",
+    "tags": "تصنيفات",
     "selectedRows": "{selected} من {total} صف(وف) محدد.",
     "rowsPerPage": "صفوف في الصفحة",
     "pageOf": "صفحة {page} من {pageCount}",
@@ -5563,11 +5598,5 @@
     "view": "عرض",
     "searchColumns": "بحث الأعمدة...",
     "noColumnsFound": "لم يتم العثور على أعمدة."
-  },
-  "validation": {
-    "phoneIncludeCountryCode": "يرجى تضمين رمز الدولة (مثال: 84+)",
-    "phoneAlreadyExists": "رقم الهاتف هذا موجود بالفعل",
-    "contactExistsOnInbox": "جهة الاتصال هذه موجودة بالفعل في صندوق الوارد المحدد",
-    "inboxChannelMismatch": "صندوق الوارد المحدد لا يتطابق مع المصدر المحدد"
   }
 }
