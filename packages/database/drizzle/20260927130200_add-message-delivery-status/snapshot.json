@@ -1,0 +1,14 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "a7f2c3d4-e5b6-4a89-b012-3456789abcde",
+  "prevIds": [],
+  "ddl": [
+    {
+      "values": ["pending", "sent", "delivered", "read", "failed"],
+      "name": "messageDeliveryStatus",
+      "entityType": "enums",
+      "schema": "public"
+    }
+  ]
+}

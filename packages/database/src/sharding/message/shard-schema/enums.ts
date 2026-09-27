@@ -2,6 +2,7 @@ import { pgEnum } from "drizzle-orm/pg-core"
 import {
   contentTypes,
   fileTypes,
+  messageDeliveryStatuses,
   messageTypes,
   senderTypes,
 } from "../../../partials"
@@ -24,6 +25,11 @@ export const contentType = pgEnum(
 export const fileType = pgEnum(
   "fileType",
   fileTypes.options as [string, ...string[]],
+)
+
+export const messageDeliveryStatus = pgEnum(
+  "messageDeliveryStatus",
+  messageDeliveryStatuses.options as [string, ...string[]],
 )
 
 export const messageKind = pgEnum("messageKind", ["message", "comment"])

@@ -27,8 +27,11 @@ import {
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { format } from "date-fns"
 import {
+  AlertCircleIcon,
   BotIcon,
+  CheckCheckIcon,
   CheckIcon,
+  ClockIcon,
   ExternalLinkIcon,
   FileTextIcon,
   ImageIcon,
@@ -204,14 +207,36 @@ export const MessageItem = (props: MessageItemProps) => {
         )}
         {RenderContentAttributes(props)}
         {message.messageType === "outgoing" && !isComment && (
-          <div className="flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/70">
+          <div className="wa-bubble-meta flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/60">
             <span>{format(new Date(message.createdAt), "HH:mm")}</span>
-            <MessageDeliveryIndicator message={message} />
+            <MessageDeliveryIndicator
+              sendError={message.sendError}
+              status={message.status as string | null | undefined}
+              t={t}
+            />
           </div>
         )}
       </div>
 
       <div className="flex">
+        {message.messageType === "outgoing" &&
+          message.sendError &&
+          isComment && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="flex items-center self-center px-1 text-destructive">
+                    <AlertCircleIcon aria-hidden className="size-4" />
+                  </span>
+                }
+              />
+              <TooltipContent>
+                <p>
+                  {t("sendFailed")}: {message.sendError}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         {isComment && !isEditing && message.messageType === "incoming" && (
           <Button
             className="self-center opacity-0 transition-opacity group-hover:opacity-100"
@@ -398,6 +423,75 @@ const StoryReplyContext = (props: {
   )
 }
 
+const MessageDeliveryIndicator = (props: {
+  sendError: string | null | undefined
+  status: string | null | undefined
+  t: ReturnType<typeof useTranslations<"messages">>
+}) => {
+  const { sendError, status, t } = props
+
+  if (sendError || status === "failed") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <TriangleAlertIcon aria-hidden className="size-3.5 text-red-500" />
+          }
+        />
+        <TooltipContent>
+          <p>
+            {t("sendFailed")}
+            {sendError ? `: ${translateSendError(sendError, t)}` : ""}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "read") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <CheckCheckIcon aria-hidden className="wa-read-receipt size-3.5" />
+          }
+        />
+        <TooltipContent>
+          <p>{t("statusRead")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "delivered") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<CheckCheckIcon aria-hidden className="size-3.5" />}
+        />
+        <TooltipContent>
+          <p>{t("statusDelivered")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "sent") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<CheckIcon aria-hidden className="size-3.5" />}
+        />
+        <TooltipContent>
+          <p>{t("statusSent")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return <ClockIcon aria-hidden className="size-3" />
+}
+
 const RenderContentAttributes = (props: MessageItemProps) => {
   const { message, onPostback } = props
   const contentAttributes = message.contentAttributes as
@@ -510,24 +604,43 @@ const RenderContentAttributes = (props: MessageItemProps) => {
               text?: string
               buttons?: Array<{ type: string; text: string; url?: string }>
             }>
-            params?: Array<{
-              type: string
-              parameters: Array<{
-                type: string
-                text?: string
-                image?: { link: string }
-              }>
-            }>
+            params?: unknown
           }
         | undefined
 
       if (tpl?.components && tpl.components.length > 0) {
-        const headerParams: Array<{ text?: string; image?: { link: string } }> =
-          []
+        const headerParams: Array<{
+          text?: string
+          image?: { link: string }
+        }> = []
         const bodyParams: Array<{ text?: string }> = []
         const buttonParams: Array<{ text?: string }> = []
 
-        for (const p of tpl.params ?? []) {
+        type ParamEntry = {
+          type: string
+          parameters: Array<{
+            type: string
+            text?: string
+            image?: { link: string }
+          }>
+        }
+
+        const rawParams = tpl.params
+        let paramsArray: ParamEntry[]
+        if (Array.isArray(rawParams)) {
+          paramsArray = rawParams
+        } else if (rawParams && typeof rawParams === "object") {
+          paramsArray = Object.entries(
+            rawParams as Record<string, ParamEntry["parameters"]>,
+          ).map(([type, parameters]) => ({
+            type,
+            parameters: Array.isArray(parameters) ? parameters : [],
+          }))
+        } else {
+          paramsArray = []
+        }
+
+        for (const p of paramsArray) {
           if (p.type === "header") {
             for (const param of p.parameters) {
               headerParams.push(
@@ -573,43 +686,6 @@ const RenderContentAttributes = (props: MessageItemProps) => {
     default:
       return null
   }
-}
-
-const MessageDeliveryIndicator = ({
-  message,
-}: {
-  message: MessageResourceWithRelations
-}) => {
-  const t = useTranslations("messages")
-
-  if (message.messageType !== "outgoing") {
-    return null
-  }
-
-  if (message.sendError) {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <span className="inline-flex items-center text-red-500">
-              <TriangleAlertIcon aria-hidden className="size-3.5" />
-            </span>
-          }
-        />
-        <TooltipContent>
-          <p>
-            {t("sendFailed")}: {translateSendError(message.sendError, t)}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-
-  return (
-    <span className="inline-flex items-center text-primary-foreground/60">
-      <CheckIcon aria-hidden className="size-3.5" />
-    </span>
-  )
 }
 
 const SEND_ERROR_PATTERNS: Array<{ re: RegExp; key: string }> = [

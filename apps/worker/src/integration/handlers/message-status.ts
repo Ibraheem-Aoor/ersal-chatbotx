@@ -11,8 +11,14 @@ import {
   messageEventTypeSchema,
   UPDATE_STATUS_PAYLOAD_TYPE,
 } from "@chatbotx.io/flow-config"
+import {
+  type RealtimeEventData,
+  RealtimeEventType,
+} from "@chatbotx.io/partysocket-config"
 import { SdkException } from "@chatbotx.io/sdk"
 import {
+  ChatJobAction,
+  chatQueue,
   IntegrationJobAction,
   type IntegrationJobMessageStatus,
 } from "@chatbotx.io/worker-config"
@@ -23,6 +29,13 @@ import {
 } from "../../services/integrations"
 import { normalizeEpochTimestamp } from "../utils/message"
 import { runFlowPostback } from "./flow"
+
+function broadcastChatEvent(workspaceId: string, event: RealtimeEventData) {
+  return chatQueue.add(ChatJobAction.broadcastEvent, {
+    type: ChatJobAction.broadcastEvent,
+    data: { workspaceId, event },
+  })
+}
 
 export const handleMessageStatus = async (
   job: IntegrationJobMessageStatus["data"],
@@ -119,6 +132,45 @@ export const handleMessageStatus = async (
 
     if (message?.contentAttributes?.metadata) {
       eventLog.metadata = message.contentAttributes.metadata as MetadataPayload
+    }
+
+    if (
+      message &&
+      (eventStatus === "delivered" ||
+        eventStatus === "read" ||
+        eventStatus === "failed")
+    ) {
+      const statusMap: Record<string, "delivered" | "read" | "failed"> = {
+        delivered: "delivered",
+        read: "read",
+        failed: "failed",
+      }
+      const newStatus = statusMap[eventStatus]
+      if (newStatus) {
+        const timestamps: { deliveredAt?: Date; readAt?: Date } = {}
+        if (eventStatus === "delivered") {
+          timestamps.deliveredAt = seenAt
+        }
+        if (eventStatus === "read") {
+          timestamps.readAt = seenAt
+        }
+        await messageRepository.updateDeliveryStatus(
+          message.id,
+          inbox.workspaceId,
+          message.createdAt,
+          newStatus,
+          timestamps,
+        )
+        await broadcastChatEvent(inbox.workspaceId, {
+          eventType: RealtimeEventType.messageStatusChanged,
+          data: {
+            messageId: message.id,
+            status: newStatus,
+            deliveredAt: timestamps.deliveredAt?.toISOString() ?? null,
+            readAt: timestamps.readAt?.toISOString() ?? null,
+          },
+        })
+      }
     }
 
     if (eventStatus === "delivered") {

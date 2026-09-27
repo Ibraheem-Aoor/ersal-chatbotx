@@ -19,6 +19,7 @@ export type CreateBroadcastDefaultValues = {
   schedulesType: "now"
   schedulesAt: null
   contactFilter: ContactFilterCriteria
+  campaignDraftTagId?: string
 }
 
 /**

@@ -439,10 +439,15 @@ export async function recordMessageSendError(
       workspaceId,
       createdAt,
     )
+    await repo.updateDeliveryStatus(messageId, workspaceId, createdAt, "failed")
 
     await broadcastChatEvent(workspaceId, {
       eventType: RealtimeEventType.messageFailed,
       data: { messageId, clientId, error: truncatedError },
+    })
+    await broadcastChatEvent(workspaceId, {
+      eventType: RealtimeEventType.messageStatusChanged,
+      data: { messageId, status: "failed" },
     })
   } catch (err) {
     logger.error(err, "Failed to persist message sendError")
@@ -490,6 +495,11 @@ async function updateMessageSourceId(
         workspaceId,
         createdAt,
       )
+      await repo.updateDeliveryStatus(messageId, workspaceId, createdAt, "sent")
+      await broadcastChatEvent(workspaceId, {
+        eventType: RealtimeEventType.messageStatusChanged,
+        data: { messageId, status: "sent" },
+      })
     }
   } catch (err) {
     logger.error(err, "Failed to update message sourceId with provider id")

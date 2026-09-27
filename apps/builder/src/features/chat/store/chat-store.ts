@@ -100,6 +100,12 @@ export type ChatActions = {
     messageId: string,
     attributes: { liked: boolean; hidden: boolean },
   ) => void
+  updateMessageDeliveryStatus: (
+    messageId: string,
+    status: string,
+    deliveredAt?: string | null,
+    readAt?: string | null,
+  ) => void
   updateMessageText: (
     messageId: string,
     newText: string,
@@ -442,6 +448,24 @@ export const createChatStore = () => {
         messages: state.messages.map((message) =>
           message.id === messageId ? { ...message, attributes } : message,
         ),
+      }))
+    },
+
+    updateMessageDeliveryStatus: (messageId, status, deliveredAt, readAt) => {
+      set((state) => ({
+        messages: state.messages.map((message) => {
+          if (message.id !== messageId) {
+            return message
+          }
+          const updated = { ...message, status } as typeof message
+          if (deliveredAt) {
+            updated.deliveredAt = new Date(deliveredAt)
+          }
+          if (readAt) {
+            updated.readAt = new Date(readAt)
+          }
+          return updated
+        }),
       }))
     },
 

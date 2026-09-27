@@ -655,6 +655,75 @@ export class ShardedMessageRepository implements IMessageRepository {
     )
   }
 
+  async updateDeliveryStatus(
+    id: string,
+    workspaceId: string,
+    createdAt: Date,
+    status: "sent" | "delivered" | "read" | "failed",
+    timestamps?: { deliveredAt?: Date; readAt?: Date },
+  ): Promise<{ id: string } | null> {
+    const statusRank: Record<string, number> = {
+      pending: 0,
+      sent: 1,
+      delivered: 2,
+      read: 3,
+      failed: 4,
+    }
+    const rank = statusRank[status] ?? 0
+
+    const patch: Partial<typeof messageModel.$inferInsert> = { status }
+    if (timestamps?.deliveredAt) {
+      patch.deliveredAt = timestamps.deliveredAt
+    }
+    if (timestamps?.readAt) {
+      patch.readAt = timestamps.readAt
+    }
+
+    const timeRangeShards = await this.getShardsForRange(createdAt, createdAt)
+    const writeShard = await this.shardManager.getWriteShardInfo(workspaceId)
+    const shards = this.mergeWriteShard(timeRangeShards, writeShard)
+    if (shards.length === 0) {
+      return null
+    }
+
+    const perShard = await Promise.all(
+      shards.map(async (shardInfo) => {
+        try {
+          const client = await this.shardManager.getShardClient(shardInfo.shard)
+          const neverDowngrade =
+            status === "failed"
+              ? sql`true`
+              : sql`(COALESCE(CASE "status"
+                  WHEN 'pending' THEN 0
+                  WHEN 'sent' THEN 1
+                  WHEN 'delivered' THEN 2
+                  WHEN 'read' THEN 3
+                  WHEN 'failed' THEN 5
+                  ELSE 0 END, 0) < ${rank})`
+          return await client
+            .update(messageModel)
+            .set(patch)
+            .where(
+              and(
+                eq(messageModel.id, id),
+                eq(messageModel.workspaceId, workspaceId),
+                eq(messageModel.createdAt, createdAt),
+                neverDowngrade,
+              ),
+            )
+            .returning({ id: messageModel.id })
+        } catch (error) {
+          logger.warn(
+            { err: error, shardId: shardInfo.shard.id },
+            "Shard update failed in updateDeliveryStatus",
+          )
+          return []
+        }
+      }),
+    )
+    return perShard.flat()[0] ?? null
+  }
+
   updateSendError(
     id: string,
     sendError: string | null,
@@ -1335,6 +1404,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                   eq(messageModel.id, id),
                   eq(messageModel.createdAt, createdAt),
                   eq(messageModel.workspaceId, workspaceId),
+                  isNull(messageModel.deletedAt),
                 ),
               )
               .limit(1)
@@ -1409,6 +1479,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                       eq(messageModel.id, options.markerMessageId as string),
                       eq(messageModel.conversationId, options.conversationId),
                       eq(messageModel.workspaceId, options.workspaceId),
+                      isNull(messageModel.deletedAt),
                     ),
                   )
                   .limit(1)
@@ -1434,6 +1505,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                 eq(messageModel.conversationId, options.conversationId),
                 eq(messageModel.workspaceId, options.workspaceId),
                 gte(messageModel.createdAt, options.sinceTime as Date),
+                isNull(messageModel.deletedAt),
               ]
               if (options.messageTypes && options.messageTypes.length > 0) {
                 whereConditions.push(
@@ -1524,6 +1596,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                     eq(messageModel.conversationId, conversationId),
                     eq(messageModel.contactInboxId, contactInboxId),
                     gte(messageModel.createdAt, lookupSinceTime),
+                    isNull(messageModel.deletedAt),
                   ),
                 )
                 .limit(1)
@@ -1582,6 +1655,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                       eq(messageModel.conversationId, conversationId),
                       eq(messageModel.contactInboxId, contactInboxId),
                       gte(messageModel.createdAt, lookupSinceTime),
+                      isNull(messageModel.deletedAt),
                       sql`${messageModel.contentAttributes}->'richResponse'->'buttonPayloads' ? ${buttonId}`,
                     ),
                   )
@@ -1663,6 +1737,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                   eq(messageModel.conversationId, conversationId),
                   eq(messageModel.workspaceId, workspaceId),
                   gte(messageModel.createdAt, sinceTime),
+                  isNull(messageModel.deletedAt),
                 ),
               )
               .limit(1)
@@ -1730,6 +1805,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                     eq(messageModel.conversationId, conversationId),
                     eq(messageModel.workspaceId, workspaceId),
                     gte(messageModel.createdAt, sinceTime),
+                    isNull(messageModel.deletedAt),
                   ),
                 )
                 .limit(1)
@@ -1796,6 +1872,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                     inArray(messageModel.contactInboxId, contactInboxIds),
                     inArray(messageModel.sourceId, sourceIds),
                     gte(messageModel.createdAt, sinceTime),
+                    isNull(messageModel.deletedAt),
                   ),
                 )) as MessageSourceRow[],
           )
@@ -2013,6 +2090,7 @@ export class ShardedMessageRepository implements IMessageRepository {
               const whereConditions = [
                 eq(messageModel.conversationId, conversationId),
                 gte(messageModel.createdAt, sinceTime),
+                isNull(messageModel.deletedAt),
               ]
               if (options?.workspaceId) {
                 whereConditions.push(
@@ -2130,6 +2208,7 @@ export class ShardedMessageRepository implements IMessageRepository {
               const whereConditions = [
                 eq(messageModel.conversationId, conversationId),
                 gte(messageModel.createdAt, sinceTime),
+                isNull(messageModel.deletedAt),
               ]
               if (options.workspaceId) {
                 whereConditions.push(
@@ -2214,6 +2293,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                       eq(messageModel.contactInboxId, contactInboxId),
                       inArray(messageModel.id, ids),
                       gte(messageModel.createdAt, sinceTime),
+                      isNull(messageModel.deletedAt),
                     ),
                   )
                 return messages as Pick<MessageModel, "id" | "text">[]
@@ -2356,7 +2436,10 @@ export class ShardedMessageRepository implements IMessageRepository {
     return this.shardManager.withShardClientForRead(
       shardInfo.shard,
       async (shardClient) => {
-        const whereConditions = [eq(messageModel.workspaceId, workspaceId)]
+        const whereConditions = [
+          eq(messageModel.workspaceId, workspaceId),
+          isNull(messageModel.deletedAt),
+        ]
 
         if (conversationId) {
           whereConditions.push(eq(messageModel.conversationId, conversationId))

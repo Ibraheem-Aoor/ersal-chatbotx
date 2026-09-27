@@ -6,6 +6,7 @@ import { getLocale } from "next-intl/server"
 import type { ReactNode } from "react"
 import { FormTranslationProvider } from "@/components/form-translation-provider"
 import { PublicEnvScript } from "@/components/public-env-script"
+import { StaleDeploymentDetector } from "@/components/stale-deployment-detector"
 import { SupportChatScript } from "@/components/support-chat-script"
 import { UILabelsConfig } from "@/components/ui-labels-config"
 import { ZodErrorMapProvider } from "@/components/zod-error-map-provider"
@@ -112,6 +113,7 @@ export default async function RootLayout({ children }: Props) {
               <NextIntlClientProvider>
                 <UILabelsConfig>
                   <ZodErrorMapProvider />
+                  <StaleDeploymentDetector />
                   <FormTranslationProvider>{children}</FormTranslationProvider>
                 </UILabelsConfig>
               </NextIntlClientProvider>

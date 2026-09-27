@@ -13,6 +13,7 @@ import { ConversationInfo } from "../conversations/components/conversation-info"
 import { changeMessageAttributesAction } from "./actions/change-message-attributes.action"
 import { deleteMessageAction } from "./actions/delete-message.action"
 import { editMessageAction } from "./actions/edit-message.action"
+import { MessageErrorBoundary } from "./components/message-error-boundary"
 import { MessageItem } from "./components/message-item"
 import type { MessageResourceWithRelations } from "./schema/resource"
 
@@ -251,20 +252,21 @@ export function MessageList() {
         followOutput
         initialTopMostItemIndex={{ index: "LAST" }}
         itemContent={(_, message) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            onChangeHide={() => handleChangeHideState(message)}
-            onChangeLike={() => handleChangeLikeState(message)}
-            onDelete={() => {
-              handleDeleteComment({
-                id: message.id,
-                createdAt: message.createdAt,
-              })
-            }}
-            onEdit={handleEditMessage}
-            onReply={handleReplyComment}
-          />
+          <MessageErrorBoundary key={message.id}>
+            <MessageItem
+              message={message}
+              onChangeHide={() => handleChangeHideState(message)}
+              onChangeLike={() => handleChangeLikeState(message)}
+              onDelete={() => {
+                handleDeleteComment({
+                  id: message.id,
+                  createdAt: message.createdAt,
+                })
+              }}
+              onEdit={handleEditMessage}
+              onReply={handleReplyComment}
+            />
+          </MessageErrorBoundary>
         )}
         startReached={loadMoreItems}
       />

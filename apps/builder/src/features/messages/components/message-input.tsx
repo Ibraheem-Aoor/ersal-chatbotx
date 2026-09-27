@@ -163,6 +163,9 @@ export const MessageInput = () => {
                 parentId: null,
                 attributes: null,
                 sendError: null,
+                status: "pending",
+                deliveredAt: null,
+                readAt: null,
               })
             }
 

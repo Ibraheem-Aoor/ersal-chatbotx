@@ -35,13 +35,15 @@ import { useDebouncedCallback } from "@chatbotx.io/ui/hooks/use-debounced-callba
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { add } from "date-fns"
-import { Loader2Icon, XIcon } from "lucide-react"
+import { Loader2Icon, UploadIcon, XIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createBroadcastAction } from "@/features/broadcasts/actions/create-broadcast.action"
+import { createCampaignDraftTagAction } from "@/features/broadcasts/actions/create-campaign-draft-tag.action"
+import { BroadcastAudienceImportDialog } from "@/features/broadcasts/components/broadcast-audience-import-dialog"
 import { BroadcastAudiencePreviewDialog } from "@/features/broadcasts/components/broadcast-audience-preview-dialog"
 import { BroadcastConfirmDialog } from "@/features/broadcasts/components/broadcast-confirm-dialog"
 import { createBroadcastRequest } from "@/features/broadcasts/schemas/action"
@@ -583,6 +585,62 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   >(null)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [campaignDraftTag, setCampaignDraftTag] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [audienceMode, setAudienceMode] = useState<"filter" | "import">(
+    "filter",
+  )
+  const [isCreatingTag, setIsCreatingTag] = useState(false)
+
+  const isTemplateType =
+    (props.subaction === broadcastSubactions.enum.whatsappTemplateMessage ||
+      props.subaction === broadcastSubactions.enum.messengerTemplateMessage) &&
+    watchedTemplateType === broadcastFlowTypes.enum.template
+
+  const handleStartImport = useCallback(async () => {
+    if (campaignDraftTag) {
+      setImportDialogOpen(true)
+      return
+    }
+    setIsCreatingTag(true)
+    const result = await createCampaignDraftTagAction.bind(null, workspaceId)()
+    setIsCreatingTag(false)
+    if (result?.data) {
+      setCampaignDraftTag(result.data)
+      setImportDialogOpen(true)
+    }
+  }, [campaignDraftTag, workspaceId])
+
+  const handleImportStarted = useCallback(() => {
+    if (!campaignDraftTag) {
+      return
+    }
+    setValue("contactFilter", {
+      operator: "and",
+      conditions: [
+        {
+          field: "tags",
+          operator: "in",
+          value: [campaignDraftTag.id],
+        },
+      ],
+    })
+    setValue("campaignDraftTagId", campaignDraftTag.id)
+    setAudienceMode("import")
+  }, [campaignDraftTag, setValue])
+
+  const handleSwitchToFilter = useCallback(() => {
+    setAudienceMode("filter")
+    setCampaignDraftTag(null)
+    setValue("campaignDraftTagId", undefined)
+    setValue("contactFilter", {
+      operator: "and",
+      conditions: [],
+    })
+  }, [setValue])
 
   const excludeFields = useMemo(
     () =>
@@ -912,11 +970,85 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
 
       <Card>
         <CardContent className="flex flex-col gap-6">
-          <ContactFilter
-            excludeFields={excludeFields}
-            inboxChannel={props.channel}
-            parentName="contactFilter"
-          />
+          {isTemplateType && (
+            <div className="flex gap-3">
+              {/* biome-ignore lint/a11y/useSemanticElements: complex styling requires div */}
+              <div
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-sm transition-colors ${
+                  audienceMode === "filter"
+                    ? "border-primary bg-primary/5 font-medium"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={() =>
+                  audienceMode !== "filter" && handleSwitchToFilter()
+                }
+                onKeyDown={(e) => {
+                  if (
+                    (e.key === "Enter" || e.key === " ") &&
+                    audienceMode !== "filter"
+                  ) {
+                    e.preventDefault()
+                    handleSwitchToFilter()
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                {t("broadcasts.audienceImport.filterMode")}
+              </div>
+              {/* biome-ignore lint/a11y/useSemanticElements: complex styling requires div */}
+              <div
+                className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-sm transition-colors ${
+                  audienceMode === "import"
+                    ? "border-primary bg-primary/5 font-medium"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={handleStartImport}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    handleStartImport()
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                {isCreatingTag && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
+                <UploadIcon className="size-4" />
+                {t("broadcasts.audienceImport.importMode")}
+              </div>
+            </div>
+          )}
+          {audienceMode === "filter" ? (
+            <ContactFilter
+              excludeFields={excludeFields}
+              inboxChannel={props.channel}
+              parentName="contactFilter"
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {campaignDraftTag && (
+                <p className="text-muted-foreground text-sm">
+                  {t("broadcasts.audienceImport.importedTag", {
+                    tag: campaignDraftTag.name,
+                  })}
+                </p>
+              )}
+              <p className="text-muted-foreground text-xs">
+                {t("broadcasts.audienceImport.templateWarning")}
+              </p>
+              <Button
+                onClick={() => setImportDialogOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                <UploadIcon className="size-4" />
+                {t("broadcasts.audienceImport.uploadAnother")}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -972,6 +1104,17 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
             total={count || 0}
             workspaceId={workspaceId}
           />
+          {isTemplateType && campaignDraftTag && (
+            <BroadcastAudienceImportDialog
+              channel={props.channel}
+              onImportStarted={handleImportStarted}
+              onOpenChange={setImportDialogOpen}
+              open={importDialogOpen}
+              tagId={campaignDraftTag.id}
+              tagName={campaignDraftTag.name}
+              workspaceId={workspaceId}
+            />
+          )}
         </div>
       </div>
     </div>
