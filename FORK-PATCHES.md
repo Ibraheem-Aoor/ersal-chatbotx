@@ -892,6 +892,93 @@ if upstream modifies the same files.
 
 ---
 
+## 31. WhatsApp Chat Wallpaper — Real Tiled PNG
+
+**Files:**
+- `apps/builder/src/features/messages/components/message-list.tsx`
+- `apps/builder/public/images/wa-chat-bg.png` (new)
+
+**What:** Replaced the inline SVG doodle wallpaper with a real WhatsApp-style
+tiled PNG background (`wa-chat-bg.png`). The background uses `background-size: 412px 749px`
+with `background-repeat: repeat`. Added contrast fix for timestamps and delivery
+ticks via `text-shadow` so they remain legible on the textured background.
+
+**Why:** The SVG doodle pattern was visually inconsistent with the WhatsApp
+experience users expect. The tiled PNG matches the native WhatsApp chat UI.
+
+**Verify after sync:** Open any conversation in the inbox → the chat background
+shows a tiled WhatsApp-style wallpaper pattern. Timestamps and delivery ticks
+are legible with subtle text shadow.
+
+---
+
+## 32. Message Delivery Status Indicators (pending/sent/delivered/read/failed)
+
+**Files:**
+- `packages/database/src/schema/message.ts` — `messageDeliveryStatus` enum + columns
+- `packages/database/src/partials/message.ts` — `messageDeliveryStatuses` zod enum
+- `packages/database/src/sharding/message/shard-schema/enums.ts` — shard enum mirror
+- `packages/database/src/sharding/message/shard-schema/message.ts` — shard columns
+- `packages/database/src/sharding/scripts/init-message-shard.sql` — schema v1.3.0
+- `packages/database/src/sharding/migrations/20260927130200_add-message-delivery-status.sql`
+- `packages/database/drizzle/20260927130200_add-message-delivery-status/migration.sql`
+- `packages/database/src/repositories/message/message-repository.ts` — `updateDeliveryStatus`
+- `packages/database/src/sharding/message/repository/sharded-message-repository.ts`
+- `packages/partysocket-config/src/schemas.ts` — `messageStatusChanged` event
+- `apps/worker/src/chat/handlers/send-message.ts` — set `sent`/`failed` on Meta send
+- `apps/worker/src/integration/handlers/message-status.ts` — set `delivered`/`read`/`failed`
+- `apps/builder/src/features/chat/chat-realtime.tsx` — realtime handler
+- `apps/builder/src/features/chat/store/chat-store.ts` — store action
+- `apps/builder/src/features/messages/components/message-item.tsx` — UI indicators
+- `apps/builder/src/features/messages/components/message-input.tsx` — optimistic defaults
+- `apps/builder/src/features/integration-webchat/providers/store/guest-sesssion-store.ts`
+- `apps/builder/messages/en.json`, `apps/builder/messages/ar.json`
+
+**What:** Full delivery status tracking for outgoing messages:
+- DB: `messageDeliveryStatus` enum (`pending`, `sent`, `delivered`, `read`, `failed`) +
+  `status`, `deliveredAt`, `readAt` columns on Message (main + shard schema).
+- Worker: sets `sent` when Meta returns wamid, `failed` on send error, `delivered`/`read`
+  on webhook status events. Never-downgrade SQL guard prevents status regression.
+- Realtime: `messageStatusChanged` event broadcasts updates to connected clients.
+- UI: clock (pending), single check (sent), double check grey (delivered), double check
+  blue #53bdeb (read), red triangle with tooltip (failed). Only on outgoing bubbles.
+
+**Why:** Users had no visibility into whether messages were delivered or read by recipients.
+
+**Verify after sync:** Send a WhatsApp message → clock icon appears immediately →
+single check after send → double check grey on delivery → double check blue on read.
+Failed messages show red triangle with error tooltip.
+
+---
+
+## 33. Campaign Audience Upload (CSV/XLSX) for Template Broadcasts
+
+**Files:**
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx` — audience mode toggle
+- `apps/builder/src/features/broadcasts/components/broadcast-audience-import-dialog.tsx`
+- `apps/builder/src/features/broadcasts/actions/create-campaign-draft-tag.action.ts`
+- `apps/builder/src/features/broadcasts/actions/create-broadcast.action.ts`
+- `apps/builder/src/features/broadcasts/schemas/action.ts`
+- `apps/builder/messages/en.json`, `apps/builder/messages/ar.json`
+
+**What:** Adds a "Import from file" audience mode for template broadcasts:
+1. Audience card shows filter/import mode toggle (only for template subactions).
+2. Import mode creates a `campaign-draft-<uuid>` tag, opens a CSV/XLSX upload dialog
+   that auto-tags imported contacts.
+3. On broadcast save, tag is renamed to `حملة: <broadcastName>` for friendly display.
+4. Filter is automatically set to `{field: "tags", operator: "in", value: [tagId]}`.
+5. Template warning tooltip: imported contacts have no 24h conversation window.
+
+**Why:** Users needed to send template broadcasts to new contacts not yet in the system.
+Filter-only audience selection couldn't target contacts that didn't exist yet.
+
+**Verify after sync:** Create a WhatsApp template broadcast → audience section shows
+"Filter contacts" / "Import from file" toggle. Click import → upload CSV → contacts
+are imported and auto-tagged. Receiver count updates. On confirm, tag is renamed to
+`حملة: <template-name>`.
+
+---
+
 ## What is NOT patched (upstream code runs unchanged)
 
 These upstream gates work correctly with `NEXT_PUBLIC_EDITION=enterprise`:
