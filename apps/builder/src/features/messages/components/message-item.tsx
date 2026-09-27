@@ -27,13 +27,14 @@ import {
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { format } from "date-fns"
 import {
-  AlertCircleIcon,
   BotIcon,
+  CheckIcon,
   ExternalLinkIcon,
   ImageIcon,
   PaperclipIcon,
   ReplyIcon,
   ThumbsUp,
+  TriangleAlertIcon,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -200,25 +201,15 @@ export const MessageItem = (props: MessageItemProps) => {
           </>
         )}
         {RenderContentAttributes(props)}
+        {message.messageType === "outgoing" && !isComment && (
+          <div className="flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/70">
+            <span>{format(new Date(message.createdAt), "HH:mm")}</span>
+            <MessageDeliveryIndicator message={message} />
+          </div>
+        )}
       </div>
 
       <div className="flex">
-        {message.messageType === "outgoing" && message.sendError && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="flex items-center self-center px-1 text-destructive">
-                  <AlertCircleIcon aria-hidden className="size-4" />
-                </span>
-              }
-            />
-            <TooltipContent>
-              <p>
-                {t("sendFailed")}: {translateSendError(message.sendError, t)}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
         {isComment && !isEditing && message.messageType === "incoming" && (
           <Button
             className="self-center opacity-0 transition-opacity group-hover:opacity-100"
@@ -510,6 +501,43 @@ const RenderContentAttributes = (props: MessageItemProps) => {
     default:
       return null
   }
+}
+
+const MessageDeliveryIndicator = ({
+  message,
+}: {
+  message: MessageResourceWithRelations
+}) => {
+  const t = useTranslations("messages")
+
+  if (message.messageType !== "outgoing") {
+    return null
+  }
+
+  if (message.sendError) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-flex items-center text-red-500">
+              <TriangleAlertIcon aria-hidden className="size-3.5" />
+            </span>
+          }
+        />
+        <TooltipContent>
+          <p>
+            {t("sendFailed")}: {translateSendError(message.sendError, t)}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center text-primary-foreground/60">
+      <CheckIcon aria-hidden className="size-3.5" />
+    </span>
+  )
 }
 
 const SEND_ERROR_PATTERNS: Array<{ re: RegExp; key: string }> = [
