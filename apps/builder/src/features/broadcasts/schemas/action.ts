@@ -47,6 +47,7 @@ export const createBroadcastRequest = z
       )
       .nullable(),
     contactFilter: contactFilterRequest.shape.contactFilter,
+    campaignDraftTagId: zodBigintAsString().optional(),
   })
   .refine((data) => !!(data.flowId || data.templateId), {
     message: "Either flow or template must be selected",

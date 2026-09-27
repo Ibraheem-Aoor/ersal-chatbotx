@@ -578,6 +578,19 @@
       "template": "Template",
       "noTemplate": "No template",
       "integration": "Integration"
+    },
+    "audienceImport": {
+      "filterMode": "Filter contacts",
+      "importMode": "Import from file",
+      "title": "Import contacts for broadcast",
+      "columnMapping": "Column mapping",
+      "tagNote": "Imported contacts will be tagged with \"{tag}\"",
+      "importedTag": "Audience: contacts tagged \"{tag}\"",
+      "startImport": "Start import",
+      "uploadAnother": "Import more contacts",
+      "importStarted": "Contact import started. Contacts will appear shortly.",
+      "importFailed": "Failed to start contact import",
+      "templateWarning": "Imported contacts have no open conversation window — use an approved template"
     }
   },
   "condition": {
