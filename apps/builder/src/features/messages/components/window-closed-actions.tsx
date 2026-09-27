@@ -18,13 +18,33 @@ import {
 } from "@chatbotx.io/ui/components/ui/alert-dialog"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@chatbotx.io/ui/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@chatbotx.io/ui/components/ui/popover"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@chatbotx.io/ui/components/ui/select"
-import { FileTextIcon, Loader2Icon, LockIcon, WorkflowIcon } from "lucide-react"
+import { cn } from "@chatbotx.io/ui/lib/utils"
+import {
+  CheckIcon,
+  ChevronsUpDownIcon,
+  FileTextIcon,
+  Loader2Icon,
+  LockIcon,
+  WorkflowIcon,
+} from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useCallback, useMemo, useState } from "react"
@@ -216,25 +236,14 @@ function SendTemplateButton({
             </div>
           )}
           {!isLoading && templates && templates.length > 0 && (
-            <Select
-              onValueChange={handleTemplateChange}
-              value={selectedTemplateId}
-            >
-              <SelectTrigger className="w-full">
-                {selectedTemplateName ? (
-                  <span className="line-clamp-1">{selectedTemplateName}</span>
-                ) : (
-                  <SelectValue placeholder={t("messages.selectTemplate")} />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((tpl) => (
-                  <SelectItem key={tpl.id} value={tpl.id}>
-                    {tpl.name} ({tpl.language})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <TemplateCombobox
+              onSelect={handleTemplateChange}
+              placeholder={t("messages.selectTemplate")}
+              searchPlaceholder={t("messages.searchTemplates")}
+              selectedId={selectedTemplateId}
+              selectedLabel={selectedTemplateName}
+              templates={templates}
+            />
           )}
           {!isLoading && (!templates || templates.length === 0) && (
             <p className="py-4 text-center text-muted-foreground text-sm">
@@ -404,5 +413,93 @@ function SendFlowButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+function TemplateCombobox({
+  templates,
+  selectedId,
+  selectedLabel,
+  onSelect,
+  placeholder,
+  searchPlaceholder,
+}: {
+  templates: Array<{
+    id: string
+    name: string
+    language: string
+    status?: string
+  }>
+  selectedId: string
+  selectedLabel: string
+  onSelect: (id: string) => void
+  placeholder: string
+  searchPlaceholder: string
+}) {
+  const [open, setOpen] = useState(false)
+  const t = useTranslations()
+
+  return (
+    <Popover modal onOpenChange={setOpen} open={open}>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between",
+              !selectedId && "text-muted-foreground",
+            )}
+            role="combobox"
+            variant="outline"
+          >
+            <span className="min-w-0 truncate">
+              {selectedLabel || placeholder}
+            </span>
+            <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+          </Button>
+        }
+      />
+      <PopoverContent
+        align="start"
+        className="w-[var(--popover-trigger-width)] p-0"
+      >
+        <Command>
+          <CommandInput className="h-9" placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{t("messages.noApprovedTemplates")}</CommandEmpty>
+            {templates.map((tpl) => (
+              <CommandItem
+                key={tpl.id}
+                onSelect={() => {
+                  onSelect(tpl.id)
+                  setOpen(false)
+                }}
+                value={`${tpl.name} ${tpl.language}`}
+              >
+                <div className="flex flex-1 items-center justify-between gap-2">
+                  <span className="truncate">
+                    {tpl.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({tpl.language})
+                    </span>
+                  </span>
+                  {tpl.status && (
+                    <span className="shrink-0 rounded bg-green-100 px-1.5 py-0.5 font-medium text-[10px] text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      {tpl.status}
+                    </span>
+                  )}
+                </div>
+                <CheckIcon
+                  className={cn(
+                    "ms-auto size-4",
+                    selectedId === tpl.id ? "opacity-100" : "opacity-0",
+                  )}
+                />
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }

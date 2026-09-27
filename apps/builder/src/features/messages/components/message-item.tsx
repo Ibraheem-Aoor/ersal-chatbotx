@@ -441,7 +441,7 @@ const MessageDeliveryIndicator = (props: {
         <TooltipContent>
           <p>
             {t("sendFailed")}
-            {sendError ? `: ${sendError}` : ""}
+            {sendError ? `: ${translateSendError(sendError, t)}` : ""}
           </p>
         </TooltipContent>
       </Tooltip>
@@ -686,4 +686,39 @@ const RenderContentAttributes = (props: MessageItemProps) => {
     default:
       return null
   }
+}
+
+const SEND_ERROR_PATTERNS: Array<{ re: RegExp; key: string }> = [
+  {
+    re: /24\s*h|outside.*window|re-?engagement/i,
+    key: "sendErrors.outsideWindow",
+  },
+  {
+    re: /not.*(?:whatsapp|registered)|incapable.*whatsapp/i,
+    key: "sendErrors.notOnWhatsapp",
+  },
+  { re: /rate\s*limit/i, key: "sendErrors.rateLimited" },
+  { re: /invalid.*phone|phone.*invalid/i, key: "sendErrors.invalidPhone" },
+  {
+    re: /media.*(?:upload|download|failed)|failed.*media/i,
+    key: "sendErrors.mediaFailed",
+  },
+  {
+    re: /template.*(?:not found|not approved)|not.*approved.*template/i,
+    key: "sendErrors.templateNotApproved",
+  },
+  { re: /receiver.*incapable|incapable/i, key: "sendErrors.receiverIncapable" },
+  { re: /spam/i, key: "sendErrors.spamRateLimited" },
+]
+
+function translateSendError(
+  error: string,
+  t: ReturnType<typeof useTranslations>,
+): string {
+  for (const { re, key } of SEND_ERROR_PATTERNS) {
+    if (re.test(error)) {
+      return t(key as Parameters<typeof t>[0])
+    }
+  }
+  return error
 }
