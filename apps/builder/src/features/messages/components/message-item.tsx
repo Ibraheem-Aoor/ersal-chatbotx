@@ -453,8 +453,7 @@ const MessageDeliveryIndicator = (props: {
           render={
             <CheckCheckIcon
               aria-hidden
-              className="size-3.5"
-              style={{ color: "#53bdeb" }}
+              className="wa-read-receipt size-3.5"
             />
           }
         />
