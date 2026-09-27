@@ -58,7 +58,7 @@ function WhatsappWindowBadge({
 
   useEffect(() => {
     setStatus(getStatus())
-    const interval = setInterval(() => setStatus(getStatus()), 1_000)
+    const interval = setInterval(() => setStatus(getStatus()), 1000)
     return () => clearInterval(interval)
   }, [getStatus])
 
@@ -72,7 +72,7 @@ function WhatsappWindowBadge({
               variant="outline"
             >
               <ClockIcon className="size-3" />
-              <span className="tabular-nums text-[11px]">
+              <span className="text-[11px] tabular-nums">
                 {status.hours > 0
                   ? `${status.hours}${t("whatsapp.window.hoursShort")} ${status.minutes}${t("whatsapp.window.minutesShort")} ${String(status.seconds).padStart(2, "0")}${t("whatsapp.window.secondsShort")}`
                   : `${status.minutes}${t("whatsapp.window.minutesShort")} ${String(status.seconds).padStart(2, "0")}${t("whatsapp.window.secondsShort")}`}
@@ -96,9 +96,7 @@ function WhatsappWindowBadge({
             variant="outline"
           >
             <LockIcon className="size-3" />
-            <span className="text-[11px]">
-              {t("whatsapp.window.closed")}
-            </span>
+            <span className="text-[11px]">{t("whatsapp.window.closed")}</span>
           </Badge>
         }
       />
@@ -148,7 +146,7 @@ export default function MessageHead() {
 
   return (
     activeConversation && (
-      <div className="flex items-center gap-2 border-b px-3 pb-3">
+      <div className="flex items-center gap-2 border-b bg-white px-3 pb-3 dark:bg-black">
         <div className="flex flex-1 flex-col">
           <div className="flex items-center gap-2">
             <span className="truncate font-medium text-semibold">
