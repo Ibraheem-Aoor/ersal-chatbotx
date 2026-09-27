@@ -89,6 +89,12 @@ export function AppSidebar({
     },
     navMain: [
       {
+        title: t("fields.analytics.label"),
+        url: `/space/${workspaceId}/dashboard`,
+        icon: ChartPieIcon,
+        permission: PERMISSION_NAV.dashboard,
+      },
+      {
         title: t("fields.inbox.label"),
         url: `/space/${workspaceId}/inbox`,
         icon: MessageCircleMoreIcon,
@@ -101,16 +107,6 @@ export function AppSidebar({
         permission: PERMISSION_NAV.contacts,
       },
       {
-        title: t("broadcasts.title"),
-        url: `/space/${workspaceId}/broadcasts`,
-        icon: RadioIcon,
-        permission: PERMISSION_NAV.broadcasts,
-      },
-      // FORK PATCH: WhatsApp Templates quick-access. URL resolves based on
-      // how many WA integrations the workspace has:
-      //  - 1 integration → link directly to its templates page
-      //  - 0 or 2+ → link to the WA channel settings (connect / pick one)
-      {
         title: t("whatsapp.tabs.messageTemplates"),
         url:
           whatsappIntegrationIds.length === 1
@@ -120,20 +116,16 @@ export function AppSidebar({
         permission: "superAdmin",
       },
       {
+        title: t("broadcasts.title"),
+        url: `/space/${workspaceId}/broadcasts`,
+        icon: RadioIcon,
+        permission: PERMISSION_NAV.broadcasts,
+      },
+      {
         title: t("fields.flows.label"),
         url: `/space/${workspaceId}/flows`,
         icon: WorkflowIcon,
         permission: PERMISSION_NAV.flows,
-      },
-      {
-        title: t("aiAgent.title"),
-        url: `/space/${workspaceId}/ai-agents`,
-        icon: BrainIcon,
-      },
-      {
-        title: t("keywords.title"),
-        url: `/space/${workspaceId}/automated-responses`,
-        icon: AtomIcon,
       },
       {
         title: t("sequences.title"),
@@ -142,9 +134,25 @@ export function AppSidebar({
         permission: PERMISSION_NAV.sequences,
       },
       {
+        title: t("keywords.title"),
+        url: `/space/${workspaceId}/automated-responses`,
+        icon: AtomIcon,
+      },
+      {
         title: t("triggers.title"),
         url: `/space/${workspaceId}/triggers`,
         icon: LightbulbIcon,
+      },
+      {
+        title: t("aiAgent.title"),
+        url: `/space/${workspaceId}/ai-agents`,
+        icon: BrainIcon,
+      },
+      {
+        title: t("ads.title"),
+        url: `/space/${workspaceId}/ads`,
+        icon: MegaphoneIcon,
+        permission: "superAdmin",
       },
       {
         title: t("webhooks.title"),
@@ -155,18 +163,6 @@ export function AppSidebar({
         title: t("tools.title"),
         url: `/space/${workspaceId}/tools`,
         icon: WrenchIcon,
-      },
-      {
-        title: t("fields.analytics.label"),
-        url: `/space/${workspaceId}/dashboard`,
-        icon: ChartPieIcon,
-        permission: PERMISSION_NAV.dashboard,
-      },
-      {
-        title: t("ads.title"),
-        url: `/space/${workspaceId}/ads`,
-        icon: MegaphoneIcon,
-        permission: "superAdmin",
       },
       {
         title: t("settings.title"),
