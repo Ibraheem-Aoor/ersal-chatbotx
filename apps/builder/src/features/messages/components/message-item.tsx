@@ -27,13 +27,15 @@ import {
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { format } from "date-fns"
 import {
-  AlertCircleIcon,
   BotIcon,
+  CheckIcon,
   ExternalLinkIcon,
+  FileTextIcon,
   ImageIcon,
   PaperclipIcon,
   ReplyIcon,
   ThumbsUp,
+  TriangleAlertIcon,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -41,6 +43,7 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import type { AttachmentResource } from "@/features/attachments/schema/resource"
 import { useAttachmentUrl } from "@/features/attachments/utils"
+import { TemplatePreview } from "@/features/integration-whatsapp/message-templates/components/template-preview"
 import type { MessageResourceWithRelations } from "../schema/resource"
 import { MessageActions, MessageActionsEditor } from "./message-actions"
 import { MessageBubble } from "./message-bubble"
@@ -200,25 +203,15 @@ export const MessageItem = (props: MessageItemProps) => {
           </>
         )}
         {RenderContentAttributes(props)}
+        {message.messageType === "outgoing" && !isComment && (
+          <div className="flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/70">
+            <span>{format(new Date(message.createdAt), "HH:mm")}</span>
+            <MessageDeliveryIndicator message={message} />
+          </div>
+        )}
       </div>
 
       <div className="flex">
-        {message.messageType === "outgoing" && message.sendError && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="flex items-center self-center px-1 text-destructive">
-                  <AlertCircleIcon aria-hidden className="size-4" />
-                </span>
-              }
-            />
-            <TooltipContent>
-              <p>
-                {t("sendFailed")}: {message.sendError}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
         {isComment && !isEditing && message.messageType === "incoming" && (
           <Button
             className="self-center opacity-0 transition-opacity group-hover:opacity-100"
@@ -507,7 +500,149 @@ const RenderContentAttributes = (props: MessageItemProps) => {
           )}
         </div>
       )
+    case "whatsapp_template": {
+      const tpl = (contentAttributes as Record<string, unknown>).template as
+        | {
+            name?: string
+            components?: Array<{
+              type: string
+              format?: string
+              text?: string
+              buttons?: Array<{ type: string; text: string; url?: string }>
+            }>
+            params?: Array<{
+              type: string
+              parameters: Array<{
+                type: string
+                text?: string
+                image?: { link: string }
+              }>
+            }>
+          }
+        | undefined
+
+      if (tpl?.components && tpl.components.length > 0) {
+        const headerParams: Array<{ text?: string; image?: { link: string } }> =
+          []
+        const bodyParams: Array<{ text?: string }> = []
+        const buttonParams: Array<{ text?: string }> = []
+
+        for (const p of tpl.params ?? []) {
+          if (p.type === "header") {
+            for (const param of p.parameters) {
+              headerParams.push(
+                param.type === "image"
+                  ? { image: param.image }
+                  : { text: param.text },
+              )
+            }
+          } else if (p.type === "body") {
+            for (const param of p.parameters) {
+              bodyParams.push({ text: param.text })
+            }
+          } else if (p.type === "button") {
+            for (const param of p.parameters) {
+              buttonParams.push({ text: param.text })
+            }
+          }
+        }
+
+        return (
+          <div className="mt-1">
+            <TemplatePreview
+              bodyParams={bodyParams}
+              buttonParams={buttonParams}
+              components={
+                tpl.components as Parameters<
+                  typeof TemplatePreview
+                >[0]["components"]
+              }
+              headerParams={headerParams}
+            />
+          </div>
+        )
+      }
+
+      return (
+        <div className="mt-1 flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground text-xs">
+          <FileTextIcon className="size-4 shrink-0" />
+          <span>{tpl?.name ?? "Template"}</span>
+        </div>
+      )
+    }
     default:
       return null
   }
+}
+
+const MessageDeliveryIndicator = ({
+  message,
+}: {
+  message: MessageResourceWithRelations
+}) => {
+  const t = useTranslations("messages")
+
+  if (message.messageType !== "outgoing") {
+    return null
+  }
+
+  if (message.sendError) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-flex items-center text-red-500">
+              <TriangleAlertIcon aria-hidden className="size-3.5" />
+            </span>
+          }
+        />
+        <TooltipContent>
+          <p>
+            {t("sendFailed")}: {translateSendError(message.sendError, t)}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center text-primary-foreground/60">
+      <CheckIcon aria-hidden className="size-3.5" />
+    </span>
+  )
+}
+
+const SEND_ERROR_PATTERNS: Array<{ re: RegExp; key: string }> = [
+  {
+    re: /24\s*h|outside.*window|re-?engagement/i,
+    key: "sendErrors.outsideWindow",
+  },
+  {
+    re: /not.*(?:whatsapp|registered)|incapable.*whatsapp/i,
+    key: "sendErrors.notOnWhatsapp",
+  },
+  { re: /rate\s*limit/i, key: "sendErrors.rateLimited" },
+  { re: /invalid.*phone|phone.*invalid/i, key: "sendErrors.invalidPhone" },
+  {
+    re: /media.*(?:upload|download|failed)|failed.*media/i,
+    key: "sendErrors.mediaFailed",
+  },
+  {
+    re: /template.*(?:not found|not approved)|not.*approved.*template/i,
+    key: "sendErrors.templateNotApproved",
+  },
+  { re: /receiver.*incapable|incapable/i, key: "sendErrors.receiverIncapable" },
+  { re: /spam/i, key: "sendErrors.spamRateLimited" },
+]
+
+function translateSendError(
+  error: string,
+  t: ReturnType<typeof useTranslations>,
+): string {
+  for (const { re, key } of SEND_ERROR_PATTERNS) {
+    if (re.test(error)) {
+      return t(key as Parameters<typeof t>[0])
+    }
+  }
+  return error
 }

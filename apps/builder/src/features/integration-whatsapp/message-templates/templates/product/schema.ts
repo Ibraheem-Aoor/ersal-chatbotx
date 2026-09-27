@@ -38,5 +38,5 @@ export const templateProductDefaultValue = (): TemplateProductSchema => ({
     variables: [],
   },
   footer: "",
-  buttons: [{ type: buttonActionTypes.enum.quickReply, text: "View Items" }],
+  buttons: [{ type: buttonActionTypes.enum.quickReply, text: "" }],
 })

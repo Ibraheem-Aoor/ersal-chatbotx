@@ -20,11 +20,11 @@ export const templateVideoSchema = z
         .refine(
           (file) => file && file instanceof File && file.type === "video/mp4",
           {
-            message: "يجب أن يكون الملف فيديو بصيغة mp4",
+            message: "validation.template.fileVideoType",
           },
         )
         .refine((file) => file && file.size <= 16 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 16 ميجابايت",
+          message: "validation.template.fileSizeVideo",
         }),
     }),
     body: z.object({
@@ -36,7 +36,10 @@ export const templateVideoSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
@@ -55,13 +58,13 @@ export const templateVideoEditSchema = z
             file === null ||
             (file instanceof File && file.type === "video/mp4"),
           {
-            message: "يجب أن يكون الملف فيديو بصيغة mp4",
+            message: "validation.template.fileVideoType",
           },
         )
         .refine(
           (file) => file === null || (file && file.size <= 16 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 16 ميجابايت",
+            message: "validation.template.fileSizeVideo",
           },
         ),
     }),
@@ -74,7 +77,10 @@ export const templateVideoEditSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
@@ -92,7 +98,7 @@ export const templateVideoDefaultValue = (
     variables: [],
   },
   footer: "",
-  buttons: Array.from({ length: countBtn }, (_, index) =>
-    buttonStepDefaultFn(`Button #${index + 1}`),
+  buttons: Array.from({ length: countBtn }, (_, _index) =>
+    buttonStepDefaultFn(""),
   ),
 })

@@ -16,7 +16,6 @@ import {
   ArchiveIcon,
   BotIcon,
   CloudDownloadIcon,
-  CloudUploadIcon,
   Layers2Icon,
   ListIcon,
   MessageCirclePlusIcon,
@@ -27,7 +26,6 @@ import {
   UserIcon,
   UserRoundXIcon,
 } from "lucide-react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import ArchiveConversationDialog from "../conversations/components/archive-conversation"
@@ -161,15 +159,6 @@ export function ContactListAction({
             </DropdownMenuItem>
           }
           workspaceId={workspaceId}
-        />
-
-        <DropdownMenuItem
-          render={
-            <Link href={`/space/${workspaceId}/contacts/import`}>
-              <CloudUploadIcon />
-              {t("actions.import")}
-            </Link>
-          }
         />
 
         <DropdownMenuSub>

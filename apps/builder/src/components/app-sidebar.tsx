@@ -101,53 +101,11 @@ export function AppSidebar({
         badge: unreadCount,
       },
       {
-        title: t("fields.flows.label"),
-        url: `/space/${workspaceId}/flows`,
-        icon: WorkflowIcon,
-        permission: PERMISSION_NAV.flows,
-      },
-      {
         title: t("fields.contacts.label"),
         url: `/space/${workspaceId}/contacts`,
         icon: UsersIcon,
         permission: PERMISSION_NAV.contacts,
       },
-      {
-        title: t("aiAgent.title"),
-        url: `/space/${workspaceId}/ai-agents`,
-        icon: BrainIcon,
-      },
-      {
-        title: t("keywords.title"),
-        url: `/space/${workspaceId}/automated-responses`,
-        icon: AtomIcon,
-      },
-      {
-        title: t("broadcasts.title"),
-        url: `/space/${workspaceId}/broadcasts`,
-        icon: RadioIcon,
-        permission: PERMISSION_NAV.broadcasts,
-      },
-      {
-        title: t("sequences.title"),
-        url: `/space/${workspaceId}/sequences`,
-        icon: ChevronsRight,
-        permission: PERMISSION_NAV.sequences,
-      },
-      {
-        title: t("triggers.title"),
-        url: `/space/${workspaceId}/triggers`,
-        icon: LightbulbIcon,
-      },
-      {
-        title: t("webhooks.title"),
-        url: `/space/${workspaceId}/webhooks`,
-        icon: WebhookIcon,
-      },
-      // FORK PATCH: WhatsApp Templates quick-access. URL resolves based on
-      // how many WA integrations the workspace has:
-      //  - 1 integration → link directly to its templates page
-      //  - 0 or 2+ → link to the WA channel settings (connect / pick one)
       {
         title: t("whatsapp.tabs.messageTemplates"),
         url:
@@ -158,15 +116,53 @@ export function AppSidebar({
         permission: "superAdmin",
       },
       {
-        title: t("tools.title"),
-        url: `/space/${workspaceId}/tools`,
-        icon: WrenchIcon,
+        title: t("broadcasts.title"),
+        url: `/space/${workspaceId}/broadcasts`,
+        icon: RadioIcon,
+        permission: PERMISSION_NAV.broadcasts,
+      },
+      {
+        title: t("fields.flows.label"),
+        url: `/space/${workspaceId}/flows`,
+        icon: WorkflowIcon,
+        permission: PERMISSION_NAV.flows,
+      },
+      {
+        title: t("sequences.title"),
+        url: `/space/${workspaceId}/sequences`,
+        icon: ChevronsRight,
+        permission: PERMISSION_NAV.sequences,
+      },
+      {
+        title: t("keywords.title"),
+        url: `/space/${workspaceId}/automated-responses`,
+        icon: AtomIcon,
+      },
+      {
+        title: t("triggers.title"),
+        url: `/space/${workspaceId}/triggers`,
+        icon: LightbulbIcon,
+      },
+      {
+        title: t("aiAgent.title"),
+        url: `/space/${workspaceId}/ai-agents`,
+        icon: BrainIcon,
       },
       {
         title: t("ads.title"),
         url: `/space/${workspaceId}/ads`,
         icon: MegaphoneIcon,
         permission: "superAdmin",
+      },
+      {
+        title: t("webhooks.title"),
+        url: `/space/${workspaceId}/webhooks`,
+        icon: WebhookIcon,
+      },
+      {
+        title: t("tools.title"),
+        url: `/space/${workspaceId}/tools`,
+        icon: WrenchIcon,
       },
       {
         title: t("settings.title"),

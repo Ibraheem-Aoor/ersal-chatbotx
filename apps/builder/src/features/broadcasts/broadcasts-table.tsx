@@ -349,7 +349,7 @@ export function BroadcastsTable({ promises }: BroadcastsTableProps) {
     >
       <DataTable table={table}>
         <DataTableToolbar table={table}>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             <Link
               className={buttonVariants({ size: "sm" })}
               href={`/space/${workspaceId}/broadcasts/create`}

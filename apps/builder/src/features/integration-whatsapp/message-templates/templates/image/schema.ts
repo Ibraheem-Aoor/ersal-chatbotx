@@ -23,11 +23,11 @@ export const templateImageSchema = z
             file instanceof File &&
             ["image/png", "image/jpg", "image/jpeg"].includes(file.type),
           {
-            message: "يجب أن يكون الملف صورة بصيغة png أو jpg أو jpeg",
+            message: "validation.template.fileImageType",
           },
         )
         .refine((file) => file && file.size <= 5 * 1024 * 1024, {
-          message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
+          message: "validation.template.fileSizeImage",
         }),
     }),
     body: z.object({
@@ -39,7 +39,10 @@ export const templateImageSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
@@ -59,13 +62,13 @@ export const templateImageEditSchema = z
             (file instanceof File &&
               ["image/png", "image/jpg", "image/jpeg"].includes(file.type)),
           {
-            message: "يجب أن يكون الملف صورة بصيغة png أو jpg أو jpeg",
+            message: "validation.template.fileImageType",
           },
         )
         .refine(
           (file) => file === null || (file && file.size <= 5 * 1024 * 1024),
           {
-            message: "يجب ألا يتجاوز حجم الملف 5 ميجابايت",
+            message: "validation.template.fileSizeImage",
           },
         ),
     }),
@@ -78,7 +81,10 @@ export const templateImageEditSchema = z
   })
   .superRefine((data, ctx) => {
     refineBodyText(data.body.text, ctx)
-    refineSampleValues(data.body.variables, data.body.text, ctx, ["body", "variables"])
+    refineSampleValues(data.body.variables, data.body.text, ctx, [
+      "body",
+      "variables",
+    ])
     refineFooterText(data.footer, ctx)
     validateButtonLimits(data.buttons, ctx)
   })
@@ -96,7 +102,7 @@ export const templateImageDefaultValue = (
     variables: [],
   },
   footer: "",
-  buttons: Array.from({ length: countBtn }, (_, index) =>
-    buttonStepDefaultFn(`Button #${index + 1}`),
+  buttons: Array.from({ length: countBtn }, (_, _index) =>
+    buttonStepDefaultFn(""),
   ),
 })
