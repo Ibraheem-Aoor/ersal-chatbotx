@@ -9,6 +9,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@chatbotx.io/ui/components/ui/avatar"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   Tooltip,
@@ -18,6 +19,7 @@ import {
 import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import { format, formatDistanceToNow } from "date-fns"
+import { CloudUploadIcon } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useFormatter, useTranslations } from "next-intl"
@@ -471,6 +473,15 @@ export function ContactsTable({
           filter={optimisticContactFilter}
           onToggle={() => setShowContactFilterPanel((current) => !current)}
           open={showContactFilterPanel}
+        />
+        <Button
+          render={
+            <Link href={`/space/${workspaceId}/contacts/import`}>
+              <CloudUploadIcon className="size-4" />
+              {t("actions.import")}
+            </Link>
+          }
+          variant="outline"
         />
         <ContactListAction
           filter={exportFilter}
