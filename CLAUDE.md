@@ -53,6 +53,6 @@ Default to the cheapest tier that fits the task; reserve the top tier for judgme
 - Do not use `git add -A` or `git add .` — stage specific files only.
 - Do not commit `.env` files or secrets.
 - Do not skip `pnpm lint` — the CI will fail.
-- Do not hardcode user-facing strings — use `useTranslations()`.
+- **No hardcoded user-facing strings — anywhere, in any language.** This includes Zod schemas, `.superRefine()`, server actions, default values, and error messages. Emit i18n keys (e.g. `"validation.template.nameFormat"`); resolve via `useTranslations()` at render time. Every key must exist in both `ar.json` and `en.json`. "Arabic-first" governs test order, not correctness: EN mode must never display Arabic.
 - Do not import `db` directly in `apps/` or `integrations/` — all DB access must go through a service (`@chatbotx.io/business`) or repository (`@chatbotx.io/database/repositories`). See `.agents/rules/data-access.md`.
 - Do not use dynamic `import()` — it breaks the tsdown build. See `.agents/rules/no-dynamic-import.md`.

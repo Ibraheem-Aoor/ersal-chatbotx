@@ -926,25 +926,26 @@ variable, file type mismatch, button limits, etc.). All error messages must appe
 the correct language. Default button texts ("عرض الكتالوج" / "View catalog") must be
 in the correct locale.
 
-## 32. UX — Sidebar reorder
+## 32. UX — Sidebar reorder (Round 2 updated)
 
 **Files:**
 - `apps/builder/src/components/app-sidebar.tsx`
 
 **What:**
-- Reordered sidebar navigation items to match client's requested priority:
-  Inbox → Contacts → Campaigns → Message Templates → Flows → AI Agents →
-  Keywords → Sequences → Triggers → Webhooks → Tools → Analytics → Ads → Settings.
+- Reordered sidebar navigation items to client's final requested priority:
+  Analytics → Inbox → Contacts → Templates → Broadcasts → Flows → Sequences →
+  Keywords → Triggers → AI Agents → Ads → Webhooks → Tools → Settings.
 - All permission gates preserved unchanged (contacts, broadcasts, sequences, flows,
   dashboard, superAdmin).
 
-**Why:** Client wants most-used items (Inbox, Contacts, Campaigns, Templates) at the
-top of the sidebar for faster access. Analytics moved down as it's less frequently used.
+**Why:** Client wants Analytics first for quick dashboard access, then core workflow
+items (Inbox, Contacts, Templates, Broadcasts) grouped together. Settings stays last.
+Round 2 moved Analytics to top and rearranged the middle items.
 
 **Verify after sync:** Sidebar renders in the new order. All permission-gated items
 still respect their gates (non-superadmin sees correct subset).
 
-## 33. UX — Inbox visual improvements (channel badge, WhatsApp background, Arabic sendError)
+## 33. UX — Inbox visual improvements (channel badge, WhatsApp wallpaper, delivery indicators, Arabic sendError)
 
 **Files:**
 - `apps/builder/src/features/conversations/conversation-item.tsx`
@@ -959,44 +960,54 @@ still respect their gates (non-superadmin sees correct subset).
 - **C1**: Channel icon badge on contact avatars now has a white circular background
   with a subtle border ring, making it clearly visible regardless of avatar color.
   Applied to both conversation list and contacts table.
-- **C2**: WhatsApp conversations get a distinctive beige wallpaper background
-  (`#ECE5DD`) with a subtle doodle pattern. Dark mode uses WhatsApp's native dark
-  background (`#0B141A`). Non-WhatsApp channels keep the default background.
-- **C4**: Common Meta API send errors are now translated to Arabic in the message
-  error tooltip. Pattern-matching maps known errors (24h window, not on WhatsApp,
-  rate limit, invalid phone, media failure, template not approved, receiver
-  incapable, spam restriction) to bilingual i18n keys. Unknown errors fall back
-  to the raw API text.
+- **C2**: WhatsApp conversations get a distinctive doodle-tile wallpaper (200×200
+  SVG with 16 hand-drawn icons: clock, phone, music, speech bubble, heart, camera,
+  star, padlock, envelope, wifi, pin, smiley, pencil, magnifying glass, document,
+  globe). Light theme: stroke `#c3beb6` opacity 0.45 on bg `#efeae2`. Dark theme:
+  stroke `#253340` opacity 0.6 on bg `#0b141a`. Dark mode selectors use both
+  `@media (prefers-color-scheme: dark)` guarded by `:root:not([data-theme="light"])`
+  and `:root[data-theme="dark"]`. Non-WhatsApp channels keep the default background.
+- **C4 delivery indicators**: Outgoing messages show inline time + delivery status:
+  sent (single ✓ grey CheckIcon), failed (⚠ red TriangleAlertIcon with sendError
+  tooltip). Note: delivered (✓✓) and read (✓✓ blue) require a per-message `status`
+  column migration — Message model currently has only `sendError` text field.
+- **C4 Arabic errors**: Common Meta API send errors translated to Arabic via
+  pattern-matching i18n keys. Unknown errors fall back to raw API text.
 
 **Why:** Visual improvements to make the inbox more intuitive — channel badges
-pop on any avatar color, WhatsApp conversations feel native, and Arabic-speaking
-agents see error reasons in their language.
+pop on any avatar color, WhatsApp wallpaper matches the native app feel, delivery
+indicators give agents immediate feedback on message status.
 
-**Verify after sync:** Open WhatsApp conversation → beige background visible,
-dark mode → dark WhatsApp background. Conversation list & contacts table →
-channel icons have visible white ring. Failed message tooltip → Arabic error
-reason (test by checking a message with sendError in DB).
+**Verify after sync:** Open WhatsApp conversation → doodle wallpaper visible,
+dark mode → dark WhatsApp wallpaper. Outgoing messages show ✓ after timestamp.
+Failed messages show ⚠ with tooltip. Conversation list & contacts table →
+channel icons have visible white ring.
 
 ---
 
-## 34. UX — Template rendering, mobile preview, broadcast flow buttons
+## 34. UX — Template rendering, mobile preview, combobox selector, broadcast flow buttons
 
 **Files:**
 - `apps/worker/src/chat/handlers/send-whatsapp-template.ts`
 - `apps/builder/src/features/messages/components/message-item.tsx`
+- `apps/builder/src/features/messages/components/window-closed-actions.tsx`
 - `apps/builder/src/features/integration-whatsapp/message-templates/components/template-preview.tsx`
 - `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
 - `apps/builder/src/features/broadcasts/components/whatsapp-broadcast-flow-buttons.tsx` (new)
 - `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
 
 **What:**
 - **C3**: Worker now persists full template `components` in `contentAttributes.template`
   when sending a WhatsApp template message. Inbox message-item renders `whatsapp_template`
   content type with rich TemplatePreview (header/body/footer/buttons) instead of
   plain "Template: name" text. Fallback card shown for messages sent before this patch.
-- **D1**: Template create/edit dialog now has a mobile preview button (SmartphoneIcon)
-  visible below the `lg` breakpoint. Opens a Sheet with the PhoneFrame + LivePreview
-  so mobile users can see the template preview without the side panel.
+- **D1**: Template create/edit dialog shows mobile preview ABOVE the input fields
+  at `< lg` breakpoints (visible by default, no button needed). Container uses
+  `flex-col lg:flex-row` layout: mobile gets a `border-b bg-muted/40` preview div
+  with `lg:hidden`, desktop keeps the existing `hidden lg:flex` side panel. Applied
+  to both create and edit modes.
 - **D2**: Template button styling uses type-specific icons (ExternalLinkIcon for URL,
   PhoneIcon for PHONE_NUMBER, ReplyIcon for quick reply) with sky-blue text and
   border dividers instead of the old gray boxes.
@@ -1005,23 +1016,32 @@ reason (test by checking a message with sendError in DB).
   extracts QUICK_REPLY buttons from template components. `WhatsappBroadcastFlowButtons`
   renders them with a flow-select dialog. Only quick-reply buttons get link-to-flow
   (URL and phone buttons are excluded).
+- **D4 (new)**: Template selector in window-closed-actions (24h window expired dialog)
+  replaced from a basic `<Select>` with a searchable `<TemplateCombobox>` using
+  Popover + Command (cmdk) primitives. Shows template name, language in parentheses,
+  and green status badge. i18n key `messages.searchTemplates` added to both locales.
 
 **Why:** Template messages in the inbox were opaque — agents saw "Template: name"
-with no content. Mobile users couldn't preview templates during creation. WhatsApp
-broadcasts lacked the button→flow linking that Messenger already had.
+with no content. Mobile users couldn't preview templates during creation. The
+template selector was unusable with many templates (no search). WhatsApp broadcasts
+lacked the button→flow linking that Messenger already had.
 
 **Verify after sync:** Send a WhatsApp template → inbox shows rich preview with
-header/body/buttons. Open template create on mobile → "Preview" button opens sheet.
-Create WhatsApp broadcast with template that has quick-reply buttons → flow-select
-buttons appear below the preview.
+header/body/buttons. Open template create on mobile → preview visible above inputs.
+24h window expired → combobox has search field for templates. Create WhatsApp
+broadcast with template that has quick-reply buttons → flow-select buttons appear
+below the preview.
 
 ---
 
-## 35. UX — Broadcast defaults and import shortcut
+## 35. UX — Broadcast defaults, contacts Import toolbar, broadcasts Import removed
 
 **Files:**
 - `packages/database/src/partials/broadcast.ts`
 - `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+- `apps/builder/src/features/contacts/contacts-table.tsx`
+- `apps/builder/src/features/contacts/contacts-list-action.tsx`
+- `apps/builder/src/features/broadcasts/broadcasts-table.tsx`
 
 **What:**
 - **E1**: Reordered `broadcastChannelCapabilities` so WhatsApp is the first
@@ -1030,12 +1050,21 @@ buttons appear below the preview.
 - **E2**: Default broadcast flow type changed from "Flow" to "Template" in
   `BroadcastFlowTypeSelector`. The form value is also synced on mount via
   `useEffect` so `watchedTemplateType` starts with `template`.
+- **F1**: Contacts Import button moved from the dropdown menu (ContactListAction)
+  to the top toolbar (contacts-table.tsx) as a visible `<Button variant="outline">`
+  with `CloudUploadIcon`. Uses base-ui `render` prop: `<Button render={<Link>...}`.
+- **E3 partial**: Import button removed from broadcasts-table.tsx toolbar. The
+  full in-form audience upload (CSV → tag → audience) is planned as a separate task.
 
 **Why:** WhatsApp is the primary channel for ErsalTech clients. Template
 broadcasts are the most common use case and should be the default selection.
+Contacts Import is a frequent action that shouldn't be buried in a dropdown.
+Broadcasts Import button was misleading — broadcast audience comes from contacts,
+not direct import.
 
-**Verify after sync:** Open broadcast creation → WhatsApp is the first channel
-option, "Template" is pre-selected.
+**Verify after sync:** Open broadcast creation → WhatsApp is first channel,
+"Template" is pre-selected. Contacts page → Import button visible in toolbar
+(not in dropdown menu). Broadcasts page → no Import button in toolbar.
 
 ---
 
