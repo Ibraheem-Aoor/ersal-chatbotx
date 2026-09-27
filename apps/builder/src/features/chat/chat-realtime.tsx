@@ -21,6 +21,7 @@ export function ChatRealtime() {
     markMessageFailed,
     assignMessageCommentId,
     updateMessageText,
+    updateMessageDeliveryStatus,
     updateContact,
     updateConversations,
   } = useChatStore((state) => state)
@@ -65,6 +66,14 @@ export function ChatRealtime() {
               newAttachmentHeight: data.newAttachmentHeight,
               removedAttachment: data.removedAttachment ?? false,
             })
+            break
+          case RealtimeEventType.messageStatusChanged:
+            updateMessageDeliveryStatus(
+              data.messageId,
+              data.status,
+              data.deliveredAt,
+              data.readAt,
+            )
             break
           case RealtimeEventType.contactBlocked:
             updateContact(data.contactId, {

@@ -140,9 +140,23 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
+type FormMessageTranslator = (message: string) => string
+
+const FormMessageTranslatorContext =
+  React.createContext<FormMessageTranslator | null>(null)
+
+const FormMessageTranslatorProvider = FormMessageTranslatorContext.Provider
+
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : props.children
+  const translator = React.useContext(FormMessageTranslatorContext)
+  let body: React.ReactNode = error
+    ? String(error?.message ?? "")
+    : props.children
+
+  if (typeof body === "string" && body && translator) {
+    body = translator(body)
+  }
 
   if (!body) {
     return null
@@ -168,5 +182,6 @@ export {
   FormControl,
   FormDescription,
   FormMessage,
+  FormMessageTranslatorProvider,
   FormField,
 }

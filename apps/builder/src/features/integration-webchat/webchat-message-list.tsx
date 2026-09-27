@@ -14,6 +14,7 @@ import {
   type VirtuosoHandle,
 } from "react-virtuoso"
 import { MessageBubble } from "../messages/components/message-bubble"
+import { MessageErrorBoundary } from "../messages/components/message-error-boundary"
 import { MessageItem } from "../messages/components/message-item"
 import type { MessageResourceWithRelations } from "../messages/schema/resource"
 import { useGuestSessionStore } from "./providers/store/guest-session-provider"
@@ -74,13 +75,14 @@ export function WebchatMessageList() {
           item.id === TYPING_INDICATOR_ID ? (
             <TypingIndicator avatarUrl={workspaceLogoUrl} />
           ) : (
-            <MessageItem
-              avatarUrl={workspaceLogoUrl}
-              guestDisplay={true}
-              key={item.id}
-              message={item as MessageResourceWithRelations}
-              onPostback={sendPostback}
-            />
+            <MessageErrorBoundary key={item.id}>
+              <MessageItem
+                avatarUrl={workspaceLogoUrl}
+                guestDisplay={true}
+                message={item as MessageResourceWithRelations}
+                onPostback={sendPostback}
+              />
+            </MessageErrorBoundary>
           )
         }
         rangeChanged={({ startIndex }) => {

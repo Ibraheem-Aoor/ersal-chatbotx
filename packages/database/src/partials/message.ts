@@ -9,6 +9,15 @@ export type MessageType = z.infer<typeof messageTypes>
 export const contentTypes = z.enum(["text", "location", "refLink"])
 export type ContentType = z.infer<typeof contentTypes>
 
+export const messageDeliveryStatuses = z.enum([
+  "pending",
+  "sent",
+  "delivered",
+  "read",
+  "failed",
+])
+export type MessageDeliveryStatus = z.infer<typeof messageDeliveryStatuses>
+
 export const lastUserInputTypes = z.enum([
   "text",
   "location",

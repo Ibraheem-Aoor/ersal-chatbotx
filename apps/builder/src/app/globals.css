@@ -17,3 +17,38 @@
  * you can always add it with the @source directive.
  */
 @source "../../node_modules/@chatbotx.io/ui";
+
+/* FORK PATCH: WhatsApp-style chat wallpaper using the official tiled background */
+.whatsapp-chat-bg {
+  --wa-meta-text: #667781;
+  background-color: #efeae2;
+  background-image: url("/images/whatsapp-chat-bg.png");
+  background-repeat: repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .whatsapp-chat-bg {
+    --wa-meta-text: #8696a0;
+    background-color: #0b141a;
+    background-image: url("/images/whatsapp-chat-bg.png");
+    background-repeat: repeat;
+  }
+}
+
+:root[data-theme="dark"] .whatsapp-chat-bg {
+  --wa-meta-text: #8696a0;
+  background-color: #0b141a;
+  background-image: url("/images/whatsapp-chat-bg.png");
+  background-repeat: repeat;
+}
+
+.wa-read-receipt {
+  color: #53bdeb;
+}
+.whatsapp-chat-bg .wa-bubble-meta,
+.whatsapp-chat-bg .wa-bubble-meta * {
+  color: var(--wa-meta-text);
+}
+.whatsapp-chat-bg .wa-bubble-meta .wa-read-receipt {
+  color: #53bdeb;
+}

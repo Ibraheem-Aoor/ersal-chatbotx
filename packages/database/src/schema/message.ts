@@ -13,6 +13,8 @@ import {
 import {
   type ContentType,
   contentTypes,
+  type MessageDeliveryStatus,
+  messageDeliveryStatuses,
   type MessageType,
   messageTypes,
   type SenderType,
@@ -47,6 +49,10 @@ export const contentType = pgEnum(
   "contentType",
   contentTypes.options as [string, ...string[]],
 )
+export const messageDeliveryStatus = pgEnum(
+  "messageDeliveryStatus",
+  messageDeliveryStatuses.options as [string, ...string[]],
+)
 export const messageKind = pgEnum("messageKind", ["message", "comment"])
 
 export const messageModel = pgTable(
@@ -80,6 +86,9 @@ export const messageModel = pgTable(
     parentId: text(),
     attributes: jsonb().$type<{ liked: boolean; hidden: boolean }>(),
     sendError: text(),
+    status: messageDeliveryStatus().$type<MessageDeliveryStatus>().default("pending"),
+    deliveredAt: timestamp({ withTimezone: true }),
+    readAt: timestamp({ withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.id, table.createdAt] }),

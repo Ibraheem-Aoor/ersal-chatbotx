@@ -1,6 +1,7 @@
 "use client"
 
 import { Skeleton } from "@chatbotx.io/ui/components/ui/skeleton"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect, useRef, useState } from "react"
@@ -12,6 +13,7 @@ import { ConversationInfo } from "../conversations/components/conversation-info"
 import { changeMessageAttributesAction } from "./actions/change-message-attributes.action"
 import { deleteMessageAction } from "./actions/delete-message.action"
 import { editMessageAction } from "./actions/edit-message.action"
+import { MessageErrorBoundary } from "./components/message-error-boundary"
 import { MessageItem } from "./components/message-item"
 import type { MessageResourceWithRelations } from "./schema/resource"
 
@@ -28,12 +30,19 @@ export function MessageList() {
     isLoadMoreMessage,
     hasNextMessagePage,
     activeConversationId,
+    conversations,
     setReplyToMessage,
     markMessagesDeleted,
     markMessagesRestored,
     updateMessageText,
     updateMessageAttributes,
   } = useChatStore((state) => state)
+
+  const activeConversation = conversations.find(
+    (c) => c.id === activeConversationId,
+  )
+  const isWhatsapp =
+    activeConversation?.contactInboxes?.[0]?.channel === "whatsapp"
 
   const { execute: deleteMessage } = useAction(
     deleteMessageAction.bind(null, workspaceId, activeConversationId ?? ""),
@@ -226,7 +235,12 @@ export function MessageList() {
   }
 
   return (
-    <div className="flex flex-1 flex-col px-3">
+    <div
+      className={cn(
+        "flex flex-1 flex-col px-3",
+        isWhatsapp && "whatsapp-chat-bg",
+      )}
+    >
       <Virtuoso
         alignToBottom={true}
         components={{
@@ -238,20 +252,21 @@ export function MessageList() {
         followOutput
         initialTopMostItemIndex={{ index: "LAST" }}
         itemContent={(_, message) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            onChangeHide={() => handleChangeHideState(message)}
-            onChangeLike={() => handleChangeLikeState(message)}
-            onDelete={() => {
-              handleDeleteComment({
-                id: message.id,
-                createdAt: message.createdAt,
-              })
-            }}
-            onEdit={handleEditMessage}
-            onReply={handleReplyComment}
-          />
+          <MessageErrorBoundary key={message.id}>
+            <MessageItem
+              message={message}
+              onChangeHide={() => handleChangeHideState(message)}
+              onChangeLike={() => handleChangeLikeState(message)}
+              onDelete={() => {
+                handleDeleteComment({
+                  id: message.id,
+                  createdAt: message.createdAt,
+                })
+              }}
+              onEdit={handleEditMessage}
+              onReply={handleReplyComment}
+            />
+          </MessageErrorBoundary>
         )}
         startReached={loadMoreItems}
       />

@@ -8,6 +8,7 @@ import {
   ResizablePanelGroup,
 } from "@chatbotx.io/ui/components/ui/resizable"
 import { useIsMobile } from "@chatbotx.io/ui/hooks/use-mobile"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import {
   ArrowRightIcon,
   BotIcon,
@@ -86,6 +87,12 @@ export const ChatLayout = (props: ChatLayoutProps) => {
     isBootstrappingUrlConversation
   )
 
+  const activeChannel = activeConversation
+    ? conversations.find((c) => c.id === activeConversation.id)
+        ?.contactInboxes?.[0]?.channel
+    : undefined
+  const isWhatsApp = activeChannel === "whatsapp"
+
   const { execute: disableBot, isExecuting: isDisablingBot } = useAction(
     disableBotAction.bind(null, workspaceId),
     {
@@ -155,7 +162,12 @@ export const ChatLayout = (props: ChatLayoutProps) => {
               <Loader2Icon className="mx-auto my-4 animate-spin" />
             )}
             {activeConversation && (
-              <div className="flex min-h-0 flex-1 flex-col">
+              <div
+                className={cn(
+                  "flex min-h-0 flex-1 flex-col",
+                  isWhatsApp && "whatsapp-chat-bg",
+                )}
+              >
                 <MessageHead />
                 {isConversationActive(activeConversation) && (
                   <Button
@@ -205,7 +217,12 @@ export const ChatLayout = (props: ChatLayoutProps) => {
           <Loader2Icon className="mx-auto my-4 animate-spin" />
         )}
         {activeConversation && (
-          <div className="flex h-full w-full flex-col">
+          <div
+            className={cn(
+              "flex h-full w-full flex-col",
+              isWhatsApp && "whatsapp-chat-bg",
+            )}
+          >
             <MessageHead />
             {isConversationActive(activeConversation) && (
               <Button

@@ -256,6 +256,9 @@ export const createGuestSessionStore = (
         attributes: null,
         sendError: null,
         ...message,
+        status: message.status ?? null,
+        deliveredAt: message.deliveredAt ?? null,
+        readAt: message.readAt ?? null,
       }
 
       set((state) => ({

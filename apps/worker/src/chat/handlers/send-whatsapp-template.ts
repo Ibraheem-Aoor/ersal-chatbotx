@@ -171,6 +171,7 @@ export async function processWhatsappTemplate(
         language: template.language,
         id: template.id,
         params: replacedParams,
+        components: validated.template.components,
       },
       stepId: step?.id,
       nodeId: step?.nodeId,
@@ -306,6 +307,21 @@ export async function processWhatsappTemplate(
           conversation.workspaceId,
           newMessage.createdAt,
         )
+        await repository.updateDeliveryStatus(
+          newMessage.id,
+          conversation.workspaceId,
+          newMessage.createdAt,
+          "sent",
+        )
+        broadcastToWorkspaceParty(conversation.workspaceId, {
+          eventType: RealtimeEventType.messageStatusChanged,
+          data: {
+            messageId: newMessage.id,
+            status: "sent",
+            deliveredAt: null,
+            readAt: null,
+          },
+        })
       } catch (err) {
         logger.error(
           err,

@@ -876,6 +876,224 @@ to Arabic. Submit creates the template successfully.
 
 ---
 
+## 31. i18n — template validation keys + bilingual form error translation
+
+**Files:**
+- `packages/ui/src/components/ui/form.tsx`
+- `apps/builder/src/components/form-translation-provider.tsx` (new)
+- `apps/builder/src/app/layout.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/schema/mutation.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/validation.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/button/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/image/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/video/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/document/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/catalog/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/product/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/carousel-image/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/templates/carousel-video/schema.ts`
+- `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
+
+**What:**
+- Added `FormMessageTranslatorContext` to `FormMessage` (packages/ui) — if a provider
+  supplies a translator function, `FormMessage` pipes the error message through it before
+  rendering. Backward-compatible: without a provider it renders as before.
+- Created `FormTranslationProvider` in the builder app — wraps `useTranslations()` to
+  resolve i18n keys (`validation.template.*`) found in Zod error messages at render time.
+  Added to the root layout alongside `ZodErrorMapProvider`.
+- Replaced every hardcoded Arabic validation string in template schemas and validation.ts
+  with an i18n key (e.g. `"validation.template.nameFormat"`). This includes: name regex,
+  header constraints, body/footer variable rules, phone format, URL validation, button
+  limits, file type/size checks, and carousel card button-count mismatch.
+- Moved default button texts ("View catalog", "View Items", "Button #1") from schema
+  default functions into the create dialog component where `t()` is available.
+- Added 27 `validation.template.*` keys and 3 `whatsapp.messageTemplate.default*` keys
+  to both ar.json and en.json.
+- Fixed pre-existing duplicate top-level `validation` key in both ar.json and en.json
+  (JSON duplicate keys — only the last one was active). Merged into single objects.
+- Renamed "البث" → "الحملات" and "وسوم" → "التصنيفات" in ar.json (A2/A3).
+
+**Why:** Hardcoded Arabic in schemas broke English locale — EN users saw Arabic errors.
+The bilingual approach: ZodErrorMapProvider handles standard validators (.min/.max/.length)
+automatically; custom messages (regex, superRefine, refine) emit i18n keys that
+FormTranslationProvider resolves from ar.json/en.json at render time.
+
+**Verify after sync:** Open WhatsApp → Message Templates → Create in both AR and EN
+locale. Trigger every validation (empty name, special chars in name, body with leading
+variable, file type mismatch, button limits, etc.). All error messages must appear in
+the correct language. Default button texts ("عرض الكتالوج" / "View catalog") must be
+in the correct locale.
+
+## 32. UX — Sidebar reorder (Round 2 updated)
+
+**Files:**
+- `apps/builder/src/components/app-sidebar.tsx`
+
+**What:**
+- Reordered sidebar navigation items to client's final requested priority:
+  Analytics → Inbox → Contacts → Templates → Broadcasts → Flows → Sequences →
+  Keywords → Triggers → AI Agents → Ads → Webhooks → Tools → Settings.
+- All permission gates preserved unchanged (contacts, broadcasts, sequences, flows,
+  dashboard, superAdmin).
+
+**Why:** Client wants Analytics first for quick dashboard access, then core workflow
+items (Inbox, Contacts, Templates, Broadcasts) grouped together. Settings stays last.
+Round 2 moved Analytics to top and rearranged the middle items.
+
+**Verify after sync:** Sidebar renders in the new order. All permission-gated items
+still respect their gates (non-superadmin sees correct subset).
+
+## 33. UX — Inbox visual improvements (channel badge, WhatsApp wallpaper, delivery indicators, Arabic sendError)
+
+**Files:**
+- `apps/builder/src/features/conversations/conversation-item.tsx`
+- `apps/builder/src/features/contacts/contacts-table.tsx`
+- `apps/builder/src/features/messages/message-list.tsx`
+- `apps/builder/src/features/messages/components/message-item.tsx`
+- `apps/builder/src/app/globals.css`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
+
+**What:**
+- **C1**: Channel icon badge on contact avatars now has a white circular background
+  with a subtle border ring, making it clearly visible regardless of avatar color.
+  Applied to both conversation list and contacts table.
+- **C2**: WhatsApp conversations get a distinctive doodle-tile wallpaper (200×200
+  SVG with 16 hand-drawn icons: clock, phone, music, speech bubble, heart, camera,
+  star, padlock, envelope, wifi, pin, smiley, pencil, magnifying glass, document,
+  globe). Light theme: stroke `#c3beb6` opacity 0.45 on bg `#efeae2`. Dark theme:
+  stroke `#253340` opacity 0.6 on bg `#0b141a`. Dark mode selectors use both
+  `@media (prefers-color-scheme: dark)` guarded by `:root:not([data-theme="light"])`
+  and `:root[data-theme="dark"]`. Non-WhatsApp channels keep the default background.
+- **C4 delivery indicators**: Outgoing messages show inline time + delivery status:
+  sent (single ✓ grey CheckIcon), failed (⚠ red TriangleAlertIcon with sendError
+  tooltip). Note: delivered (✓✓) and read (✓✓ blue) require a per-message `status`
+  column migration — Message model currently has only `sendError` text field.
+- **C4 Arabic errors**: Common Meta API send errors translated to Arabic via
+  pattern-matching i18n keys. Unknown errors fall back to raw API text.
+
+**Why:** Visual improvements to make the inbox more intuitive — channel badges
+pop on any avatar color, WhatsApp wallpaper matches the native app feel, delivery
+indicators give agents immediate feedback on message status.
+
+**Verify after sync:** Open WhatsApp conversation → doodle wallpaper visible,
+dark mode → dark WhatsApp wallpaper. Outgoing messages show ✓ after timestamp.
+Failed messages show ⚠ with tooltip. Conversation list & contacts table →
+channel icons have visible white ring.
+
+---
+
+## 34. UX — Template rendering, mobile preview, combobox selector, broadcast flow buttons
+
+**Files:**
+- `apps/worker/src/chat/handlers/send-whatsapp-template.ts`
+- `apps/builder/src/features/messages/components/message-item.tsx`
+- `apps/builder/src/features/messages/components/window-closed-actions.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/components/template-preview.tsx`
+- `apps/builder/src/features/integration-whatsapp/message-templates/create-message-template-dialog.tsx`
+- `apps/builder/src/features/broadcasts/components/whatsapp-broadcast-flow-buttons.tsx` (new)
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+- `apps/builder/messages/ar.json`
+- `apps/builder/messages/en.json`
+
+**What:**
+- **C3**: Worker now persists full template `components` in `contentAttributes.template`
+  when sending a WhatsApp template message. Inbox message-item renders `whatsapp_template`
+  content type with rich TemplatePreview (header/body/footer/buttons) instead of
+  plain "Template: name" text. Fallback card shown for messages sent before this patch.
+- **D1**: Template create/edit dialog shows mobile preview ABOVE the input fields
+  at `< lg` breakpoints (visible by default, no button needed). Container uses
+  `flex-col lg:flex-row` layout: mobile gets a `border-b bg-muted/40` preview div
+  with `lg:hidden`, desktop keeps the existing `hidden lg:flex` side panel. Applied
+  to both create and edit modes.
+- **D2**: Template button styling uses type-specific icons (ExternalLinkIcon for URL,
+  PhoneIcon for PHONE_NUMBER, ReplyIcon for quick reply) with sky-blue text and
+  border dividers instead of the old gray boxes.
+- **D3**: WhatsApp broadcasts now support linking quick-reply template buttons to
+  flows, mirroring the existing Messenger pattern. `extractWhatsappFlowButtons`
+  extracts QUICK_REPLY buttons from template components. `WhatsappBroadcastFlowButtons`
+  renders them with a flow-select dialog. Only quick-reply buttons get link-to-flow
+  (URL and phone buttons are excluded).
+- **D4 (new)**: Template selector in window-closed-actions (24h window expired dialog)
+  replaced from a basic `<Select>` with a searchable `<TemplateCombobox>` using
+  Popover + Command (cmdk) primitives. Shows template name, language in parentheses,
+  and green status badge. i18n key `messages.searchTemplates` added to both locales.
+
+**Why:** Template messages in the inbox were opaque — agents saw "Template: name"
+with no content. Mobile users couldn't preview templates during creation. The
+template selector was unusable with many templates (no search). WhatsApp broadcasts
+lacked the button→flow linking that Messenger already had.
+
+**Verify after sync:** Send a WhatsApp template → inbox shows rich preview with
+header/body/buttons. Open template create on mobile → preview visible above inputs.
+24h window expired → combobox has search field for templates. Create WhatsApp
+broadcast with template that has quick-reply buttons → flow-select buttons appear
+below the preview.
+
+---
+
+## 35. UX — Broadcast defaults, contacts Import toolbar, broadcasts Import removed
+
+**Files:**
+- `packages/database/src/partials/broadcast.ts`
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx`
+- `apps/builder/src/features/contacts/contacts-table.tsx`
+- `apps/builder/src/features/contacts/contacts-list-action.tsx`
+- `apps/builder/src/features/broadcasts/broadcasts-table.tsx`
+
+**What:**
+- **E1**: Reordered `broadcastChannelCapabilities` so WhatsApp is the first
+  channel in the broadcast channel picker (was third behind omnichannel and
+  Messenger).
+- **E2**: Default broadcast flow type changed from "Flow" to "Template" in
+  `BroadcastFlowTypeSelector`. The form value is also synced on mount via
+  `useEffect` so `watchedTemplateType` starts with `template`.
+- **F1**: Contacts Import button moved from the dropdown menu (ContactListAction)
+  to the top toolbar (contacts-table.tsx) as a visible `<Button variant="outline">`
+  with `CloudUploadIcon`. Uses base-ui `render` prop: `<Button render={<Link>...}`.
+- **E3 partial**: Import button removed from broadcasts-table.tsx toolbar. The
+  full in-form audience upload (CSV → tag → audience) is planned as a separate task.
+
+**Why:** WhatsApp is the primary channel for ErsalTech clients. Template
+broadcasts are the most common use case and should be the default selection.
+Contacts Import is a frequent action that shouldn't be buried in a dropdown.
+Broadcasts Import button was misleading — broadcast audience comes from contacts,
+not direct import.
+
+**Verify after sync:** Open broadcast creation → WhatsApp is first channel,
+"Template" is pre-selected. Contacts page → Import button visible in toolbar
+(not in dropdown menu). Broadcasts page → no Import button in toolbar.
+
+---
+
+## 36. Fix — Contact import tagId silently dropped (E3 prerequisite)
+
+**Files:**
+- `apps/builder/src/features/contacts/contact-import.service.ts`
+
+**What:**
+- **E3 fix**: The `startImport` function builds `meta` from the import input but
+  omits `tagId`, even though the form collects it (line 20 of schema), the meta
+  schema supports it (line 62 of `import.ts` partial), and the worker reads it
+  (handler.ts lines 65-67, 258-262). This means the tag a user selects during
+  contact import was **silently dropped** and never applied.
+- Added `tagId: input.tagId` to the `meta` object so the worker receives it and
+  tags imported contacts as expected.
+
+**Why:** This bug blocked the tag-based broadcast audience workflow: import
+contacts with a campaign tag → filter broadcast by that tag. The 24h session
+window rule is already enforced via `requiresRecentInteractionWindow` in
+`broadcast-filter-fields.ts` — template broadcasts bypass it (correct),
+session-based broadcasts enforce it (correct). No worker code change needed.
+
+**Verify after sync:** Import contacts with a tag selected → tag appears on
+the imported contacts. Create a broadcast → filter by that tag → contacts
+appear in the estimated audience count.
+
+---
+
 ## Data Patches (non-edition, re-apply if overwritten)
 
 These are translation/config fixes, not edition-gated. They may be overwritten
@@ -889,6 +1107,93 @@ if upstream modifies the same files.
 | D4 | `apps/builder/messages/en.json` | 20 restored translation keys (billing, fields, flows, platformSettings, whatsapp) | Lost during Phase 4 merge |
 | D5 | `apps/builder/messages/ar.json` | `fields.wabaId.label` = `"معرّف WABA"` | Overwritten with English during merge |
 | D6 | `packages/database/drizzle/20260711114121_billing-plans/migration.sql` | Removed duplicate IntegrationOpenaiCompatible + IntegrationInstagram DDL (already in upstream migrations 20260705000000 and 20260624063603). Hardened Subscription replacement: conditional DROP detects upstream's Stripe schema via `stripeCustomerId` column before dropping, `CREATE TABLE IF NOT EXISTS` guards re-runs. | Fixes fresh-migrate-from-zero failure: "relation already exists" |
+
+---
+
+## 31. WhatsApp Chat Wallpaper — Real Tiled PNG
+
+**Files:**
+- `apps/builder/src/features/messages/components/message-list.tsx`
+- `apps/builder/public/images/wa-chat-bg.png` (new)
+
+**What:** Replaced the inline SVG doodle wallpaper with a real WhatsApp-style
+tiled PNG background (`wa-chat-bg.png`). The background uses `background-size: 412px 749px`
+with `background-repeat: repeat`. Added contrast fix for timestamps and delivery
+ticks via `text-shadow` so they remain legible on the textured background.
+
+**Why:** The SVG doodle pattern was visually inconsistent with the WhatsApp
+experience users expect. The tiled PNG matches the native WhatsApp chat UI.
+
+**Verify after sync:** Open any conversation in the inbox → the chat background
+shows a tiled WhatsApp-style wallpaper pattern. Timestamps and delivery ticks
+are legible with subtle text shadow.
+
+---
+
+## 32. Message Delivery Status Indicators (pending/sent/delivered/read/failed)
+
+**Files:**
+- `packages/database/src/schema/message.ts` — `messageDeliveryStatus` enum + columns
+- `packages/database/src/partials/message.ts` — `messageDeliveryStatuses` zod enum
+- `packages/database/src/sharding/message/shard-schema/enums.ts` — shard enum mirror
+- `packages/database/src/sharding/message/shard-schema/message.ts` — shard columns
+- `packages/database/src/sharding/scripts/init-message-shard.sql` — schema v1.3.0
+- `packages/database/src/sharding/migrations/20260927130200_add-message-delivery-status.sql`
+- `packages/database/drizzle/20260927130200_add-message-delivery-status/migration.sql`
+- `packages/database/src/repositories/message/message-repository.ts` — `updateDeliveryStatus`
+- `packages/database/src/sharding/message/repository/sharded-message-repository.ts`
+- `packages/partysocket-config/src/schemas.ts` — `messageStatusChanged` event
+- `apps/worker/src/chat/handlers/send-message.ts` — set `sent`/`failed` on Meta send
+- `apps/worker/src/integration/handlers/message-status.ts` — set `delivered`/`read`/`failed`
+- `apps/builder/src/features/chat/chat-realtime.tsx` — realtime handler
+- `apps/builder/src/features/chat/store/chat-store.ts` — store action
+- `apps/builder/src/features/messages/components/message-item.tsx` — UI indicators
+- `apps/builder/src/features/messages/components/message-input.tsx` — optimistic defaults
+- `apps/builder/src/features/integration-webchat/providers/store/guest-sesssion-store.ts`
+- `apps/builder/messages/en.json`, `apps/builder/messages/ar.json`
+
+**What:** Full delivery status tracking for outgoing messages:
+- DB: `messageDeliveryStatus` enum (`pending`, `sent`, `delivered`, `read`, `failed`) +
+  `status`, `deliveredAt`, `readAt` columns on Message (main + shard schema).
+- Worker: sets `sent` when Meta returns wamid, `failed` on send error, `delivered`/`read`
+  on webhook status events. Never-downgrade SQL guard prevents status regression.
+- Realtime: `messageStatusChanged` event broadcasts updates to connected clients.
+- UI: clock (pending), single check (sent), double check grey (delivered), double check
+  blue #53bdeb (read), red triangle with tooltip (failed). Only on outgoing bubbles.
+
+**Why:** Users had no visibility into whether messages were delivered or read by recipients.
+
+**Verify after sync:** Send a WhatsApp message → clock icon appears immediately →
+single check after send → double check grey on delivery → double check blue on read.
+Failed messages show red triangle with error tooltip.
+
+---
+
+## 33. Campaign Audience Upload (CSV/XLSX) for Template Broadcasts
+
+**Files:**
+- `apps/builder/src/features/broadcasts/create-broadcast-form.tsx` — audience mode toggle
+- `apps/builder/src/features/broadcasts/components/broadcast-audience-import-dialog.tsx`
+- `apps/builder/src/features/broadcasts/actions/create-campaign-draft-tag.action.ts`
+- `apps/builder/src/features/broadcasts/actions/create-broadcast.action.ts`
+- `apps/builder/src/features/broadcasts/schemas/action.ts`
+- `apps/builder/messages/en.json`, `apps/builder/messages/ar.json`
+
+**What:** Adds a "Import from file" audience mode for template broadcasts:
+1. Audience card shows filter/import mode toggle (only for template subactions).
+2. Import mode creates a `campaign-draft-<uuid>` tag, opens a CSV/XLSX upload dialog
+   that auto-tags imported contacts.
+3. On broadcast save, tag is renamed to `حملة: <broadcastName>` for friendly display.
+4. Filter is automatically set to `{field: "tags", operator: "in", value: [tagId]}`.
+5. Template warning tooltip: imported contacts have no 24h conversation window.
+
+**Why:** Users needed to send template broadcasts to new contacts not yet in the system.
+Filter-only audience selection couldn't target contacts that didn't exist yet.
+
+**Verify after sync:** Create a WhatsApp template broadcast → audience section shows
+"Filter contacts" / "Import from file" toggle. Click import → upload CSV → contacts
+are imported and auto-tagged. Receiver count updates. On confirm, tag is renamed to
+`حملة: <template-name>`.
 
 ---
 

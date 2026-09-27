@@ -9,10 +9,21 @@ import {
   timestamp,
   unique,
 } from "drizzle-orm/pg-core"
-import type { ContentType, MessageType, SenderType } from "../../../partials"
+import type {
+  ContentType,
+  MessageDeliveryStatus,
+  MessageType,
+  SenderType,
+} from "../../../partials"
 import { bigintAsString, timestampConfig } from "../../../partials/shared"
 import type { RichResponseContentAttributes } from "../../../schema/message"
-import { contentType, messageKind, messageType, senderType } from "./enums"
+import {
+  contentType,
+  messageDeliveryStatus,
+  messageKind,
+  messageType,
+  senderType,
+} from "./enums"
 
 export const messageModel = pgTable(
   "Message",
@@ -40,6 +51,11 @@ export const messageModel = pgTable(
     parentId: text(),
     attributes: jsonb().$type<{ liked: boolean; hidden: boolean }>(),
     sendError: text(),
+    status: messageDeliveryStatus()
+      .$type<MessageDeliveryStatus>()
+      .default("pending"),
+    deliveredAt: timestamp({ withTimezone: true }),
+    readAt: timestamp({ withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.id, table.createdAt] }),

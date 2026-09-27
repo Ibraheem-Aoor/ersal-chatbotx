@@ -35,6 +35,12 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "messageDeliveryStatus" AS ENUM ('pending', 'sent', 'delivered', 'read', 'failed');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 -- Create Message table (without FK to main DB tables)
 CREATE TABLE IF NOT EXISTS "Message" (
   "id" bigint NOT NULL,
@@ -54,6 +60,10 @@ CREATE TABLE IF NOT EXISTS "Message" (
   "type" "messageKind" NOT NULL DEFAULT 'message',
   "parentId" text,
   "attributes" jsonb,
+  "sendError" text,
+  "status" "messageDeliveryStatus" DEFAULT 'pending',
+  "deliveredAt" timestamp with time zone,
+  "readAt" timestamp with time zone,
   PRIMARY KEY ("id", "createdAt")
 );
 
@@ -62,7 +72,11 @@ ALTER TABLE "Message"
   ADD COLUMN IF NOT EXISTS "deletedAt"   timestamp(6) with time zone,
   ADD COLUMN IF NOT EXISTS "type"        "messageKind" NOT NULL DEFAULT 'message',
   ADD COLUMN IF NOT EXISTS "parentId"    text,
-  ADD COLUMN IF NOT EXISTS "attributes"  jsonb;
+  ADD COLUMN IF NOT EXISTS "attributes"  jsonb,
+  ADD COLUMN IF NOT EXISTS "sendError"   text,
+  ADD COLUMN IF NOT EXISTS "status"      "messageDeliveryStatus" DEFAULT 'pending',
+  ADD COLUMN IF NOT EXISTS "deliveredAt" timestamp with time zone,
+  ADD COLUMN IF NOT EXISTS "readAt"      timestamp with time zone;
 
 -- Convert Message table to TimescaleDB hypertable
 -- Partitioned by createdAt with 7-day chunks
@@ -190,8 +204,8 @@ CREATE TABLE IF NOT EXISTS "_shard_meta" (
 );
 
 INSERT INTO "_shard_meta" ("key", "value")
-VALUES ('schemaVersion', '1.2.0')
-ON CONFLICT ("key") DO UPDATE SET "value" = '1.2.0', "updatedAt" = NOW();
+VALUES ('schemaVersion', '1.3.0')
+ON CONFLICT ("key") DO UPDATE SET "value" = '1.3.0', "updatedAt" = NOW();
 
 INSERT INTO "_shard_meta" ("key", "value")
 VALUES ('initializedAt', now()::text)

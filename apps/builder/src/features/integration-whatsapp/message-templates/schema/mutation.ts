@@ -28,10 +28,7 @@ export const createMessageTemplateRequest = z
       .string()
       .min(1)
       .max(512)
-      .regex(
-        /^[a-z0-9_]+$/,
-        "Only lowercase letters, numbers and underscores allowed",
-      ),
+      .regex(/^[a-z0-9_]+$/, "validation.template.nameFormat"),
     language: z.enum(
       languageOptions.map((option) => option.value) as [string, ...string[]],
     ),

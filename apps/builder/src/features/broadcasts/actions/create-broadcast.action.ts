@@ -9,6 +9,7 @@ import { startOfMinute } from "date-fns"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { canViewContactEmailAndPhone } from "@/features/contacts/permissions"
+import { updateTag } from "@/features/tags/actions/update-tag-action"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
 import { createBroadcastRequest } from "../schemas/action"
@@ -152,10 +153,11 @@ export const createBroadcastAction = workspaceActionClient
       canViewEmailAndPhone,
     )
 
+    const { campaignDraftTagId, ...broadcastInsertValues } = insertValues
     const [broadcast] = await db
       .insert(broadcastModel)
       .values({
-        ...insertValues,
+        ...broadcastInsertValues,
         contactFilter,
         name: broadcastName,
         workspaceId,
@@ -171,6 +173,14 @@ export const createBroadcastAction = workspaceActionClient
           : null,
       })
       .returning()
+
+    if (campaignDraftTagId && broadcast) {
+      await updateTag({
+        workspaceId,
+        id: campaignDraftTagId,
+        parsedInput: { name: `حملة: ${broadcastName}` },
+      })
+    }
 
     return broadcast
   })

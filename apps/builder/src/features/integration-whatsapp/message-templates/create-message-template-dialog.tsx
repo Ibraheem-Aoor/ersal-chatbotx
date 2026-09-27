@@ -27,6 +27,7 @@ import {
   PencilIcon,
   PlayCircleIcon,
   PlusIcon,
+  SmartphoneIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -158,7 +159,7 @@ function PhoneFrame({
             </div>
           </div>
           {/* Chat area */}
-          <div className="flex flex-1 flex-col justify-end overflow-y-auto p-3">
+          <div className="flex flex-1 flex-col justify-start overflow-y-auto p-3">
             <div className="w-full rounded-lg bg-white p-2.5 shadow-sm dark:bg-[#1f2c34]">
               {children}
             </div>
@@ -490,18 +491,50 @@ function CreateMessageTemplateDialogContent({
       case templateTypes.enum.Document:
         setValue("content", templateDocumentDefaultValue())
         break
-      case templateTypes.enum.CarouselImage:
-        setValue("content", templateCarouselImageDefaultValue())
+      case templateTypes.enum.CarouselImage: {
+        const carouselImageDefaults = templateCarouselImageDefaultValue()
+        const carouselImageBtnText = t(
+          "whatsapp.messageTemplate.defaultButtonText",
+          { index: 1 },
+        )
+        for (const card of carouselImageDefaults.cards) {
+          for (const btn of card.buttons) {
+            btn.text = carouselImageBtnText
+          }
+        }
+        setValue("content", carouselImageDefaults)
         break
-      case templateTypes.enum.CarouselVideo:
-        setValue("content", templateCarouselVideoDefaultValue())
+      }
+      case templateTypes.enum.CarouselVideo: {
+        const carouselVideoDefaults = templateCarouselVideoDefaultValue()
+        const carouselVideoBtnText = t(
+          "whatsapp.messageTemplate.defaultButtonText",
+          { index: 1 },
+        )
+        for (const card of carouselVideoDefaults.cards) {
+          for (const btn of card.buttons) {
+            btn.text = carouselVideoBtnText
+          }
+        }
+        setValue("content", carouselVideoDefaults)
         break
-      case templateTypes.enum.ViewCatalog:
-        setValue("content", templateCatalogDefaultValue())
+      }
+      case templateTypes.enum.ViewCatalog: {
+        const catalogDefaults = templateCatalogDefaultValue()
+        catalogDefaults.buttons[0].text = t(
+          "whatsapp.messageTemplate.defaultViewCatalog",
+        )
+        setValue("content", catalogDefaults)
         break
-      case templateTypes.enum.ViewProduct:
-        setValue("content", templateProductDefaultValue())
+      }
+      case templateTypes.enum.ViewProduct: {
+        const productDefaults = templateProductDefaultValue()
+        productDefaults.buttons[0].text = t(
+          "whatsapp.messageTemplate.defaultViewItems",
+        )
+        setValue("content", productDefaults)
         break
+      }
       default:
         break
     }
@@ -540,6 +573,29 @@ function CreateMessageTemplateDialogContent({
                     {t("whatsapp.messageTemplate.formHasErrors")}
                   </span>
                 )}
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      className="lg:hidden"
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <SmartphoneIcon className="size-4" />
+                      {t("whatsapp.messageTemplate.preview")}
+                    </Button>
+                  }
+                />
+                <SheetContent className="w-full max-w-[400px] overflow-y-auto p-4 sm:max-w-[400px]">
+                  <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                    <LivePreview
+                      parentName="content"
+                      templateType={templateType}
+                    />
+                  </PhoneFrame>
+                </SheetContent>
+              </Sheet>
               <Button
                 disabled={
                   !form.formState.isValid || form.formState.isSubmitting
@@ -556,8 +612,14 @@ function CreateMessageTemplateDialogContent({
           </div>
 
           {/* ---- Single-step layout: inputs (start) + preview (end) ---- */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Inputs — renders first; in RTL this becomes the right side */}
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+            {/* Mobile preview — above form on narrow screens */}
+            <div className="flex shrink-0 items-start justify-center border-b bg-muted/40 p-4 lg:hidden">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={templateType} />
+              </PhoneFrame>
+            </div>
+            {/* Inputs — renders first on desktop; in RTL this becomes the right side */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {/* Template details */}
               <Card>
@@ -762,6 +824,29 @@ function EditMessageTemplateDialogContent({
                     {t("whatsapp.messageTemplate.formHasErrors")}
                   </span>
                 )}
+              <Sheet>
+                <SheetTrigger
+                  render={
+                    <Button
+                      className="lg:hidden"
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <SmartphoneIcon className="size-4" />
+                      {t("whatsapp.messageTemplate.preview")}
+                    </Button>
+                  }
+                />
+                <SheetContent className="w-full max-w-[400px] overflow-y-auto p-4 sm:max-w-[400px]">
+                  <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                    <LivePreview
+                      parentName="content"
+                      templateType={inferredType}
+                    />
+                  </PhoneFrame>
+                </SheetContent>
+              </Sheet>
               <Button
                 disabled={
                   !form.formState.isValid || form.formState.isSubmitting
@@ -778,8 +863,14 @@ function EditMessageTemplateDialogContent({
           </div>
 
           {/* ---- Two-column layout: inputs (start) + preview (end) ---- */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Inputs — renders first; in RTL this becomes the right side */}
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+            {/* Mobile preview — above form on narrow screens */}
+            <div className="flex shrink-0 items-start justify-center border-b bg-muted/40 p-4 lg:hidden">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={inferredType} />
+              </PhoneFrame>
+            </div>
+            {/* Inputs — renders first on desktop; in RTL this becomes the right side */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {/* Re-review notice for approved templates */}
               {isApproved && (
