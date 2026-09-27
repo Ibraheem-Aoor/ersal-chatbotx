@@ -159,7 +159,7 @@ function PhoneFrame({
             </div>
           </div>
           {/* Chat area */}
-          <div className="flex flex-1 flex-col justify-end overflow-y-auto p-3">
+          <div className="flex flex-1 flex-col justify-start overflow-y-auto p-3">
             <div className="w-full rounded-lg bg-white p-2.5 shadow-sm dark:bg-[#1f2c34]">
               {children}
             </div>
