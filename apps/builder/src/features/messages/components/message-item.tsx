@@ -33,6 +33,7 @@ import {
   CheckIcon,
   ClockIcon,
   ExternalLinkIcon,
+  FileTextIcon,
   ImageIcon,
   PaperclipIcon,
   ReplyIcon,
@@ -45,6 +46,7 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import type { AttachmentResource } from "@/features/attachments/schema/resource"
 import { useAttachmentUrl } from "@/features/attachments/utils"
+import { TemplatePreview } from "@/features/integration-whatsapp/message-templates/components/template-preview"
 import type { MessageResourceWithRelations } from "../schema/resource"
 import { MessageActions, MessageActionsEditor } from "./message-actions"
 import { MessageBubble } from "./message-bubble"
@@ -451,10 +453,7 @@ const MessageDeliveryIndicator = (props: {
       <Tooltip>
         <TooltipTrigger
           render={
-            <CheckCheckIcon
-              aria-hidden
-              className="wa-read-receipt size-3.5"
-            />
+            <CheckCheckIcon aria-hidden className="wa-read-receipt size-3.5" />
           }
         />
         <TooltipContent>
@@ -595,6 +594,95 @@ const RenderContentAttributes = (props: MessageItemProps) => {
           )}
         </div>
       )
+    case "whatsapp_template": {
+      const tpl = (contentAttributes as Record<string, unknown>).template as
+        | {
+            name?: string
+            components?: Array<{
+              type: string
+              format?: string
+              text?: string
+              buttons?: Array<{ type: string; text: string; url?: string }>
+            }>
+            params?: unknown
+          }
+        | undefined
+
+      if (tpl?.components && tpl.components.length > 0) {
+        const headerParams: Array<{
+          text?: string
+          image?: { link: string }
+        }> = []
+        const bodyParams: Array<{ text?: string }> = []
+        const buttonParams: Array<{ text?: string }> = []
+
+        type ParamEntry = {
+          type: string
+          parameters: Array<{
+            type: string
+            text?: string
+            image?: { link: string }
+          }>
+        }
+
+        const rawParams = tpl.params
+        let paramsArray: ParamEntry[]
+        if (Array.isArray(rawParams)) {
+          paramsArray = rawParams
+        } else if (rawParams && typeof rawParams === "object") {
+          paramsArray = Object.entries(
+            rawParams as Record<string, ParamEntry["parameters"]>,
+          ).map(([type, parameters]) => ({
+            type,
+            parameters: Array.isArray(parameters) ? parameters : [],
+          }))
+        } else {
+          paramsArray = []
+        }
+
+        for (const p of paramsArray) {
+          if (p.type === "header") {
+            for (const param of p.parameters) {
+              headerParams.push(
+                param.type === "image"
+                  ? { image: param.image }
+                  : { text: param.text },
+              )
+            }
+          } else if (p.type === "body") {
+            for (const param of p.parameters) {
+              bodyParams.push({ text: param.text })
+            }
+          } else if (p.type === "button") {
+            for (const param of p.parameters) {
+              buttonParams.push({ text: param.text })
+            }
+          }
+        }
+
+        return (
+          <div className="mt-1">
+            <TemplatePreview
+              bodyParams={bodyParams}
+              buttonParams={buttonParams}
+              components={
+                tpl.components as Parameters<
+                  typeof TemplatePreview
+                >[0]["components"]
+              }
+              headerParams={headerParams}
+            />
+          </div>
+        )
+      }
+
+      return (
+        <div className="mt-1 flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground text-xs">
+          <FileTextIcon className="size-4 shrink-0" />
+          <span>{tpl?.name ?? "Template"}</span>
+        </div>
+      )
+    }
     default:
       return null
   }
