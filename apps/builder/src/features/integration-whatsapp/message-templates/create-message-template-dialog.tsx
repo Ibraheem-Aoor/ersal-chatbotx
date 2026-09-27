@@ -612,8 +612,14 @@ function CreateMessageTemplateDialogContent({
           </div>
 
           {/* ---- Single-step layout: inputs (start) + preview (end) ---- */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Inputs — renders first; in RTL this becomes the right side */}
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+            {/* Mobile preview — above form on narrow screens */}
+            <div className="flex shrink-0 items-start justify-center border-b bg-muted/40 p-4 lg:hidden">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={templateType} />
+              </PhoneFrame>
+            </div>
+            {/* Inputs — renders first on desktop; in RTL this becomes the right side */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {/* Template details */}
               <Card>
@@ -857,8 +863,14 @@ function EditMessageTemplateDialogContent({
           </div>
 
           {/* ---- Two-column layout: inputs (start) + preview (end) ---- */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Inputs — renders first; in RTL this becomes the right side */}
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+            {/* Mobile preview — above form on narrow screens */}
+            <div className="flex shrink-0 items-start justify-center border-b bg-muted/40 p-4 lg:hidden">
+              <PhoneFrame subtitle={t("whatsapp.messageTemplate.preview")}>
+                <LivePreview parentName="content" templateType={inferredType} />
+              </PhoneFrame>
+            </div>
+            {/* Inputs — renders first on desktop; in RTL this becomes the right side */}
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
               {/* Re-review notice for approved templates */}
               {isApproved && (

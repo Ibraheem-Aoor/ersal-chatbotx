@@ -3240,6 +3240,7 @@
     "sendTemplate": "Send Template",
     "sendTemplateDescription": "Select an approved WhatsApp message template to send to this contact.",
     "selectTemplate": "Select a template...",
+    "searchTemplates": "Search templates...",
     "noApprovedTemplates": "No approved templates found.",
     "templateSentSuccess": "Template message sent successfully.",
     "templateSentError": "Failed to send template message.",

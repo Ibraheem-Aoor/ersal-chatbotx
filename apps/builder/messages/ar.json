@@ -3858,6 +3858,7 @@
     "sendTemplate": "إرسال قالب",
     "sendTemplateDescription": "اختر قالب رسالة واتساب معتمد لإرساله إلى جهة الاتصال.",
     "selectTemplate": "اختر قالبًا...",
+    "searchTemplates": "ابحث عن القوالب...",
     "noApprovedTemplates": "لم يتم العثور على قوالب معتمدة.",
     "templateSentSuccess": "تم إرسال رسالة القالب بنجاح.",
     "templateSentError": "فشل في إرسال رسالة القالب.",
