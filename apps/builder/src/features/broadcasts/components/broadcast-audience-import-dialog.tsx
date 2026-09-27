@@ -163,7 +163,10 @@ export function BroadcastAudienceImportDialog({
             <Form {...form}>
               <form
                 className="flex flex-col gap-4"
-                onSubmit={handleSubmitWithAction}
+                onSubmit={(e) => {
+                  e.stopPropagation()
+                  handleSubmitWithAction(e)
+                }}
               >
                 <ImportDialogSettings
                   channel={channel}
