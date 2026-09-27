@@ -29,11 +29,13 @@ import { format } from "date-fns"
 import {
   AlertCircleIcon,
   BotIcon,
+  CheckIcon,
   ExternalLinkIcon,
   ImageIcon,
   PaperclipIcon,
   ReplyIcon,
   ThumbsUp,
+  TriangleAlertIcon,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -200,25 +202,51 @@ export const MessageItem = (props: MessageItemProps) => {
           </>
         )}
         {RenderContentAttributes(props)}
+        {message.messageType === "outgoing" && !isComment && (
+          <div className="wa-bubble-meta flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/60">
+            <span>{format(new Date(message.createdAt), "HH:mm")}</span>
+            {message.sendError ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <TriangleAlertIcon
+                      aria-hidden
+                      className="size-3.5 text-red-500"
+                    />
+                  }
+                />
+                <TooltipContent>
+                  <p>
+                    {t("sendFailed")}: {message.sendError}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <CheckIcon aria-hidden className="size-3.5" />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex">
-        {message.messageType === "outgoing" && message.sendError && (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="flex items-center self-center px-1 text-destructive">
-                  <AlertCircleIcon aria-hidden className="size-4" />
-                </span>
-              }
-            />
-            <TooltipContent>
-              <p>
-                {t("sendFailed")}: {message.sendError}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {message.messageType === "outgoing" &&
+          message.sendError &&
+          isComment && (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="flex items-center self-center px-1 text-destructive">
+                    <AlertCircleIcon aria-hidden className="size-4" />
+                  </span>
+                }
+              />
+              <TooltipContent>
+                <p>
+                  {t("sendFailed")}: {message.sendError}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         {isComment && !isEditing && message.messageType === "incoming" && (
           <Button
             className="self-center opacity-0 transition-opacity group-hover:opacity-100"
