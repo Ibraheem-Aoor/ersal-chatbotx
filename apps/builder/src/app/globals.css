@@ -32,7 +32,6 @@
     background-color: #0b141a;
     background-image: url("/images/whatsapp-chat-bg.png");
     background-repeat: repeat;
-    background-blend-mode: soft-light;
   }
 }
 
@@ -41,7 +40,6 @@
   background-color: #0b141a;
   background-image: url("/images/whatsapp-chat-bg.png");
   background-repeat: repeat;
-  background-blend-mode: soft-light;
 }
 
 .wa-read-receipt {

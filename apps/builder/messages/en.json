@@ -590,7 +590,8 @@
       "uploadAnother": "Import more contacts",
       "importStarted": "Contact import started. Contacts will appear shortly.",
       "importFailed": "Failed to start contact import",
-      "templateWarning": "Imported contacts have no open conversation window — use an approved template"
+      "templateWarning": "Imported contacts have no open conversation window — use an approved template",
+      "rowCount": "{count, plural, one {# contact found in file} other {# contacts found in file}}"
     }
   },
   "condition": {
@@ -3784,6 +3785,8 @@
       "preview": "Preview",
       "startTyping": "Start typing to see preview",
       "sectionHeader": "Header",
+      "headerNone": "None",
+      "headerText": "Text",
       "sectionBody": "Body",
       "sectionFooter": "Footer",
       "sectionButtons": "Buttons",

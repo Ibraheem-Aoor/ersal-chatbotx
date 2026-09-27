@@ -20,7 +20,7 @@ import {
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { Loader2Icon } from "lucide-react"
+import { Loader2Icon, UsersIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -40,6 +40,16 @@ type BroadcastAudienceImportDialogProps = {
   onImportStarted: () => void
 }
 
+const LINE_BREAK_RE = /\r?\n/
+
+async function countCsvRows(file: File): Promise<number> {
+  const text = await file.text()
+  const lines = text
+    .split(LINE_BREAK_RE)
+    .filter((line) => line.trim().length > 0)
+  return Math.max(0, lines.length - 1)
+}
+
 export function BroadcastAudienceImportDialog({
   open,
   onOpenChange,
@@ -53,6 +63,7 @@ export function BroadcastAudienceImportDialog({
   const [fileId, setFileId] = useState("")
   const [csvHeaders, setCsvHeaders] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [rowCount, setRowCount] = useState<number | null>(null)
   const hasFile = fileId !== ""
 
   const { form, handleSubmitWithAction } = useHookFormAction(
@@ -66,6 +77,7 @@ export function BroadcastAudienceImportDialog({
           onOpenChange(false)
           setFileId("")
           setCsvHeaders([])
+          setRowCount(null)
         },
         onError: ({ error }) => {
           if (error.serverError) {
@@ -104,7 +116,7 @@ export function BroadcastAudienceImportDialog({
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("broadcasts.audienceImport.title")}</DialogTitle>
         </DialogHeader>
@@ -114,7 +126,13 @@ export function BroadcastAudienceImportDialog({
             onCleared={() => {
               setFileId("")
               setCsvHeaders([])
+              setRowCount(null)
               applyHeaderMapping([])
+            }}
+            onFileSelected={(file) => {
+              countCsvRows(file)
+                .then(setRowCount)
+                .catch(() => setRowCount(null))
             }}
             onUploaded={(result, headers) => {
               setFileId(result.fileId)
@@ -129,6 +147,17 @@ export function BroadcastAudienceImportDialog({
             type={uploadTypes.enum.import}
             workspaceId={workspaceId}
           />
+
+          {hasFile && rowCount !== null && (
+            <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800 dark:bg-green-950/40">
+              <UsersIcon className="size-4 text-green-600 dark:text-green-400" />
+              <span className="font-medium text-green-800 text-sm dark:text-green-300">
+                {t("broadcasts.audienceImport.rowCount", {
+                  count: rowCount,
+                })}
+              </span>
+            </div>
+          )}
 
           {hasFile && (
             <Form {...form}>

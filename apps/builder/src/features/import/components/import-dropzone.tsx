@@ -21,6 +21,7 @@ type ImportDropzoneProps = {
   onUploaded: (result: UploadResult, csvHeaders: string[]) => void
   onCleared: () => void
   onUploadingChange?: (isUploading: boolean) => void
+  onFileSelected?: (file: File) => void
   uploadLabel?: string
   headerSource?: "client" | "server"
 }
@@ -34,6 +35,7 @@ export function ImportDropzone({
   onUploaded,
   onCleared,
   onUploadingChange,
+  onFileSelected,
   uploadLabel,
   headerSource = "client",
 }: ImportDropzoneProps) {
@@ -56,6 +58,7 @@ export function ImportDropzone({
     }
     setIsUploading(true)
     onUploadingChange?.(true)
+    onFileSelected?.(file)
     try {
       const result = await upload(file)
       const headers =
