@@ -305,6 +305,14 @@ export interface IMessageRepository {
 
   updateAttachment(params: UpdateAttachmentParams): Promise<void>
 
+  updateDeliveryStatus(
+    id: string,
+    workspaceId: string,
+    createdAt: Date,
+    status: "sent" | "delivered" | "read" | "failed",
+    timestamps?: { deliveredAt?: Date; readAt?: Date },
+  ): Promise<{ id: string } | null>
+
   updateMessageAttributes(
     messageId: string,
     workspaceId: string,

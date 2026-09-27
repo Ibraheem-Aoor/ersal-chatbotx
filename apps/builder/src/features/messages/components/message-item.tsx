@@ -29,7 +29,9 @@ import { format } from "date-fns"
 import {
   AlertCircleIcon,
   BotIcon,
+  CheckCheckIcon,
   CheckIcon,
+  ClockIcon,
   ExternalLinkIcon,
   ImageIcon,
   PaperclipIcon,
@@ -205,25 +207,11 @@ export const MessageItem = (props: MessageItemProps) => {
         {message.messageType === "outgoing" && !isComment && (
           <div className="wa-bubble-meta flex items-center justify-end gap-1 pe-1 text-[11px] text-primary-foreground/60">
             <span>{format(new Date(message.createdAt), "HH:mm")}</span>
-            {message.sendError ? (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <TriangleAlertIcon
-                      aria-hidden
-                      className="size-3.5 text-red-500"
-                    />
-                  }
-                />
-                <TooltipContent>
-                  <p>
-                    {t("sendFailed")}: {message.sendError}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <CheckIcon aria-hidden className="size-3.5" />
-            )}
+            <MessageDeliveryIndicator
+              sendError={message.sendError}
+              status={message.status as string | null | undefined}
+              t={t}
+            />
           </div>
         )}
       </div>
@@ -431,6 +419,79 @@ const StoryReplyContext = (props: {
       <span>{t("repliedToStory")}</span>
     </div>
   )
+}
+
+const MessageDeliveryIndicator = (props: {
+  sendError: string | null | undefined
+  status: string | null | undefined
+  t: ReturnType<typeof useTranslations<"messages">>
+}) => {
+  const { sendError, status, t } = props
+
+  if (sendError || status === "failed") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <TriangleAlertIcon aria-hidden className="size-3.5 text-red-500" />
+          }
+        />
+        <TooltipContent>
+          <p>
+            {t("sendFailed")}
+            {sendError ? `: ${sendError}` : ""}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "read") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <CheckCheckIcon
+              aria-hidden
+              className="size-3.5"
+              style={{ color: "#53bdeb" }}
+            />
+          }
+        />
+        <TooltipContent>
+          <p>{t("statusRead")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "delivered") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<CheckCheckIcon aria-hidden className="size-3.5" />}
+        />
+        <TooltipContent>
+          <p>{t("statusDelivered")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (status === "sent") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<CheckIcon aria-hidden className="size-3.5" />}
+        />
+        <TooltipContent>
+          <p>{t("statusSent")}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return <ClockIcon aria-hidden className="size-3" />
 }
 
 const RenderContentAttributes = (props: MessageItemProps) => {

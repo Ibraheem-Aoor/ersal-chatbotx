@@ -4,6 +4,7 @@ export const RealtimeEventType = {
   messageUpdated: "messageUpdated",
   messageIdAssigned: "messageIdAssigned",
   messageFailed: "messageFailed",
+  messageStatusChanged: "messageStatusChanged",
   typing: "typing",
   contactBlocked: "contactBlocked",
   contactUnblocked: "contactUnblocked",
@@ -81,6 +82,16 @@ export type RealtimeEventConversationAssigned = {
   }
 }
 
+export type RealtimeEventMessageStatusChanged = {
+  eventType: typeof RealtimeEventType.messageStatusChanged
+  data: {
+    messageId: string
+    status: "pending" | "sent" | "delivered" | "read" | "failed"
+    deliveredAt?: string | null
+    readAt?: string | null
+  }
+}
+
 export type RealtimeEventNotifyExportResult = {
   eventType: typeof RealtimeEventType.notifyExportResult
   data: {
@@ -96,6 +107,7 @@ export type RealtimeEventData =
   | RealtimeEventMessageIdAssigned
   | RealtimeEventMessageUpdated
   | RealtimeEventMessageFailed
+  | RealtimeEventMessageStatusChanged
   | RealtimeEventContactCommon
   | RealtimeEventConversationAssigned
   | RealtimeEventTyping

@@ -655,6 +655,75 @@ export class ShardedMessageRepository implements IMessageRepository {
     )
   }
 
+  async updateDeliveryStatus(
+    id: string,
+    workspaceId: string,
+    createdAt: Date,
+    status: "sent" | "delivered" | "read" | "failed",
+    timestamps?: { deliveredAt?: Date; readAt?: Date },
+  ): Promise<{ id: string } | null> {
+    const statusRank: Record<string, number> = {
+      pending: 0,
+      sent: 1,
+      delivered: 2,
+      read: 3,
+      failed: 4,
+    }
+    const rank = statusRank[status] ?? 0
+
+    const patch: Partial<typeof messageModel.$inferInsert> = { status }
+    if (timestamps?.deliveredAt) {
+      patch.deliveredAt = timestamps.deliveredAt
+    }
+    if (timestamps?.readAt) {
+      patch.readAt = timestamps.readAt
+    }
+
+    const timeRangeShards = await this.getShardsForRange(createdAt, createdAt)
+    const writeShard = await this.shardManager.getWriteShardInfo(workspaceId)
+    const shards = this.mergeWriteShard(timeRangeShards, writeShard)
+    if (shards.length === 0) {
+      return null
+    }
+
+    const perShard = await Promise.all(
+      shards.map(async (shardInfo) => {
+        try {
+          const client = await this.shardManager.getShardClient(shardInfo.shard)
+          const neverDowngrade =
+            status === "failed"
+              ? sql`true`
+              : sql`(COALESCE(CASE "status"
+                  WHEN 'pending' THEN 0
+                  WHEN 'sent' THEN 1
+                  WHEN 'delivered' THEN 2
+                  WHEN 'read' THEN 3
+                  WHEN 'failed' THEN 5
+                  ELSE 0 END, 0) < ${rank})`
+          return await client
+            .update(messageModel)
+            .set(patch)
+            .where(
+              and(
+                eq(messageModel.id, id),
+                eq(messageModel.workspaceId, workspaceId),
+                eq(messageModel.createdAt, createdAt),
+                neverDowngrade,
+              ),
+            )
+            .returning({ id: messageModel.id })
+        } catch (error) {
+          logger.warn(
+            { err: error, shardId: shardInfo.shard.id },
+            "Shard update failed in updateDeliveryStatus",
+          )
+          return []
+        }
+      }),
+    )
+    return perShard.flat()[0] ?? null
+  }
+
   updateSendError(
     id: string,
     sendError: string | null,
