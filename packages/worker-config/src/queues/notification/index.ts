@@ -4,7 +4,6 @@ import {
   defaultJobOptions,
   fakeQueue,
   getRedisConnection,
-  isNoRedisEnv,
 } from "../../lib/connection"
 import { queueNames } from "../../lib/types"
 
@@ -44,9 +43,10 @@ export type NotificationJobData =
   | NotificationJobNotifyIncomingMessage
   | NotificationJobNotifyConversationAssigned
 
-export const notificationQueue = isNoRedisEnv()
-  ? fakeQueue
-  : new Queue<NotificationJobData>(queueNames.enum.notification, {
+export const notificationQueue =
+  process.env.NEXT_PHASE === "phase-production-build"
+    ? fakeQueue
+    : new Queue<NotificationJobData>(queueNames.enum.notification, {
       connection: getRedisConnection(),
       defaultJobOptions,
     })
