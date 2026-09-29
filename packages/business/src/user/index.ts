@@ -44,3 +44,5 @@ export const isSuperAdmin = (user: Pick<UserModel, "email">): boolean => {
 export * from "./admin-service"
 export * from "./entitlements"
 export * from "./resolve-admin-tenant"
+export * from "./service"
+export * from "./utils"

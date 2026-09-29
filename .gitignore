@@ -64,4 +64,6 @@ chatbotx-backup-20260815.sql
 .playwright-mcp/
 
 # E2E test artifacts
-PLAN/
+PLAN/.claude/worktrees/
+*.bak
+screenshots/

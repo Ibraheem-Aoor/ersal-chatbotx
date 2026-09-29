@@ -24,6 +24,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
 
 vi.mock("@chatbotx.io/redis", () => ({
   withCache: vi.fn(),
+  createRedisConnection: vi.fn(),
 }))
 
 vi.mock("@chatbotx.io/event-bus", () => ({
@@ -37,6 +38,27 @@ vi.mock("@chatbotx.io/events", () => ({
   emitConversationTransferredToBot: vi.fn(),
   emitConversationTransferredToHuman: vi.fn(),
   emitConversationUnassigned: vi.fn(),
+}))
+
+vi.mock("@chatbotx.io/worker-config", () => ({
+  chatQueue: { add: vi.fn() },
+  ChatJobAction: { broadcastEvent: "broadcastEvent" },
+  notificationQueue: { addBulk: vi.fn() },
+  NotificationJobAction: {
+    notifyConversationAssigned: "notifyConversationAssigned",
+  },
+}))
+
+vi.mock("@chatbotx.io/partysocket-config", () => ({
+  RealtimeEventType: {
+    conversationCreated: "conversationCreated",
+    conversationUpdated: "conversationUpdated",
+    conversationAssigned: "conversationAssigned",
+  },
+}))
+
+vi.mock("../../logger", () => ({
+  logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }))
 
 vi.mock("../../contact-inbox/service", () => ({
