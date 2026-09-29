@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "ed70ea87-e884-422e-b835-3bf901c551a2",
+  "id": "7fcebe34-18ac-4db4-b2db-9a60e85470b6",
   "prevIds": [
     "ad27243e-6a6d-422e-b212-b386b4ae3440"
   ],
@@ -187,6 +187,77 @@
     },
     {
       "values": [
+        "pending",
+        "synced",
+        "failed"
+      ],
+      "name": "appointmentExternalSyncStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "inPerson",
+        "phoneCall",
+        "onlineMeeting"
+      ],
+      "name": "appointmentLocationTypeSnapshot",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "scheduled",
+        "cancelled"
+      ],
+      "name": "appointmentStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "inPerson",
+        "phoneCall",
+        "onlineMeeting"
+      ],
+      "name": "appointmentLocationType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "rollingDays",
+        "dateRange",
+        "specificDay",
+        "anyFutureDate"
+      ],
+      "name": "appointmentScheduleWindowType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "minutes",
+        "hours",
+        "days"
+      ],
+      "name": "appointmentReminderTimingUnit",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "pending",
+        "sent",
+        "cancelled",
+        "failed"
+      ],
+      "name": "appointmentReminderDispatchStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
         "image",
         "video",
         "audio",
@@ -203,6 +274,15 @@
         "outbound"
       ],
       "name": "automatedResponseType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "monthly",
+        "yearly"
+      ],
+      "name": "billingCycle",
       "entityType": "enums",
       "schema": "public"
     },
@@ -469,6 +549,18 @@
     },
     {
       "values": [
+        "pending",
+        "sent",
+        "delivered",
+        "read",
+        "failed"
+      ],
+      "name": "messageDeliveryStatus",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
         "message",
         "comment"
       ],
@@ -585,6 +677,18 @@
         "qrCode"
       ],
       "name": "ReflinkType",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "active",
+        "trial",
+        "expired",
+        "past_due",
+        "cancelled"
+      ],
+      "name": "subscriptionStatus",
       "entityType": "enums",
       "schema": "public"
     },
@@ -745,6 +849,36 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "Appointment",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "AppointmentCalendar",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "AppointmentCalendarAvailability",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "AppointmentCalendarReminder",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "AppointmentReminderDispatch",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "Attachment",
       "entityType": "tables",
       "schema": "public"
@@ -788,6 +922,18 @@
     {
       "isRlsEnabled": false,
       "name": "AutomatedResponse",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "BillingInfo",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "BillingPlan",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1111,6 +1257,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "IntegrationGoogleCalendar",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "IntegrationGoogleSheet",
       "entityType": "tables",
       "schema": "public"
@@ -1172,6 +1324,12 @@
     {
       "isRlsEnabled": false,
       "name": "IntegrationOpenrouter",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "IntegrationOutlookCalendar",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1262,6 +1420,12 @@
     {
       "isRlsEnabled": false,
       "name": "MetaCatalogSyncRun",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "PaymentHistory",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1364,6 +1528,12 @@
     {
       "isRlsEnabled": false,
       "name": "Spreadsheet",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "Subscription",
       "entityType": "tables",
       "schema": "public"
     },
@@ -4619,6 +4789,903 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "calendarId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "conversationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "startAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "endAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "inviteeTimezone",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "appointmentStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'scheduled'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "appointmentLocationTypeSnapshot",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "locationType",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "locationDetail",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "externalEventId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "appointmentExternalSyncStatus",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "externalSyncStatus",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cancelledAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "active",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "timezone",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "30",
+      "generated": null,
+      "identity": null,
+      "name": "durationMinutes",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "bufferAfterMinutes",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "appointmentLocationType",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "locationType",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "locationDetail",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "appointmentScheduleWindowType",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'rollingDays'",
+      "generated": null,
+      "identity": null,
+      "name": "scheduleWindowType",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "name": "scheduleWindowConfig",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "maxAppointmentsPerUser",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "dailyLimitEnabled",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "maxPerDay",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "allowGroupMeeting",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "maxPerSlot",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "confirmationMessage",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "confirmationFlowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cancellationFlowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "externalConnectionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "publicLinkSlug",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "calendarId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "weekday",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "startMinute",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "endMinute",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "calendarId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "flowId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "timingValue",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "appointmentReminderTimingUnit",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "timingUnit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "appointmentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reminderConfigId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactInboxId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sendAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "appointmentReminderDispatchStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'pending'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "jobId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sentAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cancelledAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "failedReason",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "Attachment"
     },
     {
@@ -5402,6 +6469,19 @@
       "table": "User"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'active'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "User"
+    },
+    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": true,
@@ -5621,6 +6701,331 @@
       "entityType": "columns",
       "schema": "public",
       "table": "AutomatedResponse"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "companyName",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "vatNumber",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "billingEmail",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'SA'",
+      "generated": null,
+      "identity": null,
+      "name": "country",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "address",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingInfo"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'1'",
+      "generated": null,
+      "identity": null,
+      "name": "organizationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "numeric(10,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "price",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'SAR'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "billingCycle",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'monthly'",
+      "generated": null,
+      "identity": null,
+      "name": "billingCycle",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "limits",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "name": "features",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "isActive",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "isDefault",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "trialDays",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "sortOrder",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "BillingPlan"
     },
     {
       "type": "bigint",
@@ -7672,6 +9077,19 @@
     {
       "type": "bigint",
       "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "appointmentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
       "default": null,
@@ -9485,6 +10903,71 @@
       "generated": null,
       "identity": null,
       "name": "macUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "flowsLimit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "flowsUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "broadcastsLimit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "broadcastsUsed",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "UserQuota"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "true",
+      "generated": null,
+      "identity": null,
+      "name": "aiAgentsEnabled",
       "entityType": "columns",
       "schema": "public",
       "table": "UserQuota"
@@ -13062,6 +14545,110 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "auth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'primary'",
+      "generated": null,
+      "identity": null,
+      "name": "providerCalendarId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "IntegrationGoogleSheet"
     },
     {
@@ -14791,6 +16378,110 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "workspaceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "integrationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "auth",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'primary'",
+      "generated": null,
+      "identity": null,
+      "name": "providerCalendarId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "IntegrationSendGrid"
     },
     {
@@ -15613,6 +17304,32 @@
       "table": "IntegrationWhatsapp"
     },
     {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "capiAccessToken",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "capiDisconnectedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "IntegrationWhatsapp"
+    },
+    {
       "type": "whatsappRegistrationStatus",
       "typeSchema": "public",
       "notNull": true,
@@ -16219,6 +17936,45 @@
       "generated": null,
       "identity": null,
       "name": "sendError",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Message"
+    },
+    {
+      "type": "messageDeliveryStatus",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": "'pending'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Message"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deliveredAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Message"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "readAt",
       "entityType": "columns",
       "schema": "public",
       "table": "Message"
@@ -17223,6 +18979,188 @@
       "entityType": "columns",
       "schema": "public",
       "table": "MetaCatalogSyncRun"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "subscriptionId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "planId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "planName",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "numeric(10,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'SAR'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paymentGateway",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "gatewayPaymentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'new'",
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'paid'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "metadata",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "PaymentHistory"
     },
     {
       "type": "bigint",
@@ -19761,6 +21699,214 @@
       "entityType": "columns",
       "schema": "public",
       "table": "Spreadsheet"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "createdAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updatedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "userId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "planId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "subscriptionStatus",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'active'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "billingCycle",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'monthly'",
+      "generated": null,
+      "identity": null,
+      "name": "cycle",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "numeric(10,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'SAR'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paymentGateway",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "gatewayPaymentId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paymentToken",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paymentTokenBrand",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paymentTokenLastFour",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "currentPeriodStart",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "currentPeriodEnd",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Subscription"
     },
     {
       "type": "bigint",
@@ -23055,6 +25201,349 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Appointment_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "startAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Appointment_workspaceId_startAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "calendarId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "startAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Appointment_calendarId_status_startAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "calendarId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Appointment_contactId_calendarId_status_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentCalendar_workspaceId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "name",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "(\"deletedAt\" is null)",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentCalendar_workspaceId_name_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "publicLinkSlug",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentCalendar_publicLinkSlug_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "calendarId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentCalendarAvailability_calendarId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "calendarId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "flowId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "timingValue",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "timingUnit",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentCalendarReminder_dedupe_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "jobId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentReminderDispatch_jobId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "sendAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentReminderDispatch_status_sendAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "appointmentId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentReminderDispatch_appointmentId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactInboxId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "AppointmentReminderDispatch_contactInboxId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "messageId",
           "isExpression": false,
           "asc": true,
@@ -24172,6 +26661,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "ContactOnSmartDelay_conversationId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "appointmentId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactOnSmartDelay_appointmentId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "ContactOnSmartDelay"
@@ -26124,6 +28634,27 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
+      "name": "IntegrationGoogleCalendar_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
       "name": "IntegrationGoogleSheet_integrationId_key",
       "entityType": "indexes",
       "schema": "public",
@@ -26660,6 +29191,27 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationOpenrouter"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "integrationId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationOutlookCalendar_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
     },
     {
       "nameExplicit": true,
@@ -30342,6 +32894,261 @@
     {
       "nameExplicit": false,
       "columns": [
+        "workspaceId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "Appointment_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "calendarId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "AppointmentCalendar",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "RESTRICT",
+      "name": "Appointment_calendarId_AppointmentCalendar_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "contactId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Contact",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "Appointment_contactId_Contact_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "conversationId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Conversation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "Appointment_conversationId_Conversation_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Appointment"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "workspaceId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentCalendar_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "confirmationFlowId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Flow",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "AppointmentCalendar_confirmationFlowId_Flow_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "cancellationFlowId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Flow",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "AppointmentCalendar_cancellationFlowId_Flow_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "externalConnectionId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "AppointmentCalendar_externalConnectionId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "calendarId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "AppointmentCalendar",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentCalendarAvailability_QfahoIQAX592_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "calendarId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "AppointmentCalendar",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentCalendarReminder_5O4INfYC3dY3_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "flowId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Flow",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentCalendarReminder_flowId_Flow_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "workspaceId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentReminderDispatch_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "appointmentId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Appointment",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentReminderDispatch_appointmentId_Appointment_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "reminderConfigId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "AppointmentCalendarReminder",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "AppointmentReminderDispatch_a526jJM55OD7_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "contactInboxId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "ContactInbox",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "AppointmentReminderDispatch_contactInboxId_ContactInbox_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "userId"
       ],
       "schemaTo": "public",
@@ -30491,6 +33298,23 @@
       "entityType": "fks",
       "schema": "public",
       "table": "AutomatedResponse"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "userId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "BillingInfo_userId_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "BillingInfo"
     },
     {
       "nameExplicit": false,
@@ -30845,6 +33669,23 @@
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "name": "ContactOnSmartDelay_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ContactOnSmartDelay"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "appointmentId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Appointment",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "SET NULL",
+      "name": "ContactOnSmartDelay_appointmentId_Appointment_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "ContactOnSmartDelay"
@@ -32204,6 +35045,40 @@
       ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
+      "name": "IntegrationGoogleCalendar_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "integrationId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationGoogleCalendar_integrationId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "workspaceId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
       "name": "IntegrationGoogleSheet_workspaceId_Workspace_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -32633,6 +35508,40 @@
       "entityType": "fks",
       "schema": "public",
       "table": "IntegrationOpenrouter"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "workspaceId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Workspace",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationOutlookCalendar_workspaceId_Workspace_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "integrationId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Integration",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "CASCADE",
+      "onDelete": "CASCADE",
+      "name": "IntegrationOutlookCalendar_integrationId_Integration_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar"
     },
     {
       "nameExplicit": false,
@@ -33092,6 +36001,57 @@
       "entityType": "fks",
       "schema": "public",
       "table": "MetaCatalogSyncRun"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "userId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "PaymentHistory_userId_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "subscriptionId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "Subscription",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "PaymentHistory_subscriptionId_Subscription_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "PaymentHistory"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "planId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "BillingPlan",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "PaymentHistory_planId_BillingPlan_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "PaymentHistory"
     },
     {
       "nameExplicit": false,
@@ -33723,6 +36683,40 @@
       "entityType": "fks",
       "schema": "public",
       "table": "Spreadsheet"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "userId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "User",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "Subscription_userId_User_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Subscription"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "planId"
+      ],
+      "schemaTo": "public",
+      "tableTo": "BillingPlan",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "Subscription_planId_BillingPlan_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "Subscription"
     },
     {
       "nameExplicit": false,
@@ -34624,6 +37618,56 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "Appointment_pkey",
+      "schema": "public",
+      "table": "Appointment",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "AppointmentCalendar_pkey",
+      "schema": "public",
+      "table": "AppointmentCalendar",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "AppointmentCalendarAvailability_pkey",
+      "schema": "public",
+      "table": "AppointmentCalendarAvailability",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "AppointmentCalendarReminder_pkey",
+      "schema": "public",
+      "table": "AppointmentCalendarReminder",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "AppointmentReminderDispatch_pkey",
+      "schema": "public",
+      "table": "AppointmentReminderDispatch",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "Account_pkey",
       "schema": "public",
       "table": "Account",
@@ -34687,6 +37731,26 @@
       "name": "AutomatedResponse_pkey",
       "schema": "public",
       "table": "AutomatedResponse",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "BillingInfo_pkey",
+      "schema": "public",
+      "table": "BillingInfo",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "BillingPlan_pkey",
+      "schema": "public",
+      "table": "BillingPlan",
       "entityType": "pks"
     },
     {
@@ -35164,6 +38228,16 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "IntegrationGoogleCalendar_pkey",
+      "schema": "public",
+      "table": "IntegrationGoogleCalendar",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "IntegrationGoogleSheet_pkey",
       "schema": "public",
       "table": "IntegrationGoogleSheet",
@@ -35267,6 +38341,16 @@
       "name": "IntegrationOpenrouter_pkey",
       "schema": "public",
       "table": "IntegrationOpenrouter",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "IntegrationOutlookCalendar_pkey",
+      "schema": "public",
+      "table": "IntegrationOutlookCalendar",
       "entityType": "pks"
     },
     {
@@ -35397,6 +38481,16 @@
       "name": "MetaCatalogSyncRun_pkey",
       "schema": "public",
       "table": "MetaCatalogSyncRun",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "PaymentHistory_pkey",
+      "schema": "public",
+      "table": "PaymentHistory",
       "entityType": "pks"
     },
     {
@@ -35547,6 +38641,16 @@
       "name": "Spreadsheet_pkey",
       "schema": "public",
       "table": "Spreadsheet",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "Subscription_pkey",
+      "schema": "public",
+      "table": "Subscription",
       "entityType": "pks"
     },
     {
@@ -35764,6 +38868,17 @@
         "userId"
       ],
       "nullsNotDistinct": false,
+      "name": "BillingInfo_userId_key",
+      "schema": "public",
+      "table": "BillingInfo",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "userId"
+      ],
+      "nullsNotDistinct": false,
       "name": "UserQuota_userId_key",
       "schema": "public",
       "table": "UserQuota",
@@ -35807,57 +38922,6 @@
       "entityType": "checks",
       "schema": "public",
       "table": "WhatsappSignupSession"
-    },
-    {
-      "values": [
-        "pending",
-        "sent",
-        "delivered",
-        "read",
-        "failed"
-      ],
-      "name": "messageDeliveryStatus",
-      "entityType": "enums",
-      "schema": "public"
-    },
-    {
-      "type": "messageDeliveryStatus",
-      "typeSchema": "public",
-      "notNull": false,
-      "dimensions": 0,
-      "default": "'pending'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "Message"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "deliveredAt",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "Message"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "readAt",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "Message"
     }
   ],
   "renames": []
