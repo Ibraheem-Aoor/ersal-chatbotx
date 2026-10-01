@@ -2174,6 +2174,12 @@
     "pageUserName": {
       "label": "Sidans användarnamn"
     },
+    "waUserId": {
+      "label": "WhatsApp-användar-ID"
+    },
+    "waUserName": {
+      "label": "WhatsApp-användarnamn"
+    },
     "password": {
       "label": "Lösenord",
       "placeholder": "••••••••"
