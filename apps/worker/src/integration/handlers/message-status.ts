@@ -15,7 +15,7 @@ import {
   type RealtimeEventData,
   RealtimeEventType,
 } from "@chatbotx.io/partysocket-config"
-import { SdkException } from "@chatbotx.io/sdk"
+import { resolveWithSourceUserIdFallback, SdkException } from "@chatbotx.io/sdk"
 import {
   ChatJobAction,
   chatQueue,
@@ -35,6 +35,33 @@ function broadcastChatEvent(workspaceId: string, event: RealtimeEventData) {
     type: ChatJobAction.broadcastEvent,
     data: { workspaceId, event },
   })
+}
+
+type StatusContactInboxWhere = { inboxId: string } & (
+  | { sourceId: string }
+  | { sourceUserId: string }
+)
+
+const findStatusContactInbox = (where: StatusContactInboxWhere) =>
+  db.query.contactInboxModel.findFirst({
+    where,
+    with: {
+      conversation: true,
+      contact: true,
+    },
+  })
+
+const resolveStatusContactInbox = async (
+  inboxId: string,
+  recipientIdentity: string,
+) => {
+  if (!recipientIdentity) {
+    return
+  }
+  return await resolveWithSourceUserIdFallback(
+    { sourceId: recipientIdentity, sourceUserId: recipientIdentity },
+    (where) => findStatusContactInbox({ inboxId, ...where }),
+  )
 }
 
 export const handleMessageStatus = async (
@@ -79,16 +106,10 @@ export const handleMessageStatus = async (
   const eventStatus = String(payload.status).toLowerCase()
 
   try {
-    const contactInbox = await db.query.contactInboxModel.findFirst({
-      where: {
-        sourceId: contact.sourceId,
-        inboxId: inbox.id,
-      },
-      with: {
-        conversation: true,
-        contact: true,
-      },
-    })
+    const contactInbox = await resolveStatusContactInbox(
+      inbox.id,
+      contact.sourceId,
+    )
 
     if (!contactInbox?.conversation) {
       throw new SdkException("Unable to find conversation")

@@ -1197,6 +1197,30 @@ are imported and auto-tagged. Receiver count updates. On confirm, tag is renamed
 
 ---
 
+## 34. MOBILE_APP_SCHEMES env var (trusted origins)
+
+**File:** `packages/auth/src/keys.ts`, `packages/auth/src/server.ts`
+
+**What:** Upstream hardcodes `"chatconnectxapp://"` in `trustedOrigins`. We replaced
+it with a `MOBILE_APP_SCHEMES` env var (comma-separated, defaults to `chatconnectxapp://`).
+The env schema parses and splits the value; `server.ts` spreads `env.MOBILE_APP_SCHEMES`
+into the static origins array.
+
+**Why:** Allows white-label mobile apps with different URL schemes without code changes.
+Follows the same pattern as `NEXT_PUBLIC_BROKER_URL` (env-driven, sensible default).
+
+**Env lines (`.env`):**
+```
+# Default is fine for the stock chatbotx-mobile-app
+# MOBILE_APP_SCHEMES=chatconnectxapp://
+# For multiple schemes: MOBILE_APP_SCHEMES=chatconnectxapp://,mybrand://
+```
+
+**Verify after sync:** `trustedOrigins()` includes `chatconnectxapp://` by default.
+Setting `MOBILE_APP_SCHEMES=foo://,bar://` includes both.
+
+---
+
 ## What is NOT patched (upstream code runs unchanged)
 
 These upstream gates work correctly with `NEXT_PUBLIC_EDITION=enterprise`:

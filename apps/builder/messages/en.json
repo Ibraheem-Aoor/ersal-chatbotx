@@ -1525,6 +1525,12 @@
     "pageUserName": {
       "label": "Page User Name"
     },
+    "waUserId": {
+      "label": "WhatsApp User ID"
+    },
+    "waUserName": {
+      "label": "WhatsApp Username"
+    },
     "purpose": {
       "label": "Purpose",
       "placeholder": "What does this Function do?"

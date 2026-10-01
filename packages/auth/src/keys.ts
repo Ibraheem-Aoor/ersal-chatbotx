@@ -13,6 +13,10 @@ export const keys = () =>
       // single-domain deploys keep working.
       NEXT_PUBLIC_BROKER_URL: z.url().optional(),
       BETTER_AUTH_SECRET: z.string(),
+      MOBILE_APP_SCHEMES: z
+        .string()
+        .default("chatconnectxapp://")
+        .transform((v) => v.split(",").map((s) => s.trim()).filter(Boolean)),
     },
     runtimeEnv: process.env,
     emptyStringAsUndefined: true,
