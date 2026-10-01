@@ -49,9 +49,9 @@ import { useChatStore } from "../../chat/store/chat-store-provider"
 import { createMessageAction } from "../actions/create-message.action"
 import { createMessageRequest } from "../schema/mutation"
 import { FileUploadPreview } from "./file-upload"
-import { WindowClosedActions } from "./window-closed-actions"
 import { InputMenu } from "./input-menu"
 import { VoiceRecorder } from "./voice-recorder"
+import { WindowClosedActions } from "./window-closed-actions"
 
 const CHANNEL_WINDOW_SECONDS: Record<ChannelType, number> = {
   omnichannel: 0,
@@ -396,7 +396,7 @@ export const MessageInput = () => {
 
   if (isMessengerHumanAgentWindowExpired) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
+      <div className="m-3 rounded-xl border border-foreground/20 pt-2">
         <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">
             {t("messages.humanAgentWindowExpired")}
@@ -408,7 +408,7 @@ export const MessageInput = () => {
 
   if (isMessengerWindowClosed && !isHumanAgentUnlocked) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
+      <div className="m-3 rounded-xl border border-foreground/20 pt-2">
         <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">
             {t("messages.messagingWindowClosed")}
@@ -453,7 +453,7 @@ export const MessageInput = () => {
   }
 
   return (
-    <div className="m-3 rounded-xl border pt-2">
+    <div className="m-3 rounded-xl border border-foreground/20 pt-2">
       <Form {...form}>
         <form
           aria-label="Message input form"
@@ -500,7 +500,7 @@ export const MessageInput = () => {
                       <Textarea
                         aria-label={t("actions.typeMessage")}
                         autoComplete="off"
-                        className="h-16 resize-none border-0 px-1.5 py-1 shadow-none focus:ring-0 focus-visible:ring-0 dark:bg-neutral-900"
+                        className="h-16 resize-none border-0 px-1.5 py-1 shadow-none focus:ring-0 focus-visible:ring-0"
                         placeholder={t("actions.messagePlaceholder")}
                         {...field}
                         onKeyDown={onKeyDown}

@@ -42,6 +42,16 @@
   background-repeat: repeat;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .whatsapp-chat-bg .message-toolbar button {
+    color: #25d366;
+  }
+}
+
+:root[data-theme="dark"] .whatsapp-chat-bg .message-toolbar button {
+  color: #25d366;
+}
+
 .wa-read-receipt {
   color: #53bdeb;
 }
